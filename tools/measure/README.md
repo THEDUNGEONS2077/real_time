@@ -1,5 +1,7 @@
 # Phone-only diagnostics
 
+For the preferred button-based flow, use the [real_time phone helper](../../diagnostics/phone/README.md): pair once, run a test, review the report, tap COPY DIAGNOSTICS and paste into the chat. It embeds this same collector and performs trace analysis on the phone. Wear Installer 2 remains the face installer. The manual workflow below is optional.
+
 The watch face cannot log code-based telemetry. This toolkit collects existing watch diagnostics through [Bugjaeger](https://sisik.eu/bugjaeger) on the phone, then analyzes exported files locally. No PC-to-watch ADB connection is used, and there is no companion logger consuming power throughout the day.
 
 ## Prepare once

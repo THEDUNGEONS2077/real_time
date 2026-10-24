@@ -6,6 +6,8 @@ Optimize from measured watch behaviour. A small APK, WFF validation, estimated m
 
 Every future face uses the shared collector, metadata and report format. Read reviewed findings here before adding a costly effect, then measure the new face because geometry, display brightness, firmware and interactive time can change the outcome.
 
+The preferred collection interface is now the local phone helper: run, review, copy and paste. It embeds the same collector and runs analysis after disconnecting the watch. Add future faces to its setup catalogue so face/build/palette/effect records remain accurate. Keep real comparisons and reviewed findings in this record; no pasted data becomes a claimed win without reviewing conditions and repeating noisy results.
+
 ## Current findings
 
 No on-watch performance or battery captures have been collected yet. There are no measured optimization wins to reuse yet.

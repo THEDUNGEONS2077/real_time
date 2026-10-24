@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phone UI labels used directly by Android widgets. Diagnostic reports use stable English keys. -->
+<resources>
+    <string name="aod_enabled">AOD enabled on the watch</string>
+    <string name="copied">Diagnostics copied. Paste the report into the chat.</string>
+</resources>

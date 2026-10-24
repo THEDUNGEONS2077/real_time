@@ -12,6 +12,8 @@ R8 is enabled in both variants to remove AGP's generated R bytecode; resource sh
 
 `tools/measure` contains the watch-shell collector and host-only analysis. It does not run inside a face. The PC processes exports; only the phone connects to the watch.
 
+`diagnostics/phone` is the preferred native phone frontend. It embeds the shared collector, pairs directly over local Wi-Fi, downloads captures into non-backed-up storage, runs a checksum-pinned ARM64 processor on the phone and formats an explicit-copy report. Its own executable code and network permission are isolated in a separate package. Battery starts are persisted atomically; no service or live connection runs through the daily interval. Pairing identity is private and separate from Wear Installer 2's.
+
 ## Generated resources
 
 The generator returns the entire resource tree as a map and can write it to any directory. Tests build in a temporary directory and compare every file with committed resources, including PNG/WebP bytes. `--check` also rejects stale extra resources. Lockfiles pin the image toolchain; dependencies changing encoded output require intentional regeneration.
