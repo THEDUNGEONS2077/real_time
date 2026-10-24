@@ -17,6 +17,12 @@ android {
         versionName = "0.1.0"
     }
     buildFeatures { buildConfig = false }
+    lint {
+        // WFF resolves bare resource names at runtime; Android lint cannot follow them.
+        disable += "UnusedResources"
+        // These versions are deliberately pinned to the agreed API-36 toolchain.
+        disable += "AndroidGradlePluginVersion"
+    }
     signingConfigs {
         if (releaseKey.isNotEmpty()) create("release") {
             storeFile = rootProject.file(releaseKey.getProperty("storeFile"))

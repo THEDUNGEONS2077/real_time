@@ -8,7 +8,7 @@ export const roles: Role[] = ['navy','cyan','pale','teal','amber'];
 /** Colours for editor-selectable variants. The reference's warning colour remains constant. */
 export const palettes = {
   REFERENCE: { navy:'#050b12', cyan:'#6fd0e6', pale:'#cfeff7', teal:'#2c6f86', amber:'#f4b942', white:'#ffffff', warning:'#ff5a2a' },
-  PHOSPHOR: { navy:'#030c08', cyan:'#80dca0', pale:'#d9ffe7', teal:'#296b4c', amber:'#b8ed65', white:'#f1fff6', warning:'#ff5a2a' },
+  PHOSPHOR: { navy:'#030c08', cyan:'#80dca0', pale:'#d9ffe7', teal:'#296b4c', amber:'#b8ed65', white:'#ffffff', warning:'#ff5a2a' },
   ICE: { navy:'#050c15', cyan:'#67cdeb', pale:'#d7f7ff', teal:'#2e6387', amber:'#88e8ff', white:'#ffffff', warning:'#ff5a2a' },
 } as const;
 /** Per-effect editor labels double as experiment descriptions. */
