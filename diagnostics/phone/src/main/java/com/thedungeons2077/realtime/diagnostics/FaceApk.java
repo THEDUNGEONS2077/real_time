@@ -1,10 +1,12 @@
 /** APK selection: copy a user-selected document privately and inspect it before any watch connection. */
 package com.thedungeons2077.realtime.diagnostics;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.util.TypedValue;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,6 +28,7 @@ public final class FaceApk implements AutoCloseable {
     }
 
     /** Read only the document granted by Android's picker; no broad storage permission or URI persistence. */
+    @SuppressLint("DiscouragedApi") // Another APK's resource IDs cannot be referenced through this app's R class.
     public static FaceApk select(Context context, Uri document) throws Exception {
         File staged = File.createTempFile("watch-face-", ".apk", context.getCacheDir());
         try {
@@ -56,16 +59,27 @@ public final class FaceApk implements AutoCloseable {
             boolean watch = false;
             if (info.reqFeatures != null) for (var feature : info.reqFeatures) watch |= "android.hardware.type.watch".equals(feature.name);
             if (!watch) throw new IOException("The selected APK is not a watch package.");
-            inspectContents(staged);
+            // AAPT2 shortens ZIP paths (for example raw/watchface becomes res/li.xml).
+            // Resolve the public resource name through the archive's table, never a source-tree path.
+            info.applicationInfo.sourceDir = staged.getAbsolutePath();
+            info.applicationInfo.publicSourceDir = staged.getAbsolutePath();
+            var resources = context.getPackageManager().getResourcesForApplication(info.applicationInfo);
+            int watchface = resources.getIdentifier("watchface", "raw", info.packageName);
+            if (watchface == 0) throw new IOException("The APK does not declare a raw/watchface resource.");
+            TypedValue value = new TypedValue();
+            resources.getValue(watchface, value, true);
+            inspectContents(staged, value.string == null ? null : value.string.toString());
             return new FaceApk(staged, info.packageName, Measurements.clean(info.versionName), info.getLongVersionCode(),
                     info.applicationInfo.minSdkVersion, hex(hash.digest()));
         } catch (Exception failure) { Files.deleteIfExists(staged.toPath()); throw failure; }
     }
 
     /** Check the resource-only footprint without extracting or executing APK contents. */
-    static void inspectContents(File file) throws IOException {
+    static void inspectContents(File file, String watchfacePath) throws IOException {
         try (ZipFile zip = new ZipFile(file)) {
-            if (zip.getEntry("res/raw/watchface.xml") == null) throw new IOException("The APK does not contain a WFF watch face.");
+            if (watchfacePath == null || !watchfacePath.startsWith("res/") || watchfacePath.contains("..")
+                    || zip.getEntry(watchfacePath) == null || zip.getEntry(watchfacePath).isDirectory())
+                throw new IOException("The APK's raw/watchface resource file is missing.");
             var entries = zip.entries(); int count = 0;
             while (entries.hasMoreElements()) {
                 String name = entries.nextElement().getName();

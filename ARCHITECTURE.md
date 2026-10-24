@@ -16,6 +16,8 @@ R8 is enabled in both variants to remove AGP's generated R bytecode; resource sh
 
 The same phone frontend installs locally selected face APKs. Android's document picker grants one file without a storage permission; a bounded private copy is inspected for the known face package, release signing certificate, watch feature and resource-only footprint. The user's install action streams this exact copy to Android's package manager over paired ADB, as `exec:cmd package install -r -S <bytes>`. Success requires the watch's explicit response and the registered version code. There is no automatic download, uninstall, downgrade or face selection. Interrupted commits can have an unknown final state and are not retried automatically. A saved battery interval blocks installation. Connection checks and operation failures produce copyable summaries without addresses or pairing codes.
 
+APK inspection resolves the named `raw/watchface` resource through Android's resource table. AAPT2 can shorten its ZIP entry to a name such as `res/li.xml`; source-tree paths cannot be used to identify packaged resources. Helper unit tests build a HALO APK and inspect its real table/ZIP with the pinned SDK's AAPT2. The fixture can be overridden with `-PhaloSelectionFixture=/absolute/path/to/released.apk` to repeat the regression against a downloaded, checksum-verified release.
+
 ## Generated resources
 
 The generator returns the entire resource tree as a map and can write it to any directory. Tests build in a temporary directory and compare every file with committed resources, including PNG/WebP bytes. `--check` also rejects stale extra resources. Lockfiles pin the image toolchain; dependencies changing encoded output require intentional regeneration.

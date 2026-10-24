@@ -67,6 +67,8 @@ Pair once with the watch, run a performance test or start/finish a battery inter
 
 Choose the HALO watch-face APK through Android's file picker, review its version and tap INSTALL TO WATCH. The helper checks its release signature/resource-only footprint, watch compatibility and installed version. No broad storage permission, automatic download, uninstall or forced downgrade is added. Installation is blocked during a battery test. CHECK CONNECTION and copyable error reports help investigate connection problems.
 
-Requires an ARM64 phone running Android 13 or newer. Real phone/watch pairing, file selection, installation, native trace processing and UI acceptance still need device testing. Unsupported metrics are reported as unavailable. Full instructions: diagnostics/phone/README.md in the repository.
+This update fixes valid HALO APKs being rejected as missing a WFF watch face: the helper now resolves optimized filenames through the APK's resource table. Selection progress and errors appear beside the picker. Update the helper normally to keep its successful pairing, then select the same HALO APK again.
+
+Requires an ARM64 phone running Android 13 or newer. The user has confirmed pairing succeeds; corrected file selection, installation, native trace processing and remaining UI acceptance still need device testing. Unsupported metrics are reported as unavailable. Full instructions: diagnostics/phone/README.md in the repository.
 EOF
 gh release create "$TAG" "$OUT/$NAME" "$OUT/SHA256SUMS" "$OUT/build-commit.txt" --prerelease --target "$(git rev-parse HEAD)" --title "real_time diagnostics $VERSION (build $BUILD)" --notes-file "$NOTES"

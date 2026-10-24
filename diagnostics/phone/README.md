@@ -23,6 +23,8 @@ Pairing belongs to this helper's private identity, so Wear Installer 2's pairing
 
 Compatible updates use the normal replace operation and preserve existing package data. The helper does not uninstall an existing face, force a downgrade or bypass signature checks. Installation is blocked until a pending battery test is finished or discarded. The temporary private APK copy is removed when replaced or the screen closes; reselect the file if Android recreates the screen.
 
+Version 0.2.1 fixes 0.2.0 rejecting the valid HALO release with “The APK does not contain a WFF watch face.” Update the helper over the existing installation to retain pairing, then choose the same HALO APK again. Inspection now follows the APK resource table's optimized path. Progress and any rejection reason appear beside CHOOSE FACE APK, with the full error also available through COPY DIAGNOSTICS.
+
 If an operation fails, review REPORT and tap COPY DIAGNOSTICS. Pairing, network refusal/timeout and package-manager errors have different guidance. A router-blocked Wi-Fi connection can still affect this helper; connecting the watch to a phone hotspot is a useful alternative network test. If installation is interrupted, its final state may be unknown: check the watch face list before retrying. There is no automatic retry.
 
 ## Performance: run and copy
@@ -62,10 +64,12 @@ bash scripts/setup-phone-tools.sh
 bash scripts/release-diagnostics.sh --verify-only
 ```
 
-The release check builds/signs the helper, checks its certificate, exact permission list, lack of background components, processor checksum, embedded shared collector and native-library allow-list. It also tests streamed transfer, incompatible watches, package-manager failures, installed-version verification, archive footprint and copyable failure messages. It writes `dist/diagnostics/real_time-diagnostics-v0.2.0.apk`, checksums and source commit. Publishing uses a separate `diagnostics-v0.2.0` prerelease and requires approval before pushing or publishing.
+The release check builds/signs the helper, checks its certificate, exact permission list, lack of background components, processor checksum, embedded shared collector and native-library allow-list. It also tests streamed transfer, incompatible watches, package-manager failures, installed-version verification, the actual packaged HALO resource table/footprint and copyable failure messages. It writes `dist/diagnostics/real_time-diagnostics-v0.2.1.apk`, checksums and source commit. Publishing uses a separate `diagnostics-v0.2.1` prerelease and requires approval before pushing or publishing.
+
+To check an existing downloaded release after verifying its checksum, run `./gradlew :diagnostics:phone:testDebugUnitTest -PhaloSelectionFixture=/absolute/path/to/real_time-halo-v0.1.0.apk --tests '*FaceApkTest'`. Without an override, the tests build and use HALO's optimized debug APK so they do not require a private release key.
 
 Dependencies are pinned: libadb-android 3.1.1, spake2-android 2.2.1, Conscrypt 2.5.3, Bouncy Castle 1.79 and Google's Android ARM64 Perfetto processor v53.0. The latter's SHA-256 is checked both when downloaded and inside the signed APK. Pairing uses the library's PAKE primitives with a local adapter adding socket timeouts and cancellation. See THIRD_PARTY.md for upstream links and license choices.
 
 Lint currently reports the deliberate API-36/ARM64 target and self-signed-certificate trust handling inside the pinned ADB/crypto dependencies. ADB uses pairing codes and key authentication rather than public web certificate authorities. The app does not use these trust managers for HTTP or other public connections.
 
-Device acceptance still requires the user's phone and watch: APK picker/signature inspection, first install and compatible update, interrupted-install recovery, pairing/reconnection, the UI and copy button, native processor execution, actual data-source availability, battery-start recovery and report completeness. Local build/unit/lint checks cannot replace that device verification. No real battery improvement is claimed yet.
+The user has confirmed pairing succeeds. Device acceptance still requires APK selection after this fix, first install and compatible update, interrupted-install recovery, reconnection, native processor execution, actual data-source availability, battery-start recovery and report completeness. Local build/unit/lint checks cannot replace that device verification. No real battery improvement is claimed yet.

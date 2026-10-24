@@ -3,4 +3,6 @@
 <resources>
     <string name="aod_enabled">AOD enabled on the watch</string>
     <string name="copied">Diagnostics copied. Paste the report into the chat.</string>
+    <string name="checking_apk">Checking the selected APK…</string>
+    <string name="apk_load_failed">APK could not be loaded.\n%1$s\nTap COPY DIAGNOSTICS to share the error.</string>
 </resources>

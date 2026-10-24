@@ -1,5 +1,6 @@
 // Phone packaging: the diagnostics client is a separate APK, never part of a WFF face.
 import java.util.Properties
+import org.gradle.api.tasks.testing.Test
 plugins { id("com.android.application") }
 val key = Properties().apply { rootProject.file("keystore.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) } }
 val processor = rootProject.file(".tools/perfetto-android-v53.0/trace_processor_shell")
@@ -24,8 +25,8 @@ android {
         applicationId = "com.thedungeons2077.realtime.diagnostics"
         minSdk = 33
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.2.1"
         buildConfigField("String", "SOURCE_COMMIT", "\"${providers.exec { commandLine("git", "rev-parse", "HEAD") }.standardOutput.asText.get().trim()}\"")
         buildConfigField("String", "FACE_CERT_SHA256", "\"${rootProject.file("signing-certificate.sha256").readText().trim()}\"")
         ndk { abiFilters += "arm64-v8a" }
@@ -49,6 +50,14 @@ android {
     lint { disable += "AndroidGradlePluginVersion" }
 }
 tasks.named("preBuild") { dependsOn(prepareProcessor, prepareCollector) }
+// Test the packaged resource table and ZIP, including AAPT2's renamed paths, rather than source paths.
+tasks.withType<Test>().configureEach {
+    dependsOn(":faces:halo:assembleDebug")
+    val fixture = providers.gradleProperty("haloSelectionFixture").orElse(rootProject.file("faces/halo/build/outputs/apk/debug/halo-debug.apk").absolutePath)
+    inputs.file(fixture)
+    systemProperty("halo.selection.fixture", fixture.get())
+    systemProperty("halo.selection.aapt2", File(android.sdkDirectory, "build-tools/36.0.0/aapt2").absolutePath)
+}
 dependencies {
     implementation("com.github.MuntashirAkon:libadb-android:3.1.1") {
         // Use one Bouncy Castle family; mixing the old/new artifacts duplicates classes.

@@ -1,5 +1,12 @@
 # Changelog
 
+## Diagnostics 0.2.1 (build 3)
+
+- Fixed valid release APKs being rejected as missing a WFF watch face. Resolve `raw/watchface` through the APK's resource table so AAPT2's shortened ZIP paths are supported.
+- Added regressions against an actual packaged HALO APK, while retaining signature, package, permissions and executable-content checks.
+- Show APK inspection progress and rejection reasons beside the picker. Starting a new selection clears the previous selection so a failed replacement cannot install the old file accidentally.
+- The user confirmed helper pairing succeeds. Corrected APK selection and watch installation still require device acceptance; the update preserves the existing pairing identity.
+
 ## Diagnostics 0.2.0 (build 2)
 
 - Added local HALO APK selection and installation through the helper's existing watch pairing. Wear Installer 2 is no longer required.

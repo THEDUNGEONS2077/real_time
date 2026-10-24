@@ -158,11 +158,13 @@ public final class MainActivity extends Activity {
         super.onActivityResult(request, result, data);
         if (request != PICK_APK || result != RESULT_OK || data == null || data.getData() == null) return;
         android.net.Uri document = data.getData();
+        FaceApk previous = selectedApk; selectedApk = null;
+        if (previous != null) previous.close();
+        selection.setText(R.string.checking_apk);
         run("APK selection", () -> {
             FaceApk apk = FaceApk.select(this, document);
             if (isDestroyed()) { apk.close(); throw new java.io.IOException("Screen closed during APK selection."); }
-            FaceApk previous = selectedApk; selectedApk = apk;
-            if (previous != null) previous.close();
+            selectedApk = apk;
             runOnUiThread(() -> { if (!isDestroyed()) selection.setText(apk.summary()); });
             return "HALO APK ready. Review its version, then tap INSTALL TO WATCH.";
         });
@@ -200,7 +202,12 @@ public final class MainActivity extends Activity {
         worker.execute(() -> {
             String message;
             try { message = task.run(); }
-            catch (Exception error) { diagnostics.disconnect(); message = OperationFailure.describe(action, error); diagnostics.recordFailure(action, error); }
+            catch (Exception error) {
+                diagnostics.disconnect(); message = OperationFailure.describe(action, error); diagnostics.recordFailure(action, error);
+                if (action.equals("APK selection")) runOnUiThread(() -> {
+                    if (!isDestroyed()) selection.setText(getString(R.string.apk_load_failed, Measurements.clean(error.getMessage())));
+                });
+            }
             String finalMessage = message;
             runOnUiThread(() -> {
                 if (isDestroyed()) return;
