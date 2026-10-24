@@ -55,7 +55,7 @@ grep -q 'android:hasCode.*false\|android:hasCode.*0x0' out/verification/manifest
 awk '/com.google.wear.watchface.format.version/{found=1;next} found && /:value/{if($0 ~ /=4$/)exit 0;exit 1} END{if(!found)exit 1}' out/verification/manifest.txt || fail 'WFF format property must be 4.'
 "$BT/aapt2" dump badging "$APK" > out/verification/package.txt
 grep -q "package: name='com.thedungeons2077.realtime.$FACE'" out/verification/package.txt || fail 'Unexpected package ID.'
-grep -q "sdkVersion:'36'" out/verification/package.txt || fail 'Unexpected minimum SDK.'
+grep -q "minSdkVersion:'36'" out/verification/package.txt || fail 'Unexpected minimum SDK.'
 grep -q "targetSdkVersion:'36'" out/verification/package.txt || fail 'Unexpected target SDK.'
 
 # Validate both runtime memory budgets against the signed APK.
