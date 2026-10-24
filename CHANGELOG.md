@@ -1,5 +1,17 @@
 # Changelog
 
+## REDLINE 0.2.0 (build 3)
+
+- Added six editor palettes: Reference Red, Amber, Cyan, Green, Violet and Ice. Selected branches embed literal colours, preserving the 0.1.1 workaround; no runtime colour lookup is introduced.
+- Added Still, Slow (0.5×), Standard (1×) and Fast (2×) speed controls. Still removes every optional motion/sensor source; other speeds leave the seconds beacon accurate and live readouts fixed. Individual effect switches remain available.
+- Added Smooth rotation as the default: linear, native looping interpolation requesting 30 fps for decorative rotors. Dynamic retains the original modulated main rings and clock-driven motion. Actual frame delivery and cost require Watch7 testing.
+- Passed official WFF 4 and memory checks at 3,280,256 active bytes and 38,016 ambient bytes. Added palette/speed/style previews, motion checks and matching measurement metadata. The user confirmed 0.1.1 renders correctly and looks good, while requesting smoother motion; no controlled performance or battery result is available.
+
+## Diagnostics 0.4.0 (build 6)
+
+- Added REDLINE palette, motion-speed and rotation-style declarations to test setup and copied reports, with separate known 0.2.0 source provenance. These describe the watch editor settings and do not change them remotely.
+- Preserved pairing, explicit APK installation, signature/resource checks, on-demand diagnostics and local-only storage/networking.
+
 ## REDLINE 0.1.1 (build 2)
 
 - Prepared a compatibility workaround for the reported white preview/applied face: embed the fixed reference colours directly instead of resolving a single-option runtime colour configuration. Artwork, glyphs, glow and full motion are unchanged.

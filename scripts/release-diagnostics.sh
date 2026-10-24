@@ -61,13 +61,11 @@ TAG="diagnostics-v$VERSION"
 NOTES=$(mktemp)
 trap 'rm -f "$NOTES"' EXIT
 cat > "$NOTES" <<'EOF'
-Adds COLLECT RENDERER DIAGNOSTICS for watch faces that install but fail in preview/applied mode. Reproduce the failure, restore a readable face if needed, then collect promptly and review/copy the filtered report. This reads existing process/main/system/crash buffers once without clearing logs or starting a continuous logger.
+Adds REDLINE 0.2.0 palette, motion-speed and rotation-style declarations to TEST SETUP and copied reports. Match these controls to the watch editor before collecting diagnostics: helper setup records your choices and does not remotely change the face. Older REDLINE versions can mark the new fields unavailable. Known 0.2.0 source provenance is included.
 
-Warnings/errors are attributed to renderer processes or specific DWF/WFF tags, deduplicated and limited to 80 entries. Address/identifier patterns and explicitly sensitive fields are filtered; raw system logs remain in private non-backed-up phone storage. Missing sources or an empty error list are not proof that a face rendered successfully. Logs may include an earlier selected face.
+Install/update this APK on the Android phone to preserve pairing. Existing helpers can already install REDLINE 0.2.0; this update improves experiment labels. Explicit APK selection, release signature/resource checks, verified watch installation, on-demand renderer diagnostics and battery/performance tools remain available. The user confirms REDLINE 0.1.1 renders correctly; smoother motion in 0.2.0 still needs watch testing.
 
-Includes known REDLINE 0.1.1 provenance for its candidate fixed-colour workaround. The user confirmed 0.1.0 renders white in preview and applied mode while HALO remains normal; the underlying cause and success of the workaround still need device logs or confirmation.
-
-Install/update this APK on the Android phone to retain pairing. HALO/REDLINE APK installation, signatures, resource checks and measurement workflows remain available. No extra Android permission, automatic upload/download or cloud endpoint is added. Renderer diagnostics are blocked during a pending battery test. Requires an ARM64 phone on Android 13 or newer. Instructions: diagnostics/phone/README.md.
+No extra Android permission, background component, automatic upload/download or cloud endpoint is added. Requires an ARM64 phone on Android 13 or newer. Instructions: diagnostics/phone/README.md.
 
 EOF
 gh release create "$TAG" "$OUT/$NAME" "$OUT/SHA256SUMS" "$OUT/build-commit.txt" --prerelease --target "$(git rev-parse HEAD)" --title "real_time diagnostics $VERSION (build $BUILD)" --notes-file "$NOTES"

@@ -92,3 +92,38 @@ it('keeps ambient time-only and does not include frame sequences or runtime blur
 it('reproduces all committed REDLINE resources deterministically',async()=>{
   await build(resolve(root,'faces/redline/src/main/res'),true,'redline');
 },20000);
+
+it('exposes six literal-colour presets without runtime theme lookup',()=>{
+  const output=watchfaceXml();
+  for(const [id,p] of Object.entries(palettes)){
+    expect(output).toContain(`id="${id}" displayName="palette_${id.toLowerCase()}"`);
+    expect(output).toContain(p.cyan);
+    expect(previewSvg(frame({redlinePalette:id}))).toContain(p.cyan);
+  }
+  expect(output).not.toContain('[CONFIGURATION.palette');
+});
+it('scales each decorative rotor and pulse, keeps seconds accurate, and makes STILL source-free',()=>{
+  const f=frame({time:new Date('2026-10-24T00:00:01Z')});
+  for(const feel of ['SMOOTH','DYNAMIC'] as const)for(const [speed,rate] of [['SLOW',.5],['STANDARD',1],['FAST',2]] as const){
+    const nodes=flat(scene(speed,feel),f),main=nodes.find(n=>n.kind==='group'&&n.name==='outer_rotor');
+    expect(main?.kind).toBe('group');
+    if(main?.kind==='group'){
+      if(feel==='SMOOTH'){
+        expect(value(main.angle!,f)).toBeCloseTo(20*rate);
+        expect(main.rotation).toEqual({degrees:360,duration:18/rate,fps:30});
+      }else expect(main.rotation).toBeUndefined();
+    }
+    const seconds=nodes.find(n=>n.kind==='group'&&n.name==='seconds_beacon');
+    if(seconds?.kind==='group')expect(value(seconds.angle!,f)).toBe(6);
+    expect(Math.max(...bounds(scene(speed,feel),frame({...f,tiltX:3,tiltY:-3})))).toBeLessThanOrEqual(210);
+  }
+  const still=scene('STILL').map(n=>nodeXml(n,style)).join('');
+  expect(still).not.toMatch(/MILLISECOND|SECONDS_IN_DAY|Gyro|Animation|seconds_beacon|radar_sweep/);
+  expect(still).toContain('[STEP_COUNT]');expect(still).toContain('[BATTERY_PERCENT]');
+});
+it('uses native looping interpolation only for smooth decorative rotors',()=>{
+  const smooth=scene('FAST','SMOOTH').map(n=>nodeXml(n,style)).join('');
+  expect(smooth).toContain('duration="9" repeat="-1" fps="30"');
+  expect(smooth).toContain('value="-360"');
+  expect(scene('STANDARD','DYNAMIC').map(n=>nodeXml(n,style)).join('')).not.toContain('<Animation');
+});

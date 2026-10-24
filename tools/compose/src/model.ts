@@ -8,6 +8,7 @@ export type Effect = typeof effects[number];
 export interface Frame {
   time: Date; hour24: boolean; battery: number; steps: number;
   palette: 'REFERENCE' | 'PHOSPHOR' | 'ICE'; ambient: boolean;
+  redlinePalette?: string; motionSpeed?: 'STILL'|'SLOW'|'STANDARD'|'FAST'; motionStyle?: 'SMOOTH'|'DYNAMIC';
   effects: Record<Effect, boolean>; tiltX: number; tiltY: number; shortcut: string | null;
 }
 /** Canonical catalogue and picker preview state. Date fields use UTC as a synthetic local clock. */
@@ -68,6 +69,8 @@ export interface Group {
   kind: 'group'; name: string; children: Node[]; angle?: NumberValue; scale?: NumberValue;
   x?: NumberValue; y?: NumberValue; gyro?: boolean; alpha?: NumberValue;
   pivot?: { x:number; y:number };
+  /** Native linear rotor interpolation; the shared angle is its SVG phase approximation. */
+  rotation?: { degrees:number; duration:number; fps:number };
 }
 /** Conditional branches remove disabled high-frequency data sources from the active tree. */
 export interface Switch { kind: 'switch'; effect: Effect; enabled: Node[]; disabled: Node[] }

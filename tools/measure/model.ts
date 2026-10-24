@@ -4,7 +4,7 @@ import { effects } from '../compose/src/model.ts';
 /** Human-recorded conditions which the WFF package cannot log itself. */
 export interface RunMetadata {
   schemaVersion:1; id:string; face:string; version:string; commit:string;
-  palette:string; effects:Record<string,boolean>; aod:boolean;
+  palette:string; motionSpeed?:'STILL'|'SLOW'|'STANDARD'|'FAST'; motionStyle?:'SMOOTH'|'DYNAMIC'; effects:Record<string,boolean>; aod:boolean;
   brightness:string; screenTimeoutSeconds:number; connectivity:string;
   firmware:string; notes:string; kind:'battery'|'performance';
   rendererProcess?:string; rendererLayer?:string;
@@ -24,6 +24,9 @@ export function metadata(input:unknown):RunMetadata {
   // Both current faces expose these seven stable switches; future faces may define their own catalogue.
   if(m.face==='halo'||m.face==='redline')for(const e of effects)if(typeof (m.effects as Record<string,unknown>)[e]!=='boolean')throw new Error(`Record effects.${e}.`);
   for(const key of ['rendererProcess','rendererLayer'])if(m[key]!==undefined&&typeof m[key]!=='string')throw new Error(`${key} must be a string when provided.`);
+  for(const [key,allowed] of Object.entries({motionSpeed:['STILL','SLOW','STANDARD','FAST'],motionStyle:['SMOOTH','DYNAMIC']}))if(m[key]!==undefined&&!allowed.includes(String(m[key])))throw new Error(`Invalid ${key}.`);
+  // Legacy runs remain readable; new REDLINE controls must be explicitly recorded.
+  if(m.face==='redline'&&!/^0\.1\./.test(String(m.version)))for(const key of ['motionSpeed','motionStyle'])if(m[key]===undefined)throw new Error(`Record ${key} for this REDLINE build.`);
   return m as unknown as RunMetadata;
 }
 /** A snapshot may have unsupported battery fields. Null never means zero. */

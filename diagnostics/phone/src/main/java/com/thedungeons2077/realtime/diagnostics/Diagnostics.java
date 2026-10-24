@@ -277,7 +277,7 @@ public final class Diagnostics {
         StringBuilder report = new StringBuilder("REAL_TIME DIAGNOSTICS / 1\n");
         report.append("Helper: ").append(BuildConfig.VERSION_NAME).append(" / ").append(BuildConfig.SOURCE_COMMIT).append('\n');
         report.append("Test: ").append(kind).append(" / ").append(id).append('\n');
-        for (String key : new String[]{"watchModel", "firmware", "face", "faceVersion", "faceCommit", "palette", "preset", "aod"})
+        for (String key : new String[]{"watchModel", "firmware", "face", "faceVersion", "faceCommit", "palette", "motionSpeed", "motionStyle", "preset", "aod"})
             report.append(key).append(": ").append(Measurements.clean(metadata.optString(key, "unavailable"))).append('\n');
         report.append("Setup is user-declared; verify it matches the watch editor.\n");
         JSONObject effects = metadata.optJSONObject("effects");

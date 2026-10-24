@@ -16,8 +16,15 @@ public final class FaceCatalog {
         if ("REDLINE".equals(face)) return "com.thedungeons2077.realtime.redline";
         return null;
     }
+    /** Known palette IDs, shared by experiment declarations and catalogue tests. */
+    public static String[] palettes(String face) {
+        if ("REDLINE".equals(face)) return new String[]{"REFERENCE", "AMBER", "CYAN", "GREEN", "VIOLET", "ICE"};
+        if ("HALO".equals(face)) return new String[]{"REFERENCE", "PHOSPHOR", "ICE"};
+        return new String[]{"STOCK"};
+    }
     /** Preserve known release provenance; unknown face versions are explicitly unavailable. */
     public static String commit(String face, String version) {
+        if ("REDLINE".equals(face) && "0.2.0".equals(version)) return BuildConfig.REDLINE_CONTROLS_SOURCE_COMMIT;
         if ("REDLINE".equals(face) && "0.1.1".equals(version)) return BuildConfig.REDLINE_PATCH_SOURCE_COMMIT;
         if (!"0.1.0".equals(version)) return "unavailable";
         if ("HALO".equals(face)) return "053438dc20e5486f4db9604cfef5d32fe989b0fd";

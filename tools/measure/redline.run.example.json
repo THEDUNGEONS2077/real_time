@@ -2,9 +2,11 @@
   "schemaVersion": 1,
   "id": "redline-full-01",
   "face": "redline",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "commit": "REPLACE_WITH_BUILD_COMMIT",
   "palette": "REFERENCE",
+  "motionSpeed": "STANDARD",
+  "motionStyle": "SMOOTH",
   "effects": {
     "seconds": true,
     "ring_a": true,

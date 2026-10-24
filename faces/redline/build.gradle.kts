@@ -13,8 +13,8 @@ android {
         applicationId = "com.thedungeons2077.realtime.redline"
         minSdk = 36
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.1.1"
+        versionCode = 3
+        versionName = "0.2.0"
     }
     buildFeatures { buildConfig = false }
     lint {

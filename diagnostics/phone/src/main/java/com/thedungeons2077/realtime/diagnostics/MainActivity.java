@@ -38,7 +38,7 @@ public final class MainActivity extends Activity {
     private TextView status, report, selection;
     private volatile FaceApk selectedApk;
     private EditText host, pairPort, connectionPort, code, renderer, layer, otherFace;
-    private Spinner face, palette, preset;
+    private Spinner face, palette, preset, motionSpeed, motionStyle;
     private CheckBox aod;
     private Diagnostics diagnostics;
     private boolean busy;
@@ -104,9 +104,11 @@ public final class MainActivity extends Activity {
         face = spinner(setup, "FACE", new String[]{"HALO", "REDLINE", "STOCK / OTHER"});
         otherFace = field(setup, "OTHER FACE NAME", "Fill this in when testing a stock or other face", InputType.TYPE_CLASS_TEXT);
         palette = spinner(setup, "PALETTE", new String[]{"REFERENCE", "PHOSPHOR", "ICE", "STOCK"});
+        motionSpeed = spinner(setup, "REDLINE MOTION SPEED (0.2.0+)", new String[]{"STANDARD", "SLOW", "FAST", "STILL", "UNAVAILABLE / OLDER VERSION"});
+        motionStyle = spinner(setup, "REDLINE ROTATION STYLE (0.2.0+)", new String[]{"SMOOTH", "DYNAMIC", "UNAVAILABLE / OLDER VERSION"});
         face.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
             @Override public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
-                setChoices(palette, position == 0 ? new String[]{"REFERENCE", "PHOSPHOR", "ICE"} : position == 1 ? new String[]{"REFERENCE"} : new String[]{"STOCK"});
+                setChoices(palette, FaceCatalog.palettes(position < 2 ? (position == 0 ? "HALO" : "REDLINE") : "STOCK"));
             }
             @Override public void onNothingSelected(android.widget.AdapterView<?> parent) { }
         });
@@ -191,6 +193,11 @@ public final class MainActivity extends Activity {
         String selectedFace = face.getSelectedItemPosition() < 2 ? face.getSelectedItem().toString() : otherFace.getText().toString().trim();
         if (selectedFace.isBlank()) throw new IllegalArgumentException("Record the name of the stock or other face being tested.");
         result.put("face", selectedFace).put("palette", palette.getSelectedItem().toString()).put("preset", preset.getSelectedItem().toString()).put("aod", aod.isChecked());
+        if (face.getSelectedItemPosition() == 1) {
+            String speed = motionSpeed.getSelectedItem().toString(), style = motionStyle.getSelectedItem().toString();
+            if (!speed.startsWith("UNAVAILABLE")) result.put("motionSpeed", speed);
+            if (!style.startsWith("UNAVAILABLE")) result.put("motionStyle", style);
+        }
         result.put("rendererProcess", renderer.getText().toString().trim()).put("rendererLayer", layer.getText().toString().trim());
         JSONObject effects = new JSONObject();
         for (int i = 0; i < Measurements.EFFECTS.length; i++) effects.put(Measurements.EFFECTS[i], face.getSelectedItemPosition() < 2 && preset.getSelectedItemPosition() != 1 && preset.getSelectedItemPosition() != i + 2);

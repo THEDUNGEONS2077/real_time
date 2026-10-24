@@ -21,7 +21,7 @@ export async function analyze(input:string,processor?:string){
 }
 /** Conditions that must match before assigning a difference to the face/effect change. */
 export function conditionDifferences(a:RunMetadata,b:RunMetadata):string[]{
-  return (['firmware','brightness','screenTimeoutSeconds','connectivity','aod','kind'] as const).filter(k=>a[k]!==b[k]);
+  return (['firmware','brightness','screenTimeoutSeconds','connectivity','aod','kind','motionSpeed','motionStyle'] as const).filter(k=>a[k]!==b[k]);
 }
 type Report=Awaited<ReturnType<typeof analyze>>;
 /** A comparison is qualified rather than silently normalizing incompatible experiments. */
@@ -50,7 +50,7 @@ const display=(n:number|null,unit:string)=>n===null?'unavailable':`${n.toFixed(3
 export function markdown(r:Report):string{
   const {metadata:m,battery:b,performance:p}=r;
   return `# real_time measurement: ${m.id}\n\n${m.face} ${m.version} · ${m.commit}\n\n`+
-    `- Firmware: ${m.firmware}\n- Palette: ${m.palette}\n- Effects: ${Object.entries(m.effects).map(([k,v])=>`${k}=${v?'on':'off'}`).join(', ')}\n`+
+    `- Firmware: ${m.firmware}\n- Palette: ${m.palette}\n- Motion speed/style: ${m.motionSpeed??'unavailable'} / ${m.motionStyle??'unavailable'}\n- Effects: ${Object.entries(m.effects).map(([k,v])=>`${k}=${v?'on':'off'}`).join(', ')}\n`+
     `- AOD: ${m.aod?'on':'off'}; brightness: ${m.brightness}; timeout: ${m.screenTimeoutSeconds}s; connectivity: ${m.connectivity}\n\n`+
     `## Battery: whole watch\n\n- Duration: ${display(b.hours,'hours')}\n- Observed loss: ${display(b.lossPercentagePoints,'percentage points')}\n`+
     `- Observed drain: ${display(b.lossPointsPerHour,'percentage points/hour')}\n- Charge counter change: ${display(b.chargeLossUah,'µAh')}\n`+
@@ -72,7 +72,7 @@ export async function reports(r:Report,out:string):Promise<void>{
   await writeFile(resolve(out,'report.json'),JSON.stringify(r,null,2)+'\n');
   await writeFile(resolve(out,'report.md'),markdown(r));
   const values={id:r.metadata.id,face:r.metadata.face,version:r.metadata.version,commit:r.metadata.commit,
-    ...r.metadata.effects,palette:r.metadata.palette,firmware:r.metadata.firmware,
+    ...r.metadata.effects,palette:r.metadata.palette,motionSpeed:r.metadata.motionSpeed,motionStyle:r.metadata.motionStyle,firmware:r.metadata.firmware,
     hours:r.battery.hours,lossPointsPerHour:r.battery.lossPointsPerHour,chargeLossUah:r.battery.chargeLossUah,
     estimatedPowerMah:r.battery.estimatedPowerMah,rendererCpuMs:r.performance.rendererCpuMs,
     frameP50Ms:r.performance.frameTiming?.p50Ms??null,frameP95Ms:r.performance.frameTiming?.p95Ms??null,

@@ -99,3 +99,5 @@ npm run measure -- --input measurements/raw/imported-day-01/halo-day-01 --baseli
 ## Keep what we learn
 
 Review raw outputs locally. Copy only a checked summary to `measurements/reviewed/`, then record the result, visual tradeoff, settings, build, repetitions and confidence in ../../OPTIMIZATION.md. Future watch faces must consult those findings and use this protocol. No measured improvement is recorded until real watch data exists.
+
+REDLINE 0.2.0+ runs also require `motionSpeed` (STILL/SLOW/STANDARD/FAST) and `motionStyle` (SMOOTH/DYNAMIC). Match the watch editor and use `redline.run.example.json`. Hold these settings constant during effect experiments. Compare styles or speeds in separately labelled experiments; differing values are flagged as conditions requiring review. Legacy exports without these controls remain readable.

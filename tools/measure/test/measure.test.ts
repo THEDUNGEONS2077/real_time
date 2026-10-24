@@ -80,3 +80,12 @@ describe('trace handling and metadata',()=>{
     }finally{await rm(dir,{recursive:true,force:true});}
   });
 });
+
+it('requires REDLINE speed/style metadata and flags changes while retaining legacy runs',()=>{
+  const run={schemaVersion:1,id:'redline-speed',face:'redline',version:'0.2.0',commit:'abcdef123',palette:'REFERENCE',effects:Object.fromEntries(['seconds','ring_a','ring_b','breathing','nodes','scan','tilt'].map(k=>[k,true])),aod:false,brightness:'100',screenTimeoutSeconds:60,connectivity:'BT',firmware:'build',notes:'',kind:'performance'};
+  expect(()=>metadata(run)).toThrow('motionSpeed');
+  const a=metadata({...run,motionSpeed:'STANDARD',motionStyle:'SMOOTH'});
+  expect(conditionDifferences(a,{...a,motionSpeed:'FAST',motionStyle:'DYNAMIC'})).toEqual(['motionSpeed','motionStyle']);
+  expect(()=>metadata({...a,motionSpeed:'TURBO'})).toThrow('Invalid motionSpeed');
+  expect(metadata({...run,version:'0.1.1'}).motionSpeed).toBeUndefined();
+});

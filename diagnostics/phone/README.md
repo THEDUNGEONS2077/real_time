@@ -33,7 +33,7 @@ If an operation fails, review REPORT and tap COPY DIAGNOSTICS. Pairing, network 
 2. Choose REDLINE (or the affected face) in TEST SETUP. Reproduce the failing preview/applied face once, then restore HALO if needed so the watch is readable.
 3. Tap COLLECT RENDERER DIAGNOSTICS promptly. It reads existing process/log buffers once, then disconnects; no continuous logger is started, no buffer is cleared and no watch setting is changed. This action is blocked during a pending battery test.
 4. Review REPORT, tap COPY DIAGNOSTICS and paste it into the chat. The summary includes only attributed renderer warnings/errors, at most 80 distinct entries; raw logs remain in private non-backed-up storage. Sources that fail or cannot be attributed stay explicitly unavailable. Logs may include a previously selected face, and an empty report does not prove a successful render.
-5. For the REDLINE 0.1.0 white-screen investigation, collect before installing candidate 0.1.1 if possible. That candidate removes its unnecessary fixed-palette lookup; the cause and successful device rendering remain unconfirmed until logs or the watch test establish them. If the update still fails, reproduce and collect again. Turn debugging off afterwards.
+5. REDLINE 0.1.1 now has user-confirmed rendering after its fixed-colour workaround. For a new failure, record the exact face/version/palette/speed/style, reproduce it and collect promptly. Turn debugging off afterwards.
 
 ## Performance: run and copy
 
@@ -43,7 +43,7 @@ If an operation fails, review REPORT and tap COPY DIAGNOSTICS. Pairing, network 
 4. The phone analyzes the trace locally. The watch does not run the processor. Review REPORT and tap COPY DIAGNOSTICS, then paste into the chat. Turn wireless debugging off and restore the normal display timeout after the test session.
 5. Repeat each setting three times. Compare full motion, all seven optional effects off, then each effect disabled individually. Keep brightness, watch position, wrist movement, visible time and connectivity matched.
 
-Choose REDLINE explicitly in TEST SETUP for its captures; it exposes REFERENCE only. HALO retains REFERENCE/PHOSPHOR/ICE. The same seven stable effect IDs refer to each face's own editor switches; do not compare their meanings without consulting that face's design.
+Choose REDLINE explicitly in TEST SETUP for its captures; 0.2.0 exposes REFERENCE/AMBER/CYAN/GREEN/VIOLET/ICE. Match its MOTION SPEED (STILL/SLOW/STANDARD/FAST) and ROTATION STYLE (SMOOTH/DYNAMIC) as well. These helper selectors only label reports; use the watch editor to change the face. For 0.1.x choose UNAVAILABLE / OLDER VERSION for both new fields. HALO retains REFERENCE/PHOSPHOR/ICE. The same seven stable effect IDs refer to each face's own editor switches; do not compare their meanings without consulting that face's design.
 
 The first report lists available CPU processes and frame layers. Specific renderer CPU and frame timing stay unavailable until the correct process/surface is identified. After reviewing a report, enter exact names under OPTIONAL RENDERER SELECTION and tap REANALYZE SAVED TEST. This operates on the last saved trace without reconnecting to the watch.
 
@@ -74,7 +74,7 @@ bash scripts/setup-phone-tools.sh
 bash scripts/release-diagnostics.sh --verify-only
 ```
 
-The release check builds/signs the helper, checks its certificate, exact permission list, lack of background components, processor checksum, embedded shared collector and native-library allow-list. It also tests streamed transfer, incompatible watches, package-manager failures, installed-version verification, actual packaged HALO and REDLINE resource tables/footprints and copyable failure messages. It writes `dist/diagnostics/real_time-diagnostics-v0.3.1.apk`, checksums and source commit. Publishing uses a separate `diagnostics-v0.3.1` prerelease and requires approval before pushing or publishing.
+The release check builds/signs the helper, checks its certificate, exact permission list, lack of background components, processor checksum, embedded shared collector and native-library allow-list. It also tests streamed transfer, incompatible watches, package-manager failures, installed-version verification, actual packaged HALO and REDLINE resource tables/footprints and copyable failure messages. It writes `dist/diagnostics/real_time-diagnostics-v0.4.0.apk`, checksums and source commit. Publishing uses a separate `diagnostics-v0.4.0` prerelease and requires approval before pushing or publishing.
 
 To check an existing downloaded release after verifying its checksum, run `./gradlew :diagnostics:phone:testDebugUnitTest -PhaloSelectionFixture=/absolute/path/to/real_time-halo-v0.1.0.apk --tests '*FaceApkTest'`. Without an override, the tests build and use both optimized debug APKs so they do not require a private release key.
 
@@ -82,6 +82,6 @@ Dependencies are pinned: libadb-android 3.1.1, spake2-android 2.2.1, Conscrypt 2
 
 Lint currently reports the deliberate API-36/ARM64 target and self-signed-certificate trust handling inside the pinned ADB/crypto dependencies. ADB uses pairing codes and key authentication rather than public web certificate authorities. The app does not use these trust managers for HTTP or other public connections.
 
-The user has confirmed pairing, HALO installation and display through 0.2.1. REDLINE 0.1.0 installs but has confirmed white preview/applied output; corrected rendering, the new face selector, compatible updates, interrupted-install recovery, reconnection, native processor execution, actual data-source availability and battery-test recovery still need device acceptance. Local build/unit/lint checks cannot replace that device verification. No real battery improvement is claimed yet.
+The user has confirmed pairing, HALO installation and display through 0.2.1. REDLINE 0.1.1 displays correctly according to the user, who requests smoother motion. REDLINE 0.2.0 palettes/speeds/styles, the new face selector, compatible updates, interrupted-install recovery, reconnection, native processor execution, actual data-source availability and battery-test recovery still need device acceptance. Local build/unit/lint checks cannot replace that device verification. No real battery improvement is claimed yet.
 
-Known REDLINE 0.1.0 and 0.1.1 provenance is pinned to their separate local release tags once they exist. Fetch tags before later helper builds; HEAD supplies provenance only for the initial combined review/release build.
+Known REDLINE 0.1.0, 0.1.1 and 0.2.0 provenance is pinned to their separate local release tags once they exist. Fetch tags before later helper builds; HEAD supplies provenance only for the initial combined review/release build.

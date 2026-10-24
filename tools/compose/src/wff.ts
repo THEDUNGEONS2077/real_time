@@ -43,7 +43,7 @@ export function nodeXml(n:Node,style:RenderStyle=haloStyle):string {
     case 'switch':return tag('Condition',{},tag('Expressions',{},tag('Expression',{name:'enabled'},`<![CDATA[[CONFIGURATION.${n.effect}] == "TRUE"]]>`))+tag('Compare',{expression:'enabled'},n.enabled.map(c=>nodeXml(c,style)).join(''))+(n.disabled.length?tag('Default',{},n.disabled.map(c=>nodeXml(c,style)).join('')):''));
     case 'group': {
       const gyros=n.gyro?tag('Gyro',{x:expression(n.x??0),y:expression(n.y??0)}):'';
-      const transforms=(n.gyro?'':transform('x',n.x)+transform('y',n.y))+transform('angle',n.angle)+transform('scaleX',n.scale)+transform('scaleY',n.scale)+transform('alpha',n.alpha);
+      const transforms=(n.gyro?'':transform('x',n.x)+transform('y',n.y))+(n.rotation?tag('Transform',{target:'angle',value:n.rotation.degrees},tag('Animation',{interpolation:'LINEAR',duration:n.rotation.duration,repeat:-1,fps:n.rotation.fps})):transform('angle',n.angle))+transform('scaleX',n.scale)+transform('scaleY',n.scale)+transform('alpha',n.alpha);
       return tag('Group',{...canvas,name:n.name,x:initial(n.x,0),y:initial(n.y,0),angle:initial(n.angle,0),scaleX:initial(n.scale,1),scaleY:initial(n.scale,1),alpha:initial(n.alpha,255),pivotX:(n.pivot?.x??216)/432,pivotY:(n.pivot?.y??216)/432},gyros+transforms+n.children.map(c=>nodeXml(c,style)).join(''));
     }
     case 'image': return tag('PartImage',{...canvas,x:Math.round(n.x??0),y:Math.round(n.y??0),width:n.width??432,height:n.height??432,alpha:n.alpha,tintColor:colour(n.role,style)},tag('Image',{resource:n.resource}));

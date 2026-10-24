@@ -7,6 +7,7 @@ val processor = rootProject.file(".tools/perfetto-android-v53.0/trace_processor_
 // The first combined face/helper release is built at HEAD; later helper builds pin the face's tag.
 val redlineTag = providers.exec { commandLine("git", "rev-parse", "--verify", "--quiet", "refs/tags/redline-v0.1.0^{commit}"); isIgnoreExitValue = true }.standardOutput.asText.get().trim()
 val redlinePatchTag = providers.exec { commandLine("git", "rev-parse", "--verify", "--quiet", "refs/tags/redline-v0.1.1^{commit}"); isIgnoreExitValue = true }.standardOutput.asText.get().trim()
+val redlineControlsTag = providers.exec { commandLine("git", "rev-parse", "--verify", "--quiet", "refs/tags/redline-v0.2.0^{commit}"); isIgnoreExitValue = true }.standardOutput.asText.get().trim()
 val prepareProcessor by tasks.registering(Copy::class) {
     // Android permits execution from the installed native-library directory, not writable app data.
     from(processor)
@@ -28,12 +29,13 @@ android {
         applicationId = "com.thedungeons2077.realtime.diagnostics"
         minSdk = 33
         targetSdk = 36
-        versionCode = 5
-        versionName = "0.3.1"
+        versionCode = 6
+        versionName = "0.4.0"
         buildConfigField("String", "SOURCE_COMMIT", "\"${providers.exec { commandLine("git", "rev-parse", "HEAD") }.standardOutput.asText.get().trim()}\"")
         buildConfigField("String", "FACE_CERT_SHA256", "\"${rootProject.file("signing-certificate.sha256").readText().trim()}\"")
         buildConfigField("String", "REDLINE_SOURCE_COMMIT", "\"${if (redlineTag.matches(Regex("[0-9a-f]{40}"))) redlineTag else providers.exec { commandLine("git", "rev-parse", "HEAD") }.standardOutput.asText.get().trim()}\"")
         buildConfigField("String", "REDLINE_PATCH_SOURCE_COMMIT", "\"${if (redlinePatchTag.matches(Regex("[0-9a-f]{40}"))) redlinePatchTag else providers.exec { commandLine("git", "rev-parse", "HEAD") }.standardOutput.asText.get().trim()}\"")
+        buildConfigField("String", "REDLINE_CONTROLS_SOURCE_COMMIT", "\"${if (redlineControlsTag.matches(Regex("[0-9a-f]{40}"))) redlineControlsTag else providers.exec { commandLine("git", "rev-parse", "HEAD") }.standardOutput.asText.get().trim()}\"")
         ndk { abiFilters += "arm64-v8a" }
     }
     buildFeatures { buildConfig = true }
