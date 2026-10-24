@@ -1,8 +1,8 @@
 # real_time diagnostics: phone helper
 
-Install this separate APK on the **Android phone**, by opening the downloaded APK in the phone's package installer. It supports ARM64 phones running Android 13 or newer, including the project's S25 Ultra. Update the existing helper normally to retain its pairing and saved battery start. This helper installs HALO on the watch as well as collecting diagnostics; Wear Installer 2 and Bugjaeger are not needed for this flow.
+Install this separate APK on the **Android phone**, by opening the downloaded APK in the phone's package installer. It supports ARM64 phones running Android 13 or newer, including the project's S25 Ultra. Update the existing helper normally to retain its pairing and saved battery start. This helper installs HALO and REDLINE on the watch as well as collecting diagnostics; Wear Installer 2 and Bugjaeger are not needed for this flow.
 
-The routine is **pair once → choose the HALO APK → install → run a test → review → COPY DIAGNOSTICS → paste into the chat**. The same pairing is used for installation and tests. Battery tests have separate start/finish buttons so no connection or logger needs to run during normal wear.
+The routine is **pair once → choose a face APK → install → run a test → review → COPY DIAGNOSTICS → paste into the chat**. The same pairing is used for installation and tests. Battery tests have separate start/finish buttons so no connection or logger needs to run during normal wear.
 
 ## Pair once
 
@@ -13,13 +13,13 @@ The routine is **pair once → choose the HALO APK → install → run a test �
 
 Pairing belongs to this helper's private identity, so Wear Installer 2's pairing is not shared automatically. Later tests reuse the helper's identity. When wireless debugging is enabled again, its connection port can change; update that field without pairing again. Clear data/uninstall or remove the identity on the watch if you want to revoke it.
 
-## Install HALO from this phone
+## Install HALO or REDLINE from this phone
 
-1. Download the HALO **watch-face** APK from the watch-face prerelease into the phone's Downloads folder. The diagnostics APK is the separate app already installed on this phone; do not select it as a face.
-2. In INSTALL WATCH FACE, tap CHOOSE FACE APK and select the local HALO APK through Android's file picker. No broad storage permission is required, and no file is downloaded automatically.
-3. Review the displayed face, version/build and SHA-256. The helper checks the known HALO package, real_time release signing certificate, watch declaration and absence of code/permissions. APK reads are limited to 32 MiB. Debug builds and unrelated apps are rejected.
+1. Download the desired **watch-face** APK from the watch-face prerelease into the phone's Downloads folder. The diagnostics APK is the separate app already installed on this phone; do not select it as a face.
+2. In INSTALL WATCH FACE, tap CHOOSE FACE APK and select the local face APK through Android's file picker. No broad storage permission is required, and no file is downloaded automatically.
+3. Review the displayed face, version/build and SHA-256. The helper checks the known HALO/REDLINE package, real_time release signing certificate, watch declaration and absence of code/permissions. APK reads are limited to 32 MiB. Debug builds and unrelated apps are rejected.
 4. Tap INSTALL TO WATCH. The helper checks the destination is a watch with a suitable Android version, streams the private inspected copy to its package manager and verifies the installed version after an explicit Success response. Keep the helper open until it finishes.
-5. On the watch, long-press the current face → add a face → choose HALO. It is not selected automatically. Verify rendering, toggles, steps/battery/date and Timer as listed in the root README. Turn wireless debugging off afterwards.
+5. On the watch, long-press the current face → add a face → choose the installed face. It is not selected automatically. Verify rendering, toggles, steps/battery/date and Timer as listed in the root README. Turn wireless debugging off afterwards.
 
 Compatible updates use the normal replace operation and preserve existing package data. The helper does not uninstall an existing face, force a downgrade or bypass signature checks. Installation is blocked until a pending battery test is finished or discarded. The temporary private APK copy is removed when replaced or the screen closes; reselect the file if Android recreates the screen.
 
@@ -29,11 +29,13 @@ If an operation fails, review REPORT and tap COPY DIAGNOSTICS. Pairing, network 
 
 ## Performance: run and copy
 
-1. On the watch, select HALO and choose the palette/effect configuration to test. Set the display timeout to one minute, leave AOD off, and keep the watch face selected and unlocked.
+1. On the watch, select HALO or REDLINE and choose the palette/effect configuration to test. Set the display timeout to one minute, leave AOD off, and keep the watch face selected and unlocked.
 2. In TEST SETUP, choose the matching face, palette and effects preset. These are experiment labels, not controls that change WFF settings. Record the actual name for stock/other faces.
 3. Tap RUN 30-SECOND PERFORMANCE TEST. The helper reads the watch's capabilities and settings, wakes its display, records the trace, downloads it and disconnects. Leave the watch on its face for the full recording.
 4. The phone analyzes the trace locally. The watch does not run the processor. Review REPORT and tap COPY DIAGNOSTICS, then paste into the chat. Turn wireless debugging off and restore the normal display timeout after the test session.
 5. Repeat each setting three times. Compare full motion, all seven optional effects off, then each effect disabled individually. Keep brightness, watch position, wrist movement, visible time and connectivity matched.
+
+Choose REDLINE explicitly in TEST SETUP for its captures; it exposes REFERENCE only. HALO retains REFERENCE/PHOSPHOR/ICE. The same seven stable effect IDs refer to each face's own editor switches; do not compare their meanings without consulting that face's design.
 
 The first report lists available CPU processes and frame layers. Specific renderer CPU and frame timing stay unavailable until the correct process/surface is identified. After reviewing a report, enter exact names under OPTIONAL RENDERER SELECTION and tap REANALYZE SAVED TEST. This operates on the last saved trace without reconnecting to the watch.
 
@@ -64,12 +66,14 @@ bash scripts/setup-phone-tools.sh
 bash scripts/release-diagnostics.sh --verify-only
 ```
 
-The release check builds/signs the helper, checks its certificate, exact permission list, lack of background components, processor checksum, embedded shared collector and native-library allow-list. It also tests streamed transfer, incompatible watches, package-manager failures, installed-version verification, the actual packaged HALO resource table/footprint and copyable failure messages. It writes `dist/diagnostics/real_time-diagnostics-v0.2.1.apk`, checksums and source commit. Publishing uses a separate `diagnostics-v0.2.1` prerelease and requires approval before pushing or publishing.
+The release check builds/signs the helper, checks its certificate, exact permission list, lack of background components, processor checksum, embedded shared collector and native-library allow-list. It also tests streamed transfer, incompatible watches, package-manager failures, installed-version verification, actual packaged HALO and REDLINE resource tables/footprints and copyable failure messages. It writes `dist/diagnostics/real_time-diagnostics-v0.3.0.apk`, checksums and source commit. Publishing uses a separate `diagnostics-v0.3.0` prerelease and requires approval before pushing or publishing.
 
-To check an existing downloaded release after verifying its checksum, run `./gradlew :diagnostics:phone:testDebugUnitTest -PhaloSelectionFixture=/absolute/path/to/real_time-halo-v0.1.0.apk --tests '*FaceApkTest'`. Without an override, the tests build and use HALO's optimized debug APK so they do not require a private release key.
+To check an existing downloaded release after verifying its checksum, run `./gradlew :diagnostics:phone:testDebugUnitTest -PhaloSelectionFixture=/absolute/path/to/real_time-halo-v0.1.0.apk --tests '*FaceApkTest'`. Without an override, the tests build and use both optimized debug APKs so they do not require a private release key.
 
 Dependencies are pinned: libadb-android 3.1.1, spake2-android 2.2.1, Conscrypt 2.5.3, Bouncy Castle 1.79 and Google's Android ARM64 Perfetto processor v53.0. The latter's SHA-256 is checked both when downloaded and inside the signed APK. Pairing uses the library's PAKE primitives with a local adapter adding socket timeouts and cancellation. See THIRD_PARTY.md for upstream links and license choices.
 
 Lint currently reports the deliberate API-36/ARM64 target and self-signed-certificate trust handling inside the pinned ADB/crypto dependencies. ADB uses pairing codes and key authentication rather than public web certificate authorities. The app does not use these trust managers for HTTP or other public connections.
 
-The user has confirmed pairing succeeds. Device acceptance still requires APK selection after this fix, first install and compatible update, interrupted-install recovery, reconnection, native processor execution, actual data-source availability, battery-start recovery and report completeness. Local build/unit/lint checks cannot replace that device verification. No real battery improvement is claimed yet.
+The user has confirmed pairing, HALO installation and display through 0.2.1. REDLINE's first install/rendering, the new face selector, compatible updates, interrupted-install recovery, reconnection, native processor execution, actual data-source availability and battery-test recovery still need device acceptance. Local build/unit/lint checks cannot replace that device verification. No real battery improvement is claimed yet.
+
+Known REDLINE 0.1.0 provenance is pinned to the local `redline-v0.1.0` release tag once it exists. Fetch tags before later helper builds; HEAD supplies provenance only for the initial combined review/release build.

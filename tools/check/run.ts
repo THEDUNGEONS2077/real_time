@@ -7,6 +7,7 @@ import { effects, frame } from '../compose/src/model.ts';
 import type { Frame } from '../compose/src/model.ts';
 import { palettes } from '../compose/faces/halo/design.ts';
 import { previewSvg } from '../compose/src/preview.ts';
+import { redlinePreviews } from './redline.ts';
 
 const out=resolve(root,'out/previews');
 await mkdir(out,{recursive:true});
@@ -69,3 +70,4 @@ try{
   console.log('Reference image unavailable; generated previews without comparison.');
 }
 console.log(`Previews and ambient checks: ${out}/index.html (${Object.keys(palettes).length} palettes).`);
+await redlinePreviews();

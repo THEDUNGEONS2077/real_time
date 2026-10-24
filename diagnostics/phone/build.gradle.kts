@@ -4,6 +4,8 @@ import org.gradle.api.tasks.testing.Test
 plugins { id("com.android.application") }
 val key = Properties().apply { rootProject.file("keystore.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) } }
 val processor = rootProject.file(".tools/perfetto-android-v53.0/trace_processor_shell")
+// The first combined face/helper release is built at HEAD; later helper builds pin the face's tag.
+val redlineTag = providers.exec { commandLine("git", "rev-parse", "--verify", "--quiet", "refs/tags/redline-v0.1.0^{commit}"); isIgnoreExitValue = true }.standardOutput.asText.get().trim()
 val prepareProcessor by tasks.registering(Copy::class) {
     // Android permits execution from the installed native-library directory, not writable app data.
     from(processor)
@@ -25,10 +27,11 @@ android {
         applicationId = "com.thedungeons2077.realtime.diagnostics"
         minSdk = 33
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.2.1"
+        versionCode = 4
+        versionName = "0.3.0"
         buildConfigField("String", "SOURCE_COMMIT", "\"${providers.exec { commandLine("git", "rev-parse", "HEAD") }.standardOutput.asText.get().trim()}\"")
         buildConfigField("String", "FACE_CERT_SHA256", "\"${rootProject.file("signing-certificate.sha256").readText().trim()}\"")
+        buildConfigField("String", "REDLINE_SOURCE_COMMIT", "\"${if (redlineTag.matches(Regex("[0-9a-f]{40}"))) redlineTag else providers.exec { commandLine("git", "rev-parse", "HEAD") }.standardOutput.asText.get().trim()}\"")
         ndk { abiFilters += "arm64-v8a" }
     }
     buildFeatures { buildConfig = true }
@@ -53,9 +56,13 @@ tasks.named("preBuild") { dependsOn(prepareProcessor, prepareCollector) }
 // Test the packaged resource table and ZIP, including AAPT2's renamed paths, rather than source paths.
 tasks.withType<Test>().configureEach {
     dependsOn(":faces:halo:assembleDebug")
+    dependsOn(":faces:redline:assembleDebug")
     val fixture = providers.gradleProperty("haloSelectionFixture").orElse(rootProject.file("faces/halo/build/outputs/apk/debug/halo-debug.apk").absolutePath)
     inputs.file(fixture)
     systemProperty("halo.selection.fixture", fixture.get())
+    val redlineFixture = rootProject.file("faces/redline/build/outputs/apk/debug/redline-debug.apk")
+    inputs.file(redlineFixture)
+    systemProperty("redline.selection.fixture", redlineFixture.absolutePath)
     systemProperty("halo.selection.aapt2", File(android.sdkDirectory, "build-tools/36.0.0/aapt2").absolutePath)
 }
 dependencies {

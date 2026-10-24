@@ -29,9 +29,14 @@ public final class WatchInstallSession {
 
     /** Require a supported watch, explicit package-manager success and a matching registered version. */
     public static void install(Transport transport, File file, long size, int minSdk, long versionCode, IntConsumer progress) throws Exception {
+        install(transport, file, PACKAGE, size, minSdk, versionCode, progress);
+    }
+    /** Validate catalogue membership before constructing a version-check command for either face. */
+    public static void install(Transport transport, File file, String packageName, long size, int minSdk, long versionCode, IntConsumer progress) throws Exception {
+        FaceCatalog.name(packageName);
         InstallProtocol.service(size);
         if (watchApi(transport) < minSdk) throw new IOException("This APK requires Android API " + minSdk + ". Update the watch before installing it.");
         InstallProtocol.requireSuccess(transport.streamApk(file, size, progress));
-        InstallProtocol.requireVersion(transport.command("dumpsys package " + PACKAGE, 30), versionCode);
+        InstallProtocol.requireVersion(transport.command("dumpsys package " + packageName, 30), versionCode);
     }
 }

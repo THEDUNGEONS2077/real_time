@@ -48,9 +48,8 @@ public final class FaceApk implements AutoCloseable {
             var info = context.getPackageManager().getPackageArchiveInfo(staged.getAbsolutePath(),
                     PackageManager.PackageInfoFlags.of(PackageManager.GET_SIGNING_CERTIFICATES | PackageManager.GET_PERMISSIONS | PackageManager.GET_CONFIGURATIONS));
             if (info == null || info.applicationInfo == null || info.signingInfo == null)
-                throw new IOException("This file is not a readable signed APK. Choose the HALO watch-face APK.");
-            if (!WatchInstallSession.PACKAGE.equals(info.packageName))
-                throw new IOException("Choose the HALO watch-face APK. The phone helper and other apps cannot be installed here.");
+                throw new IOException("This file is not a readable signed APK. Choose a real_time watch-face APK.");
+            FaceCatalog.name(info.packageName);
             var signers = info.signingInfo.getApkContentsSigners();
             if (signers.length != 1 || !hex(MessageDigest.getInstance("SHA-256").digest(signers[0].toByteArray())).equals(BuildConfig.FACE_CERT_SHA256))
                 throw new IOException("This APK does not have the real_time release signature.");
@@ -90,7 +89,7 @@ public final class FaceApk implements AutoCloseable {
     }
 
     /** Short local selection details shown before the explicit install action. */
-    public String summary() { return "HALO " + versionName + " (build " + versionCode + ")\n" + packageName + "\n" + size + " bytes\nSHA-256: " + sha256; }
+    public String summary() { return FaceCatalog.name(packageName) + " " + versionName + " (build " + versionCode + ")\n" + packageName + "\n" + size + " bytes\nSHA-256: " + sha256; }
     /** Verify the private selection again before starting a watch transfer. */
     public void verifyUnchanged() throws Exception {
         MessageDigest hash = MessageDigest.getInstance("SHA-256");

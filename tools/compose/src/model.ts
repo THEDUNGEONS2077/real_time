@@ -61,19 +61,28 @@ export interface Shape {
   kind: 'line' | 'rect' | 'circle' | 'arc'; role: Role; alpha?: NumberValue; stroke?: number;
   x?: NumberValue; y?: NumberValue; x2?: number; y2?: number; width?: number; height?: number;
   r?: number; start?: number; end?: NumberValue; warning?: boolean;
+  cx?: number; cy?: number;
 }
 /** A transform applies around the canvas centre in both renderers. */
 export interface Group {
   kind: 'group'; name: string; children: Node[]; angle?: NumberValue; scale?: NumberValue;
   x?: NumberValue; y?: NumberValue; gyro?: boolean; alpha?: NumberValue;
+  pivot?: { x:number; y:number };
 }
 /** Conditional branches remove disabled high-frequency data sources from the active tree. */
 export interface Switch { kind: 'switch'; effect: Effect; enabled: Node[]; disabled: Node[] }
 /** Readouts use templates; the clock itself uses DigitalClock, not text expressions. */
-export interface Label { kind: 'label'; content: 'date' | 'steps' | 'battery' | string; x: number; y: number; width: number; size: number; role: Role; alpha?: NumberValue }
+export interface Label { kind: 'label'; content: 'date' | 'steps' | 'battery' | string; x: number; y: number; width: number; size: number; role: Role; alpha?: NumberValue; align?:'START'|'CENTER' }
 /** A dot-matrix clock is rendered through the platform's time formatting. */
 export interface Clock { kind: 'clock'; ambient: boolean }
 /** Generated image layer. A monochrome background is tinted by the active palette. */
-export interface ImageNode { kind: 'image'; resource: string; alpha: number; role: Role }
+export interface ImageNode { kind: 'image'; resource: string; alpha: number; role: Role; x?:number; y?:number; width?:number; height?:number }
 /** Discriminated renderer input. */
 export type Node = Shape | Group | Switch | Label | Clock | ImageNode;
+/** Per-face styling keeps shared geometry/expression serialization independent of HALO's layout. */
+export interface RenderStyle {
+  roles: readonly Role[]; palettes: Record<string,Record<Role,string>>;
+  clockXml?: (ambient:boolean)=>string; clockSvg?: (f:Frame)=>string;
+  labelXml?: Record<string,string>; labelText?: (content:string,f:Frame)=>string;
+  imageData?: Record<string,string>;
+}

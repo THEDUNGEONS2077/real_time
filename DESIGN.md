@@ -1,5 +1,7 @@
 # HALO design
 
+REDLINE's separate reference, rotation profile, subtle glow and hardware/resource calibration are documented in [faces/redline/README.md](faces/redline/README.md). Shared renderer extensions preserve HALO's generated resources byte for byte.
+
 ## Reference and adaptation
 
 Reference: the user's `wallhaven-ox3gqm.jpg`, a 1920×1080 navy sci-fi HUD. It is read locally from `/mnt/c/Users/57298327/Desktop/DL/` and is not copied into the repository or release.

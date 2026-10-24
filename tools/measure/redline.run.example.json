@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "redline-full-01",
+  "face": "redline",
+  "version": "0.1.0",
+  "commit": "REPLACE_WITH_BUILD_COMMIT",
+  "palette": "REFERENCE",
+  "effects": {
+    "seconds": true,
+    "ring_a": true,
+    "ring_b": true,
+    "breathing": true,
+    "nodes": true,
+    "scan": true,
+    "tilt": true
+  },
+  "aod": false,
+  "brightness": "RECORD_ACTUAL_SETTING",
+  "screenTimeoutSeconds": 60,
+  "connectivity": "RECORD_BLUETOOTH_WIFI_LTE_AND_DEBUGGING_STATE",
+  "firmware": "COPY_FROM_probe_OR_start_firmware.txt",
+  "notes": "Record activity, notifications, temperature changes and any interruptions.",
+  "kind": "performance"
+}

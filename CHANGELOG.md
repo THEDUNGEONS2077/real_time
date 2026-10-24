@@ -1,5 +1,19 @@
 # Changelog
 
+## REDLINE 0.1.0 (build 1)
+
+- Added a standalone reference-derived black/red HUD: DUNGEONS name, angular horizontal 12/24-hour clock, full uppercase date, steps, battery instrument and editable Timer provider slot.
+- Added faster counter-rotating 18/12-second main carriers with continuous speed modulation, 8/10/24-second instrument verniers, subtle pulse, radar sweep, seconds beacon and bounded two-unit depth. Seven individual switches start enabled; disabled effects return to static poses and overlays disappear.
+- Added restrained red glow using layered narrow strokes and original pre-rendered masks. Readouts stay fixed; ambient is dim time only on black. WFF 4/API 36 packaging contains no code or permissions.
+- Shared numeric/vector backends now support local pivots and positioned masks while HALO's resources remain byte-identical. Added full previews, aligned reference review, motion/edge/glyph checks and independent face release tags.
+- Official memory evaluation passes at 3,204,224 active bytes and 38,016 ambient bytes. REDLINE rendering, motion, Timer and performance still need device acceptance; no battery improvement is claimed.
+
+## Diagnostics 0.3.0 (build 4)
+
+- Added HALO/REDLINE catalogue-based APK installation and installed-version verification against the selected face's own package. Known face labels/provenance and palette choices now follow the selected face.
+- Preserved pairing, signature/resource checks, sole network permission, local-only operations and copyable reports. APK inspection regressions now use packaged APKs from both faces.
+- The user confirmed HALO installs and displays successfully through helper 0.2.1. Their positive performance feedback is recorded as qualitative; controlled trace and battery results remain unavailable.
+
 ## Diagnostics 0.2.1 (build 3)
 
 - Fixed valid release APKs being rejected as missing a WFF watch face. Resolve `raw/watchface` through the APK's resource table so AAPT2's shortened ZIP paths are supported.

@@ -1,0 +1,88 @@
+/** REDLINE contracts: faster bounded rotation, fixed readouts, reference glow and reusable resource generation. */
+import { expect, it } from 'vitest';
+import { resolve } from 'node:path';
+import { effects, expression, frame, value } from '../src/model.ts';
+import type { Frame, Node } from '../src/model.ts';
+import { polar } from '../src/geometry.ts';
+import { build, root } from '../src/build.ts';
+import { timeRows } from '../src/dotmatrix.ts';
+import { nodeXml } from '../src/wff.ts';
+import { layout, motion, palettes, scene } from '../faces/redline/design.ts';
+import { clockXml, labelText, previewSvg, style, watchfaceXml } from '../faces/redline/render.ts';
+import { digitSvg, glyph } from '../faces/redline/assets.ts';
+
+const flat=(nodes:Node[],f:Frame):Node[]=>nodes.flatMap(n=>n.kind==='switch'?flat(f.effects[n.effect]?n.enabled:n.disabled,f):n.kind==='group'?[n,...flat(n.children,f)]:[n]);
+/** Sample rendered primitive/image boundaries after all ancestor transforms, including glow strokes. */
+function bounds(nodes:Node[],f:Frame,map:(x:number,y:number)=>[number,number]=(x,y)=>[x,y],scale=1):number[]{
+  return nodes.flatMap(n=>{
+    if(n.kind==='switch')return bounds(f.effects[n.effect]?n.enabled:n.disabled,f,map,scale);
+    if(n.kind==='clock'||n.kind==='label'||n.kind==='image'&&n.resource==='redline_mesh')return [];
+    if(n.kind==='group'){
+      const a=value(n.angle??0,f)*Math.PI/180,s=value(n.scale??1,f),dx=value(n.x??0,f),dy=value(n.y??0,f),cx=n.pivot?.x??216,cy=n.pivot?.y??216;
+      return bounds(n.children,f,(x,y)=>{const u=(x-cx)*s,v=(y-cy)*s;return map(cx+dx+u*Math.cos(a)-v*Math.sin(a),cy+dy+u*Math.sin(a)+v*Math.cos(a));},scale*s);
+    }
+    const x=value(n.x??0,f),y=value(n.y??0,f);
+    const points:[number,number][]=n.kind==='line'?[[x,y],[n.x2!,n.y2!]]:n.kind==='rect'||n.kind==='image'?[[x,y],[x+n.width!,y],[x,y+n.height!],[x+n.width!,y+n.height!]]:
+      n.kind==='circle'?Array.from({length:24},(_,i)=>polar(n.r??0,i*15,x,y)):Array.from({length:73},(_,i)=>polar(n.r??0,(n.start??0)+(value(n.end??360,f)-(n.start??0))*i/72,n.cx??216,n.cy??216));
+    return points.map(([x,y])=>{const [a,b]=map(x,y);return Math.hypot(a-216,b-216)+('stroke' in n?n.stroke??0:0)*scale/2;});
+  });
+}
+it('keeps all glowing geometry and icons inside the round safe margin',()=>{
+  for(const tiltX of [-3,0,3])for(const tiltY of [-3,3])for(let seconds=0;seconds<60;seconds+=2.5){
+    const f=frame({time:new Date(Date.UTC(2026,9,24,23,59,0)+seconds*1000),tiltX,tiltY});
+    expect(Math.max(...bounds(scene(),f))).toBeLessThanOrEqual(216-layout.margin);
+  }
+});
+it('rotates substantially faster than HALO without reversing or unbounded sine arguments',()=>{
+  expect(motion.outer).toBeLessThan(120);expect(motion.inner).toBeLessThan(300);
+  for(let seconds=0;seconds<60;seconds+=.25){
+    const a=frame({time:new Date(Date.UTC(2026,9,24)+seconds*1000)}),b=frame({time:new Date(a.time.getTime()+10)});
+    for(const n of flat(scene(),a))if(n.kind==='group'&&['outer_rotor','inner_rotor'].includes(n.name)){
+      const delta=((value(n.angle!,b)-value(n.angle!,a)+540)%360-180)/.01;
+      expect(delta*(n.name==='outer_rotor'?1:-1)).toBeGreaterThan(12);
+      expect(Math.abs(delta)).toBeLessThan(39);expect(expression(n.angle!)).toContain('%');
+    }
+  }
+});
+it('removes optional motion and overlays when effects are disabled',()=>{
+  const f=frame({effects:Object.fromEntries(effects.map(e=>[e,false])) as Frame['effects']});
+  const xml=flat(scene(),f).map(n=>nodeXml(n,style)).join('');
+  expect(xml).not.toMatch(/MILLISECOND|SECOND_MILLISECOND|ACCELEROMETER|radar_sweep|seconds_beacon/);
+});
+it('gives every switch a changing transform while leaving time outside rotating groups',()=>{
+  for(const e of effects){
+    const f=frame({effects:Object.fromEntries(effects.map(id=>[id,id===e])) as Frame['effects']});
+    expect(flat(scene(),f).map(n=>nodeXml(n,style)).join('')).toMatch(/Transform|Gyro/);
+  }
+  for(const n of flat(scene(),frame()))if(n.kind==='group')expect(flat(n.children,frame()).some(c=>c.kind==='clock'||c.kind==='label')).toBe(false);
+});
+it.each(['00:00','10:45','12:00','23:59'])('preserves a readable horizontal %s',time=>{
+  const t=new Date(`2026-10-24T${time}:00Z`);expect(timeRows(t,true).join(':')).toBe(time);
+  expect(previewSvg(frame({time:t}))).toContain('width="34" height="54"');
+});
+it('uses original distinct angular glyphs with padding and native hour formatting',()=>{
+  expect(new Set([...'0123456789'].map(c=>digitSvg(c))).size).toBe(10);
+  expect(4*glyph.width+glyph.colonWidth).toBeLessThanOrEqual(layout.time.width);
+  expect(clockXml()).toContain('hourFormat="SYNC_TO_DEVICE"');expect(clockXml()).toContain('format="hh:mm"');
+  expect(timeRows(new Date('2026-10-25T00:00Z'),false).join(':')).toBe('12:00');
+});
+it('updates full date at rollover and keeps zero or large step values',()=>{
+  expect(labelText('full_date',frame({time:new Date('2026-10-25T00:00Z')}))).toBe('SUN 25 OCT');
+  for(const steps of [0,8540,123456])expect(labelText('step_value',frame({steps}))).toBe(String(steps));
+});
+it('keeps red restrained and uses a distinct low-battery warning',()=>{
+  expect(palettes.REFERENCE.cyan).toBe('#ff202b');
+  const arc=flat(scene(),frame()).find(n=>n.kind==='arc'&&n.warning)!;
+  expect(nodeXml(arc,style)).toContain('[BATTERY_PERCENT] <= 15');
+  expect(previewSvg(frame({battery:15}))).toContain('#ffb24a');expect(previewSvg(frame({battery:16}))).not.toContain('#ffb24a');
+});
+it('keeps ambient time-only and does not include frame sequences or runtime blur',()=>{
+  const xml=watchfaceXml(),ambient=xml.slice(xml.indexOf('name="ambient"'),xml.indexOf('<ComplicationSlot'));
+  expect(ambient).not.toMatch(/Transform|Gyro|MILLISECOND|redline_mesh|STEP_COUNT/);
+  expect(xml).not.toMatch(/SequenceImages|AnimatedImage|GaussianBlur|Launch/);
+  expect(xml).toContain('SET TIMER');expect(xml).toContain('[COMPLICATION.TEXT]');
+  for(const e of effects)expect(xml).toContain(`id="${e}" displayName="effect_${e}" defaultValue="TRUE"`);
+});
+it('reproduces all committed REDLINE resources deterministically',async()=>{
+  await build(resolve(root,'faces/redline/src/main/res'),true,'redline');
+},20000);

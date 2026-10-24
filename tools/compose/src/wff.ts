@@ -1,5 +1,5 @@
 /** WFF backend: serialize the shared scene as resource-only Watch Face Format 4. */
-import type { Node, NumberValue, Role, Shape } from './model.ts';
+import type { Node, NumberValue, Role, Shape, RenderStyle } from './model.ts';
 import { effects, expression } from './model.ts';
 import { effectLabels, layout, palettes, roles, scene } from '../faces/halo/design.ts';
 
@@ -10,22 +10,23 @@ export function tag(name:string, attrs:Record<string,string|number|undefined>, c
   return `<${name}${Object.entries(attrs).filter(([,v])=>v!==undefined).map(([k,v])=>` ${k}="${xml(String(v))}"`).join('')}>${children}</${name}>`;
 }
 const canvas={x:0,y:0,width:432,height:432};
-const colour=(role:Role)=>roles.includes(role)?`[CONFIGURATION.palette.${roles.indexOf(role)}]`:palettes.REFERENCE[role];
+const haloStyle:RenderStyle={roles,palettes};
+const colour=(role:Role,style:RenderStyle=haloStyle)=>style.roles.includes(role)?`[CONFIGURATION.palette.${style.roles.indexOf(role)}]`:style.palettes.REFERENCE[role];
 const transform=(target:string,n:NumberValue|undefined)=>n!==undefined&&typeof n!=='number'?tag('Transform',{target,value:expression(n)}):'';
 const initial=(n:NumberValue|undefined,fallback:number)=>typeof n==='number'?n:fallback;
 
-function shape(n:Shape):string {
-  const style=tag(n.stroke?'Stroke':'Fill',{color:colour(n.role),...(n.stroke?{thickness:n.stroke}: {})});
+function shape(n:Shape,style:RenderStyle):string {
+  const paint=tag(n.stroke?'Stroke':'Fill',{color:colour(n.role,style),...(n.stroke?{thickness:n.stroke}: {})});
   const attrs:Record<string,string|number|undefined>={};
   let name='Line';
   switch(n.kind){
     case 'line':Object.assign(attrs,{startX:initial(n.x,0),startY:initial(n.y,0),endX:n.x2,endY:n.y2});break;
     case 'rect':name='Rectangle';Object.assign(attrs,{x:initial(n.x,0),y:initial(n.y,0),width:n.width,height:n.height});break;
     case 'circle':name='Ellipse';Object.assign(attrs,{x:initial(n.x,0)-(n.r??0),y:initial(n.y,0)-(n.r??0),width:2*(n.r??0),height:2*(n.r??0)});break;
-    case 'arc':name='Arc';Object.assign(attrs,{centerX:216,centerY:216,width:2*(n.r??0),height:2*(n.r??0),startAngle:n.start,endAngle:initial(n.end,(n.start??0)+1)});break;
+    case 'arc':name='Arc';Object.assign(attrs,{centerX:n.cx??216,centerY:n.cy??216,width:2*(n.r??0),height:2*(n.r??0),startAngle:n.start,endAngle:initial(n.end,(n.start??0)+1)});break;
   }
-  const draw=tag(name,attrs,style+transform('endAngle',n.end));
-  const part=(colorWarning=false)=>tag('PartDraw',{...canvas,alpha:initial(n.alpha,255)},transform('alpha',n.alpha)+(colorWarning?draw.replaceAll(colour(n.role),colour('warning')):draw));
+  const draw=tag(name,attrs,paint+transform('endAngle',n.end));
+  const part=(colorWarning=false)=>tag('PartDraw',{...canvas,alpha:initial(n.alpha,255)},transform('alpha',n.alpha)+(colorWarning?draw.replaceAll(colour(n.role,style),colour('warning',style)):draw));
   if(!n.warning)return part();
   return tag('Condition',{},tag('Expressions',{},tag('Expression',{name:'low_battery'},'<![CDATA[[BATTERY_PERCENT] <= 15]]>'))+tag('Compare',{expression:'low_battery'},part(true))+tag('Default',{},part()));
 }
@@ -36,20 +37,20 @@ export function clockXml(ambient=false):string {
 }
 
 /** Emit a single subtree. Switch branches prevent disabled effects from animating invisibly. */
-export function nodeXml(n:Node):string {
-  if(['line','rect','circle','arc'].includes(n.kind)) return shape(n as Shape);
+export function nodeXml(n:Node,style:RenderStyle=haloStyle):string {
+  if(['line','rect','circle','arc'].includes(n.kind)) return shape(n as Shape,style);
   switch(n.kind){
-    case 'switch':return tag('Condition',{},tag('Expressions',{},tag('Expression',{name:'enabled'},`<![CDATA[[CONFIGURATION.${n.effect}] == "TRUE"]]>`))+tag('Compare',{expression:'enabled'},n.enabled.map(nodeXml).join(''))+(n.disabled.length?tag('Default',{},n.disabled.map(nodeXml).join('')):''));
+    case 'switch':return tag('Condition',{},tag('Expressions',{},tag('Expression',{name:'enabled'},`<![CDATA[[CONFIGURATION.${n.effect}] == "TRUE"]]>`))+tag('Compare',{expression:'enabled'},n.enabled.map(c=>nodeXml(c,style)).join(''))+(n.disabled.length?tag('Default',{},n.disabled.map(c=>nodeXml(c,style)).join('')):''));
     case 'group': {
       const gyros=n.gyro?tag('Gyro',{x:expression(n.x??0),y:expression(n.y??0)}):'';
       const transforms=(n.gyro?'':transform('x',n.x)+transform('y',n.y))+transform('angle',n.angle)+transform('scaleX',n.scale)+transform('scaleY',n.scale)+transform('alpha',n.alpha);
-      return tag('Group',{...canvas,name:n.name,x:initial(n.x,0),y:initial(n.y,0),angle:initial(n.angle,0),scaleX:initial(n.scale,1),scaleY:initial(n.scale,1),alpha:initial(n.alpha,255),pivotX:0.5,pivotY:0.5},gyros+transforms+n.children.map(nodeXml).join(''));
+      return tag('Group',{...canvas,name:n.name,x:initial(n.x,0),y:initial(n.y,0),angle:initial(n.angle,0),scaleX:initial(n.scale,1),scaleY:initial(n.scale,1),alpha:initial(n.alpha,255),pivotX:(n.pivot?.x??216)/432,pivotY:(n.pivot?.y??216)/432},gyros+transforms+n.children.map(c=>nodeXml(c,style)).join(''));
     }
-    case 'image': return tag('PartImage',{...canvas,alpha:n.alpha,tintColor:colour(n.role)},tag('Image',{resource:n.resource}));
-    case 'clock':return clockXml(n.ambient);
+    case 'image': return tag('PartImage',{...canvas,x:Math.round(n.x??0),y:Math.round(n.y??0),width:n.width??432,height:n.height??432,alpha:n.alpha,tintColor:colour(n.role,style)},tag('Image',{resource:n.resource}));
+    case 'clock':return style.clockXml?.(n.ambient)??clockXml(n.ambient);
     case 'label': {
       const templates:Record<string,string>={date:tag('Upper',{},tag('Template',{},'%s %02d'+tag('Parameter',{expression:'[DAY_OF_WEEK_S]'})+tag('Parameter',{expression:'[DAY]'}))),steps:tag('Template',{},'▪ %d'+tag('Parameter',{expression:'[STEP_COUNT]'})),battery:tag('Template',{},'BAT %d%%'+tag('Parameter',{expression:'[BATTERY_PERCENT]'}))};
-      return tag('PartText',{x:n.x,y:n.y,width:n.width,height:22,alpha:initial(n.alpha,255)},tag('Text',{align:'START'},tag('Font',{family:'monospace',size:n.size,color:colour(n.role)},templates[n.content]??xml(n.content))));
+      return tag('PartText',{x:n.x,y:n.y,width:n.width,height:22,alpha:initial(n.alpha,255)},tag('Text',{align:n.align??'START'},tag('Font',{family:'monospace',size:n.size,color:colour(n.role,style)},style.labelXml?.[n.content]??templates[n.content]??xml(n.content))));
     }
     default:throw new Error(`Unrecognized node ${n.kind}`);
   }
@@ -76,7 +77,7 @@ export function watchfaceXml():string {
     effects.map(id=>tag('BooleanConfiguration',{id,displayName:`effect_${id}`,defaultValue:'TRUE'})).join('');
   const background=tag('PartDraw',canvas,tag('Rectangle',{...canvas},tag('Fill',{color:colour('navy')})));
   const timerFrame=nodeXml({kind:'rect',...layout.timer,role:'teal',stroke:0.8,alpha:180});
-  const active=tag('Group',{...canvas,name:'interactive'},tag('Variant',{mode:'AMBIENT',target:'alpha',value:0})+background+scene().map(nodeXml).join('')+timerFrame);
+  const active=tag('Group',{...canvas,name:'interactive'},tag('Variant',{mode:'AMBIENT',target:'alpha',value:0})+background+scene().map(n=>nodeXml(n)).join('')+timerFrame);
   const ambient=tag('Group',{...canvas,name:'ambient',alpha:0},tag('Variant',{mode:'AMBIENT',target:'alpha',value:255})+clockXml(true));
   return '<?xml version="1.0" encoding="utf-8"?>\n<!-- Generated by tools/compose. Edit the shared design, then run npm run compose. -->\n'+
     tag('WatchFace',{width:432,height:432},tag('Metadata',{key:'PREVIEW_TIME',value:'10:08:36'})+tag('BitmapFonts',{},font(false)+font(true))+tag('UserConfigurations',{},config)+tag('Scene',{backgroundColor:'#000000'},active+ambient+shortcutXml())).replaceAll('</PartDraw>','</PartDraw>\n').replaceAll('</Group>','</Group>\n').replaceAll('</Condition>','</Condition>\n')+'\n';

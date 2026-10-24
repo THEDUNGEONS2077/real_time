@@ -85,7 +85,7 @@ public final class MainActivity extends Activity {
         text(connection, "The Android network permission is used only to reach the private watch address you enter. No public addresses or hostnames are accepted.", 12, PALE);
 
         LinearLayout install = section("INSTALL WATCH FACE", true);
-        text(install, "Download the HALO watch-face APK onto this phone. Choose it here, review the face/version, then install using the same watch connection. The diagnostics phone APK belongs on the phone.", 12, PALE);
+        text(install, "Download the HALO or REDLINE watch-face APK onto this phone. Choose it here, review the face/version, then install using the same watch connection. The diagnostics phone APK belongs on the phone.", 12, PALE);
         button(install, "CHOOSE FACE APK", () -> {
             Intent picker = new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE)
                     .putExtra(Intent.EXTRA_LOCAL_ONLY, true);
@@ -94,16 +94,22 @@ public final class MainActivity extends Activity {
         selection = text(install, "No APK selected.", 12, PALE);
         button(install, "INSTALL TO WATCH", () -> {
             FaceApk apk = selectedApk;
-            if (apk == null) throw new IllegalStateException("Choose the HALO watch-face APK first.");
+            if (apk == null) throw new IllegalStateException("Choose a real_time watch-face APK first.");
             LocalEndpoint endpoint = currentEndpoint();
-            run("Installation", () -> { diagnostics.install(endpoint, apk); return "HALO installed and version verified. On the watch, long-press the current face, add a face, then choose HALO. Turn wireless debugging off when finished."; });
+            run("Installation", () -> { diagnostics.install(endpoint, apk); return FaceCatalog.name(apk.packageName) + " installed and version verified. On the watch, long-press the current face, add a face, then choose " + FaceCatalog.name(apk.packageName) + ". Turn wireless debugging off when finished."; });
         });
         text(install, "Compatible updates preserve existing face data. Installation is blocked during a battery test. Interrupted installs need a check of the watch face list before retrying.", 12, PALE);
 
         LinearLayout setup = section("TEST SETUP", true);
-        face = spinner(setup, "FACE", new String[]{"HALO", "STOCK / OTHER"});
+        face = spinner(setup, "FACE", new String[]{"HALO", "REDLINE", "STOCK / OTHER"});
         otherFace = field(setup, "OTHER FACE NAME", "Fill this in when testing a stock or other face", InputType.TYPE_CLASS_TEXT);
         palette = spinner(setup, "PALETTE", new String[]{"REFERENCE", "PHOSPHOR", "ICE", "STOCK"});
+        face.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
+            @Override public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
+                setChoices(palette, position == 0 ? new String[]{"REFERENCE", "PHOSPHOR", "ICE"} : position == 1 ? new String[]{"REFERENCE"} : new String[]{"STOCK"});
+            }
+            @Override public void onNothingSelected(android.widget.AdapterView<?> parent) { }
+        });
         String[] presets = new String[9]; presets[0] = "FULL MOTION"; presets[1] = "ALL EFFECTS OFF";
         for (int i = 0; i < 7; i++) presets[i + 2] = "FULL EXCEPT " + Measurements.EFFECTS[i].toUpperCase(java.util.Locale.ROOT);
         preset = spinner(setup, "EFFECTS", presets);
@@ -166,7 +172,7 @@ public final class MainActivity extends Activity {
             if (isDestroyed()) { apk.close(); throw new java.io.IOException("Screen closed during APK selection."); }
             selectedApk = apk;
             runOnUiThread(() -> { if (!isDestroyed()) selection.setText(apk.summary()); });
-            return "HALO APK ready. Review its version, then tap INSTALL TO WATCH.";
+            return FaceCatalog.name(apk.packageName) + " APK ready. Review its version, then tap INSTALL TO WATCH.";
         });
     }
 
@@ -177,12 +183,12 @@ public final class MainActivity extends Activity {
     }
     private JSONObject setup() throws Exception {
         JSONObject result = new JSONObject();
-        String selectedFace = face.getSelectedItemPosition() == 0 ? "HALO" : otherFace.getText().toString().trim();
+        String selectedFace = face.getSelectedItemPosition() < 2 ? face.getSelectedItem().toString() : otherFace.getText().toString().trim();
         if (selectedFace.isBlank()) throw new IllegalArgumentException("Record the name of the stock or other face being tested.");
         result.put("face", selectedFace).put("palette", palette.getSelectedItem().toString()).put("preset", preset.getSelectedItem().toString()).put("aod", aod.isChecked());
         result.put("rendererProcess", renderer.getText().toString().trim()).put("rendererLayer", layer.getText().toString().trim());
         JSONObject effects = new JSONObject();
-        for (int i = 0; i < Measurements.EFFECTS.length; i++) effects.put(Measurements.EFFECTS[i], face.getSelectedItemPosition() == 0 && preset.getSelectedItemPosition() != 1 && preset.getSelectedItemPosition() != i + 2);
+        for (int i = 0; i < Measurements.EFFECTS.length; i++) effects.put(Measurements.EFFECTS[i], face.getSelectedItemPosition() < 2 && preset.getSelectedItemPosition() != 1 && preset.getSelectedItemPosition() != i + 2);
         return result.put("effects", effects);
     }
     private void copy() {
@@ -230,12 +236,15 @@ public final class MainActivity extends Activity {
     }
     private Spinner spinner(LinearLayout parent, String label, String[] items) {
         text(parent, label, 12, CYAN); Spinner spinner = new Spinner(this);
+        setChoices(spinner, items); spinner.setMinimumHeight(dp(48)); parent.addView(spinner); controls.add(spinner); return spinner;
+    }
+    private void setChoices(Spinner spinner, String[] items) {
         var adapter = new ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, items) {
             @Override public View getView(int position, View convert, android.view.ViewGroup parentView) {
                 TextView view = (TextView) super.getView(position, convert, parentView); view.setTextColor(PALE); view.setTypeface(Typeface.MONOSPACE); view.setTextSize(15); return view;
             }
         };
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item); spinner.setAdapter(adapter); spinner.setMinimumHeight(dp(48)); parent.addView(spinner); controls.add(spinner); return spinner;
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item); spinner.setAdapter(adapter);
     }
     private void button(LinearLayout parent, String label, Action action) {
         Button button = new Button(this); button.setText(label); button.setTypeface(Typeface.MONOSPACE); button.setTextColor(AMBER); button.setMinHeight(dp(48)); parent.addView(button); controls.add(button);

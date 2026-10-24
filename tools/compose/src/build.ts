@@ -8,6 +8,10 @@ import { digitSvg } from './dotmatrix.ts';
 import { previewSvg } from './preview.ts';
 import { stringsXml, watchfaceXml } from './wff.ts';
 import { palettes } from '../faces/halo/design.ts';
+import * as redline from '../faces/redline/render.ts';
+import { digitSvg as segmentSvg, icons, meshSvg } from '../faces/redline/assets.ts';
+/** Independent resource modules share the generator and render backends. */
+export type FaceName='halo'|'redline';
 
 /** Repository root, independent of the caller's working directory. */
 export const root = resolve(dirname(fileURLToPath(import.meta.url)),'../../..');
@@ -30,7 +34,8 @@ export async function backgroundData(palette:keyof typeof palettes):Promise<stri
   return 'data:image/webp;base64,'+buffer.toString('base64');
 }
 /** Return the complete generated resource set without writing project files. */
-export async function resources():Promise<Map<string,Buffer>> {
+export async function resources(face:FaceName='halo'):Promise<Map<string,Buffer>> {
+  if(face==='redline')return redlineResources();
   const result=new Map<string,Buffer>();
   result.set('raw/watchface.xml',Buffer.from(watchfaceXml()));
   result.set('values/strings.xml',Buffer.from(stringsXml()));
@@ -41,9 +46,20 @@ export async function resources():Promise<Map<string,Buffer>> {
   result.set('drawable-nodpi/preview.png',await sharp(Buffer.from(preview)).png({compressionLevel:9}).toBuffer());
   return result;
 }
+/** Small static masks and original segmented glyphs accompany REDLINE's vector scene. */
+async function redlineResources():Promise<Map<string,Buffer>> {
+  const result=new Map<string,Buffer>();
+  result.set('raw/watchface.xml',Buffer.from(redline.watchfaceXml()));
+  result.set('values/strings.xml',Buffer.from(redline.stringsXml()));
+  result.set('xml/watch_face_info.xml',Buffer.from('<?xml version="1.0" encoding="utf-8"?>\n<!-- Generated picker metadata. -->\n<WatchFaceInfo><Preview value="@drawable/preview"/><Editable value="true"/><MultipleInstancesAllowed value="true"/></WatchFaceInfo>\n'));
+  for(const [name,svg] of Object.entries({...icons,redline_mesh:meshSvg()}))result.set(`drawable-nodpi/${name}.webp`,await sharp(Buffer.from(svg)).webp({lossless:true,effort:6}).toBuffer());
+  for(const character of '0123456789:')for(const ambient of [false,true])result.set(`drawable-nodpi/segment_${ambient?'ambient_':''}${character===':'?'colon':character}.png`,await sharp(Buffer.from(segmentSvg(character,!ambient))).png({compressionLevel:9}).toBuffer());
+  result.set('drawable-nodpi/preview.png',await sharp(Buffer.from(redline.previewSvg(frame({time:new Date('2026-10-24T10:45:00Z'),battery:87,steps:8540})))).png({compressionLevel:9}).toBuffer());
+  return result;
+}
 /** Build to an explicit directory, or verify committed resources without changing them. */
-export async function build(destination:string,check=false):Promise<void> {
-  const files=await resources();
+export async function build(destination:string,check=false,face:FaceName='halo'):Promise<void> {
+  const files=await resources(face);
   for(const [name,data] of files){
     const path=resolve(destination,name);
     if(check){
@@ -59,7 +75,11 @@ export async function build(destination:string,check=false):Promise<void> {
   }
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
-  const args=process.argv.slice(2),out=args.indexOf('--out');
-  await build(out>=0?resolve(args[out+1]):resolve(root,'faces/halo/src/main/res'),args.includes('--check'));
-  console.log(args.includes('--check')?'Generated resources match byte for byte.':'HALO resources generated.');
+  const args=process.argv.slice(2),out=args.indexOf('--out'),faceFlag=args.indexOf('--face');
+  const selected=faceFlag>=0?[args[faceFlag+1]]:out>=0?['halo']:['halo','redline'];
+  for(const face of selected){
+    if(face!=='halo'&&face!=='redline')throw new Error(`Unknown face: ${face}`);
+    await build(out>=0?resolve(args[out+1]):resolve(root,`faces/${face}/src/main/res`),args.includes('--check'),face);
+  }
+  console.log(args.includes('--check')?'Generated resources match byte for byte.':`${selected.join(', ')} resources generated.`);
 }

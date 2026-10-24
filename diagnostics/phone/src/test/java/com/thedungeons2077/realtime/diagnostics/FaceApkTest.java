@@ -33,7 +33,12 @@ public final class FaceApkTest {
         assertThrows(IOException.class, () -> inspect("../res/li.xml", "res/li.xml"));
     }
     @Test public void actualPackagedHaloResolvesItsWatchfaceResource() throws Exception {
-        File apk = new File(System.getProperty("halo.selection.fixture"));
+        inspectPackaged(new File(System.getProperty("halo.selection.fixture")));
+    }
+    @Test public void actualPackagedRedlineResolvesItsWatchfaceResource() throws Exception {
+        inspectPackaged(new File(System.getProperty("redline.selection.fixture")));
+    }
+    private void inspectPackaged(File apk) throws Exception {
         assertTrue("A packaged HALO fixture is required", apk.isFile());
         // AAPT2 is a trusted SDK tool reading our built APK, never code from a diagnostic export.
         File output = File.createTempFile("halo-resource-table-", ".txt");

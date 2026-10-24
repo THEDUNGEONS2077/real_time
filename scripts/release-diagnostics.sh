@@ -61,14 +61,13 @@ TAG="diagnostics-v$VERSION"
 NOTES=$(mktemp)
 trap 'rm -f "$NOTES"' EXIT
 cat > "$NOTES" <<'EOF'
-Phone helper for HALO and future real_time watch faces. Install or update this APK on the Android phone. It now installs locally selected HALO watch-face APKs using the same pairing as diagnostics; Wear Installer 2 is optional.
+Phone helper for HALO and REDLINE. Install/update this APK on the Android phone to retain its existing pairing. Choose either face APK, review its identity and tap INSTALL TO WATCH. Version verification now targets the chosen face's own package.
 
-Pair once with the watch, run a performance test or start/finish a battery interval, review the readable report and tap COPY DIAGNOSTICS. Raw captures and pairing keys stay locally; there are no analytics or automatic uploads. The only network destination accepted is the watch's private numeric Wi-Fi address.
+Pair once, install a face, run performance captures or battery endpoints, review the result and tap COPY DIAGNOSTICS. Face and palette choices now match HALO or REDLINE. Pairing keys and raw captures remain private and non-backed-up; there are no analytics, cloud endpoints or automatic uploads/downloads. Only a validated private numeric watch address is accepted.
 
-Choose the HALO watch-face APK through Android's file picker, review its version and tap INSTALL TO WATCH. The helper checks its release signature/resource-only footprint, watch compatibility and installed version. No broad storage permission, automatic download, uninstall or forced downgrade is added. Installation is blocked during a battery test. CHECK CONNECTION and copyable error reports help investigate connection problems.
+The helper preserves release-signature/resource-only checks, bounded streamed installation, explicit-copy reports and the battery-test exclusion. No extra Android permission is added. Packaged-APK selection tests cover both faces, including optimized WFF resource paths.
 
-This update fixes valid HALO APKs being rejected as missing a WFF watch face: the helper now resolves optimized filenames through the APK's resource table. Selection progress and errors appear beside the picker. Update the helper normally to keep its successful pairing, then select the same HALO APK again.
+The user confirmed successful HALO installation/display through 0.2.1. REDLINE's first installation, new selector, native trace processing and remaining device acceptance still need testing. Requires an ARM64 phone running Android 13 or newer. Full instructions: diagnostics/phone/README.md.
 
-Requires an ARM64 phone running Android 13 or newer. The user has confirmed pairing succeeds; corrected file selection, installation, native trace processing and remaining UI acceptance still need device testing. Unsupported metrics are reported as unavailable. Full instructions: diagnostics/phone/README.md in the repository.
 EOF
 gh release create "$TAG" "$OUT/$NAME" "$OUT/SHA256SUMS" "$OUT/build-commit.txt" --prerelease --target "$(git rev-parse HEAD)" --title "real_time diagnostics $VERSION (build $BUILD)" --notes-file "$NOTES"

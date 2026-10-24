@@ -6,6 +6,8 @@
 
 `faces/halo` is one Android application with resources only. It declares WFF 4, API 36 and `hasCode=false`. There is no Kotlin, AndroidX, service, launcher activity, runtime permission or network code. Further faces get independent modules and package IDs.
 
+`faces/redline` is the second independent module with the same packaging constraints. Its design and original glyph/icon masks live under `tools/compose/faces/redline`. Both faces use the shared numeric AST and vector renderers; optional per-face styling, clock layout, labels, local arc centres, group pivots and positioned image masks avoid copying the renderer. The default HALO backend remains byte-identical. REDLINE uses fixed readouts and faster modulated main carriers plus independently rotating instrument verniers. Narrow alpha strokes and small static masks provide glow; there is no runtime blur.
+
 R8 is enabled in both variants to remove AGP's generated R bytecode; resource shrinking stays off because WFF resolves artwork and labels by name. The .dev variant uses a different package and debug signing key but is not debuggable: the APK contains no application code to debug. Capture tools inspect the system renderer instead.
 
 `tools/check` rasterizes SVG with Sharp, produces a standalone gallery and measures ambient coverage. The scene is shared, but font metrics, glow, complication content and runtime rendering can differ on the watch. These checks never stand in for device acceptance.
@@ -17,6 +19,8 @@ R8 is enabled in both variants to remove AGP's generated R bytecode; resource sh
 The same phone frontend installs locally selected face APKs. Android's document picker grants one file without a storage permission; a bounded private copy is inspected for the known face package, release signing certificate, watch feature and resource-only footprint. The user's install action streams this exact copy to Android's package manager over paired ADB, as `exec:cmd package install -r -S <bytes>`. Success requires the watch's explicit response and the registered version code. There is no automatic download, uninstall, downgrade or face selection. Interrupted commits can have an unknown final state and are not retried automatically. A saved battery interval blocks installation. Connection checks and operation failures produce copyable summaries without addresses or pairing codes.
 
 APK inspection resolves the named `raw/watchface` resource through Android's resource table. AAPT2 can shorten its ZIP entry to a name such as `res/li.xml`; source-tree paths cannot be used to identify packaged resources. Helper unit tests build a HALO APK and inspect its real table/ZIP with the pinned SDK's AAPT2. The fixture can be overridden with `-PhaloSelectionFixture=/absolute/path/to/released.apk` to repeat the regression against a downloaded, checksum-verified release.
+
+The phone helper's FaceCatalog explicitly allows HALO and REDLINE and supplies their accurate labels/package names. Selection still checks the shared release certificate and absence of code/permissions. Installed-version verification targets the selected face, never a default HALO package. Palette choices follow the selected face; both faces currently expose the same seven stable effect IDs with face-specific meanings. Known REDLINE 0.1.0 provenance resolves the local `redline-v0.1.0` commit, with HEAD used for the initial combined review build. Fetch that tag before building later helper releases; version changes require updating the explicit catalogue. Other versions remain unavailable.
 
 ## Generated resources
 
@@ -49,3 +53,5 @@ Effect metadata is a boolean map so future faces can name their own effects. HAL
 The release script validates the signed APK, not just the source: package identity, SDKs, certificate, no permissions, no DEX/native libraries and official memory limits. It parses the XML validator's PASS/FAIL output because that validator may return status zero on invalid XML. Verify-only mode has no remote GitHub operations.
 
 Generated artwork and source are committed; keys, captures, analysis output, downloaded validators and build products are ignored. Reviewed measurements and optimization decisions may be committed only after checking their contents.
+
+Face verification reports are separated under `out/verification/<face>`. HALO retains its original `v*` release tag scheme; subsequent faces use `<face>-v*`, allowing independent versions and monotonic version codes. The shared helper uses its separate `diagnostics-v*` release scheme.

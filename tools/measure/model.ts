@@ -21,8 +21,8 @@ export function metadata(input:unknown):RunMetadata {
   if(typeof m.aod!=='boolean'||typeof m.screenTimeoutSeconds!=='number'||!Number.isFinite(m.screenTimeoutSeconds)||m.screenTimeoutSeconds<=0)throw new Error('Record AOD and a positive screen timeout.');
   if(!m.effects||typeof m.effects!=='object')throw new Error('Record every effect switch.');
   for(const [key,value] of Object.entries(m.effects))if(!/^[a-z][a-z0-9_]*$/.test(key)||typeof value!=='boolean')throw new Error('Effect names must be simple identifiers with boolean values.');
-  // HALO has a fixed known catalogue; future faces can record their own effect names.
-  if(m.face==='halo')for(const e of effects)if(typeof (m.effects as Record<string,unknown>)[e]!=='boolean')throw new Error(`Record effects.${e}.`);
+  // Both current faces expose these seven stable switches; future faces may define their own catalogue.
+  if(m.face==='halo'||m.face==='redline')for(const e of effects)if(typeof (m.effects as Record<string,unknown>)[e]!=='boolean')throw new Error(`Record effects.${e}.`);
   for(const key of ['rendererProcess','rendererLayer'])if(m[key]!==undefined&&typeof m[key]!=='string')throw new Error(`${key} must be a string when provided.`);
   return m as unknown as RunMetadata;
 }

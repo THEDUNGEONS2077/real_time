@@ -19,6 +19,7 @@ public final class WatchInstallSessionTest {
                 case "pm list features": return features;
                 case "getprop ro.build.version.sdk": return api;
                 case "dumpsys package com.thedungeons2077.realtime.halo": return version;
+                case "dumpsys package com.thedungeons2077.realtime.redline": return version;
                 default: throw new AssertionError("Unexpected watch command: " + command);
             }
         }
@@ -47,5 +48,15 @@ public final class WatchInstallSessionTest {
     @Test public void unverifiedInstallationIsNotAccepted() {
         Watch watch = new Watch(); watch.version = "Unable to find package";
         assertThrows(IOException.class, watch::install); assertEquals(4, watch.actions.size());
+    }
+    @Test public void redlineChecksItsOwnPackageAfterInstallation() throws Exception {
+        Watch watch = new Watch();
+        WatchInstallSession.install(watch, new File("redline.apk"), "com.thedungeons2077.realtime.redline", 100, 36, 1, p -> { });
+        assertEquals("dumpsys package com.thedungeons2077.realtime.redline", watch.actions.get(watch.actions.size() - 1));
+    }
+    @Test public void unknownPackagesAreRejectedBeforeConnecting() {
+        Watch watch = new Watch();
+        assertThrows(IllegalArgumentException.class, () -> WatchInstallSession.install(watch, new File("other.apk"), "other; rm -rf /", 100, 36, 1, p -> { }));
+        assertTrue(watch.actions.isEmpty());
     }
 }

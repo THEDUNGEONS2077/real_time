@@ -24,6 +24,8 @@ Resource-only Wear OS watch faces for the user's Galaxy Watch7 40 mm. Read ARCHI
 - Do not claim device acceptance or performance improvements until the user supplies device evidence. Use they/them when referring to the user.
 - Every future face must consult OPTIMIZATION.md, expose measurable optional effects, and use the shared measurement protocol.
 
+For later helper builds, fetch the released face tags before building so catalogue provenance stays pinned. New faces require their own design/acceptance document and independent release tag.
+
 Commands:
 
 ```bash

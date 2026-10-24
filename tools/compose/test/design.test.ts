@@ -45,12 +45,12 @@ describe('motion and palette contracts',()=>{
     expect(nodes.some(n=>n.kind==='group'&&n.name==='seconds_moving')).toBe(false);
     expect(nodes.some(n=>n.kind==='group'&&n.name==='core_scan')).toBe(false);
     expect(nodes.filter(n=>n.kind==='group').some(n=>n.gyro)).toBe(false);
-    expect(nodes.filter(n=>n.kind==='group').map(nodeXml).join('')).not.toContain('[MILLISECOND]');
+    expect(nodes.filter(n=>n.kind==='group').map(n=>nodeXml(n)).join('')).not.toContain('[MILLISECOND]');
   });
   it('moves each enabled effect and leaves all others present',()=>{
     for(const effect of effects){
       const f=frame({effects:Object.fromEntries(effects.map(k=>[k,k===effect])) as Frame['effects']});
-      const serialized=flatten(scene(),f).filter(n=>n.kind==='group').map(nodeXml).join('');
+      const serialized=flatten(scene(),f).filter(n=>n.kind==='group').map(n=>nodeXml(n)).join('');
       expect(serialized).toMatch(/Transform|Gyro/);
     }
   });

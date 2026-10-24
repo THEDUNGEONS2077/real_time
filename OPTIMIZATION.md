@@ -12,6 +12,10 @@ The preferred collection interface is now the local phone helper: run, review, c
 
 No on-watch performance or battery captures have been collected yet. There are no measured optimization wins to reuse yet.
 
+On 2026-10-24 the user supplied a successful HALO installation/version-verification report, confirmed the face displays on their Watch7 and described its performance as good. This is a qualitative device observation, without controlled trace, jank or battery measurements. It supports reusing the resource-only approach; it does not establish a measured energy saving or validate REDLINE's faster motion.
+
+REDLINE's initial resource evaluation passes at 3,204,224 active bytes and 38,016 ambient bytes. Its reference-red strokes and pre-rendered masks avoid runtime blur, while stable readouts sit outside rotating groups. These are implementation/resource findings, not measured power results. Follow the same experiment sequence below for REDLINE, using its own rotor/pulse/instrument/radar labels and selecting REDLINE in the phone helper. Consult [its design](faces/redline/README.md) for the precise profile and tradeoffs.
+
 Implementation choices awaiting measurement:
 
 - Prefer vector geometry and small, tightly bounded masks.

@@ -57,7 +57,7 @@ public final class Diagnostics {
             int api = WatchInstallSession.watchApi(connection);
             String model = Measurements.clean(command("getprop ro.product.model"));
             String report = operationHeader("CONNECTION") + "Watch: " + model + "\nAndroid API: " + api
-                    + "\nConnection and watch identity verified. You can choose and install the HALO APK.\n";
+                    + "\nConnection and watch identity verified. You can choose and install a real_time face APK.\n";
             writeText(reportFile, report); return report;
         } finally { disconnect(); }
     }
@@ -69,11 +69,11 @@ public final class Diagnostics {
         try {
             connect(endpoint);
             progress.accept("Checking watch compatibility…");
-            WatchInstallSession.install(connection, apk.file, apk.size, apk.minSdk, apk.versionCode,
-                    percent -> progress.accept("Sending HALO to the watch: " + percent + "%. Waiting for Android to finish installation…"));
+            WatchInstallSession.install(connection, apk.file, apk.packageName, apk.size, apk.minSdk, apk.versionCode,
+                    percent -> progress.accept("Sending " + FaceCatalog.name(apk.packageName) + " to the watch: " + percent + "%. Waiting for Android to finish installation…"));
             String report = operationHeader("INSTALLATION") + apk.summary()
                     + "\nResult: watch reported Success; installed version verified.\n"
-                    + "On the watch, long-press the current face, add a face and select HALO.\n"
+                    + "On the watch, long-press the current face, add a face and select " + FaceCatalog.name(apk.packageName) + ".\n"
                     + "Turn wireless debugging off when finished. Rendering and Timer still need device acceptance.\n";
             writeText(reportFile, report); return report;
         } finally { disconnect(); }
@@ -109,7 +109,7 @@ public final class Diagnostics {
             metadata.put("watchSettings", settings);
             if (Measurements.number(settings.optString("screen_off_timeout")) == null || Double.parseDouble(settings.optString("screen_off_timeout")) < 35000)
                 throw new IllegalStateException("Set the watch display timeout to one minute, then run the test again. The helper will not change it automatically.");
-            progress.accept("Recording for 30 seconds. Keep HALO visible on the watch; you can leave the phone alone.");
+            progress.accept("Recording for 30 seconds. Keep the selected face visible on the watch; you can leave the phone alone.");
             command("input keyevent 224");
             capture("trace", id, "", run);
             progress.accept("Saving the trace to this phone…");
@@ -236,12 +236,13 @@ public final class Diagnostics {
     private void collectInfo(JSONObject metadata) throws Exception {
         metadata.put("watchModel", command("getprop ro.product.model").trim());
         metadata.put("firmware", command("getprop ro.build.fingerprint").trim());
-        if (metadata.optString("face").equals("HALO")) {
-            String packages = command("dumpsys package com.thedungeons2077.realtime.halo");
+        String facePackage = FaceCatalog.packageName(metadata.optString("face"));
+        if (facePackage != null) {
+            String packages = command("dumpsys package " + facePackage);
             var match = Pattern.compile("versionName=([^\\s]+)").matcher(packages);
             metadata.put("faceVersion", match.find() ? match.group(1) : "unavailable");
             // The first published face's source is known; later unknown versions remain explicitly unknown.
-            metadata.put("faceCommit", metadata.optString("faceVersion").equals("0.1.0") ? "053438dc20e5486f4db9604cfef5d32fe989b0fd" : "unavailable");
+            metadata.put("faceCommit", FaceCatalog.commit(metadata.optString("face"), metadata.optString("faceVersion")));
         } else metadata.put("faceVersion", "unavailable / user-selected face").put("faceCommit", "unavailable");
     }
     private static Measurements.Snapshot endpoint(File directory) throws IOException {
