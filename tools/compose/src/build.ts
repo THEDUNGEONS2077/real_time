@@ -21,7 +21,12 @@ export function backgroundSvg():string {
 }
 /** Tint only visible pixels; alpha remains unchanged across all palettes. */
 export async function backgroundData(palette:keyof typeof palettes):Promise<string> {
-  const buffer=await sharp(Buffer.from(backgroundSvg())).tint(palettes[palette].cyan).webp({lossless:true,effort:6}).toBuffer();
+  // Match WFF's SRC_IN colour filter exactly: RGB is the palette colour, alpha is the mask.
+  // Sharp.tint preserves source lightness, which would leave this white mask almost white.
+  const {data,info}=await sharp(Buffer.from(backgroundSvg())).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+  const rgb=palettes[palette].cyan.slice(1).match(/../g)!.map(v=>parseInt(v,16));
+  for(let i=0;i<data.length;i+=4){data[i]=rgb[0];data[i+1]=rgb[1];data[i+2]=rgb[2];}
+  const buffer=await sharp(data,{raw:{width:info.width,height:info.height,channels:4}}).webp({lossless:true,effort:6}).toBuffer();
   return 'data:image/webp;base64,'+buffer.toString('base64');
 }
 /** Return the complete generated resource set without writing project files. */

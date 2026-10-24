@@ -3,10 +3,10 @@
 set -euo pipefail
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT"
-FACE=halo; PUBLISH=false; PRERELEASE=false
+FACE=halo; PUBLISH=false; PRERELEASE=false; VERIFY_ONLY=false
 while (($#)); do
   case "$1" in
-    --verify-only) ;;
+    --verify-only) VERIFY_ONLY=true;;
     --face) FACE=${2:?face name required}; shift;;
     --publish) PUBLISH=true;;
     --prerelease) PRERELEASE=true;;
@@ -14,6 +14,7 @@ while (($#)); do
   esac
   shift
 done
+if $VERIFY_ONLY && $PUBLISH; then echo '--verify-only cannot be combined with --publish.' >&2; exit 2; fi
 [[ "$FACE" =~ ^[a-z][a-z0-9_]*$ ]] || { echo 'Invalid face name.' >&2; exit 2; }
 fail() { echo "ERROR: $*" >&2; exit 1; }
 [[ -f keystore.properties ]] || fail 'Run node scripts/setup-signing.mjs first.'
@@ -51,6 +52,7 @@ unzip -Z1 "$APK" > out/verification/apk-files.txt
 if grep -qE '(^|/)classes[^/]*\.dex$|\.so$' out/verification/apk-files.txt; then fail 'APK contains executable code.'; fi
 "$BT/aapt2" dump xmltree "$APK" --file AndroidManifest.xml > out/verification/manifest.txt
 grep -q 'android:hasCode.*false\|android:hasCode.*0x0' out/verification/manifest.txt || fail 'hasCode=false missing.'
+awk '/com.google.wear.watchface.format.version/{found=1;next} found && /:value/{if($0 ~ /=4$/)exit 0;exit 1} END{if(!found)exit 1}' out/verification/manifest.txt || fail 'WFF format property must be 4.'
 "$BT/aapt2" dump badging "$APK" > out/verification/package.txt
 grep -q "package: name='com.thedungeons2077.realtime.$FACE'" out/verification/package.txt || fail 'Unexpected package ID.'
 grep -q "sdkVersion:'36'" out/verification/package.txt || fail 'Unexpected minimum SDK.'
@@ -77,6 +79,9 @@ git fetch origin
 [[ $(git rev-parse HEAD) == "$(git rev-parse '@{u}')" ]] || fail 'HEAD must match the approved pushed commit.'
 TAG="v$VERSION"
 ! gh release view "$TAG" >/dev/null 2>&1 || fail 'Release already exists.'
+# Android refuses updates whose versionCode does not increase.
+LAST_BUILD=$(git tag --list 'v*' | while IFS= read -r tag; do git show "$tag:faces/$FACE/build.gradle.kts" 2>/dev/null | sed -n 's/.*versionCode = \([0-9]*\).*/\1/p' || true; done | sort -n | tail -1)
+[[ -z "$LAST_BUILD" || "$BUILD" -gt "$LAST_BUILD" ]] || fail 'versionCode must exceed prior releases.'
 NOTES=$(mktemp)
 trap 'rm -f "$NOTES"' EXIT
 awk -v h="## $VERSION (build $BUILD)" '$0==h{f=1;next} /^## /{if(f)exit} f' CHANGELOG.md > "$NOTES"

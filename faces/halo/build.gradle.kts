@@ -32,9 +32,18 @@ android {
         }
     }
     buildTypes {
-        debug { applicationIdSuffix = ".dev"; versionNameSuffix = "-dev" }
+        debug {
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+            // There is no application code to attach a debugger to; diagnostics target the system renderer.
+            isDebuggable = false
+            // AGP creates R classes even without source code. R8 removes those unused classes.
+            isMinifyEnabled = true
+            isShrinkResources = false
+        }
         release {
-            isMinifyEnabled = false
+            // Remove AGP's generated R bytecode, while retaining all runtime-named WFF resources.
+            isMinifyEnabled = true
             isShrinkResources = false
             if (releaseKey.isNotEmpty()) signingConfig = signingConfigs.getByName("release")
         }

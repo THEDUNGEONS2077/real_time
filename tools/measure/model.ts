@@ -1,11 +1,10 @@
 /** Measurement data layer: explicit provenance and unavailable values, never invented telemetry. */
-import type { Effect } from '../compose/src/model.ts';
 import { effects } from '../compose/src/model.ts';
 
 /** Human-recorded conditions which the WFF package cannot log itself. */
 export interface RunMetadata {
   schemaVersion:1; id:string; face:string; version:string; commit:string;
-  palette:string; effects:Record<Effect,boolean>; aod:boolean;
+  palette:string; effects:Record<string,boolean>; aod:boolean;
   brightness:string; screenTimeoutSeconds:number; connectivity:string;
   firmware:string; notes:string; kind:'battery'|'performance';
   rendererProcess?:string; rendererLayer?:string;
@@ -21,7 +20,9 @@ export function metadata(input:unknown):RunMetadata {
   if(m.kind!=='battery'&&m.kind!=='performance')throw new Error('kind must be battery or performance.');
   if(typeof m.aod!=='boolean'||typeof m.screenTimeoutSeconds!=='number'||!Number.isFinite(m.screenTimeoutSeconds)||m.screenTimeoutSeconds<=0)throw new Error('Record AOD and a positive screen timeout.');
   if(!m.effects||typeof m.effects!=='object')throw new Error('Record every effect switch.');
-  for(const e of effects)if(typeof (m.effects as Record<string,unknown>)[e]!=='boolean')throw new Error(`Record effects.${e}.`);
+  for(const [key,value] of Object.entries(m.effects))if(!/^[a-z][a-z0-9_]*$/.test(key)||typeof value!=='boolean')throw new Error('Effect names must be simple identifiers with boolean values.');
+  // HALO has a fixed known catalogue; future faces can record their own effect names.
+  if(m.face==='halo')for(const e of effects)if(typeof (m.effects as Record<string,unknown>)[e]!=='boolean')throw new Error(`Record effects.${e}.`);
   for(const key of ['rendererProcess','rendererLayer'])if(m[key]!==undefined&&typeof m[key]!=='string')throw new Error(`${key} must be a string when provided.`);
   return m as unknown as RunMetadata;
 }

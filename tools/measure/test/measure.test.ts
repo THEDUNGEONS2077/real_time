@@ -8,6 +8,9 @@ import { metadata } from '../model.ts';
 import type { BatterySnapshot, RunMetadata } from '../model.ts';
 import { parseCsv, performance } from '../perfetto.ts';
 import { conditionDifferences, csvCell } from '../analyze.ts';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { root } from '../../compose/src/build.ts';
 
 const start:BatterySnapshot={epoch:100000,uptime:1000,bootId:'same-boot',firmware:'same-build',level:90,scale:100,chargeCounterUah:270000,plugged:false,status:3,statsStart:1700000000000,
   history:'Battery History:\n +0ms (1) RESET\n +1s000ms (2) 090 -plugged',checkin:'9,0,l,pws,300,20,20,20',conditions:{brightness:'100',aod:'0'}};
@@ -55,6 +58,15 @@ describe('trace handling and metadata',()=>{
     expect(()=>metadata({schemaVersion:1})).toThrow('id');
     const a={firmware:'a',brightness:'100',screenTimeoutSeconds:60,connectivity:'BT',aod:false,kind:'battery'} as RunMetadata;
     expect(conditionDifferences(a,{...a,firmware:'b',aod:true})).toEqual(['firmware','aod']);
+  });
+  it('accepts future-face effect names while requiring all HALO switches',()=>{
+    const run={schemaVersion:1,id:'future-01',face:'future',version:'0.1.0',commit:'abcdef123',palette:'CUSTOM',effects:{particles:true},aod:false,brightness:'100',screenTimeoutSeconds:60,connectivity:'BT; debug on',firmware:'test-build',notes:'Synthetic metadata',kind:'performance'};
+    expect(metadata(run).effects).toEqual({particles:true});
+    expect(()=>metadata({...run,face:'halo'})).toThrow('effects.seconds');
+    expect(()=>metadata({...run,commit:'REPLACE_WITH_BUILD_COMMIT'})).toThrow('actual source commit');
+  });
+  it('rejects combined verify-only and publish flags before any build or remote operation',async()=>{
+    await expect(promisify(execFile)('bash',[resolve(root,'scripts/release-wear.sh'),'--verify-only','--publish'])).rejects.toMatchObject({code:2});
   });
   it('marks interrupted and unsupported traces unavailable instead of zero',async()=>{
     const dir=await mkdtemp(resolve(tmpdir(),'real-time-trace-'));
