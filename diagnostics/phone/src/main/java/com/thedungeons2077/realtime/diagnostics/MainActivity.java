@@ -6,6 +6,7 @@ import android.app.AlertDialog;
 import android.content.ClipData;
 import android.content.ClipDescription;
 import android.content.ClipboardManager;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -29,11 +30,13 @@ import java.util.concurrent.Executors;
 
 /** A native screen with no embedded browser, remote content or background service. */
 public final class MainActivity extends Activity {
+    private static final int PICK_APK = 41;
     private static final int BACKGROUND = Color.rgb(5, 11, 18), PALE = Color.rgb(207, 239, 247), CYAN = Color.rgb(111, 208, 230), AMBER = Color.rgb(244, 185, 66);
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final List<View> controls = new ArrayList<>();
     private LinearLayout page;
-    private TextView status, report;
+    private TextView status, report, selection;
+    private volatile FaceApk selectedApk;
     private EditText host, pairPort, connectionPort, code, renderer, layer, otherFace;
     private Spinner face, palette, preset;
     private CheckBox aod;
@@ -55,8 +58,8 @@ public final class MainActivity extends Activity {
         });
         setContentView(scroll);
         text("<real_time>\nDIAGNOSTICS", 24, CYAN);
-        text("LOCAL TESTS · REVIEW · COPY\nNo analytics or automatic uploads. Results stay on this phone until you copy them.", 13, PALE);
-        status = text(diagnostics.batteryPending() ? "Battery test pending. Reconnect to finish it." : "Ready. Pair once, then choose a test.", 14, AMBER);
+        text("INSTALL · TEST · REVIEW · COPY\nNo analytics or automatic uploads. Results stay on this phone until you copy them.", 13, PALE);
+        status = text(diagnostics.batteryPending() ? "Battery test pending. Reconnect to finish it." : "Ready. Pair once, then install or test.", 14, AMBER);
 
         LinearLayout connection = section("WATCH CONNECTION", true);
         var preferences = getPreferences(MODE_PRIVATE);
@@ -73,9 +76,29 @@ public final class MainActivity extends Activity {
             String pairingCode = LocalEndpoint.pairingCode(code.getText().toString());
             getPreferences(MODE_PRIVATE).edit().putString("host", endpoint.host).apply();
             code.setText("");
-            run(() -> { diagnostics.pair(endpoint, pairingCode); return "Paired. Use the connection port for tests; you do not need to pair again unless pairing is removed."; });
+            run("Pairing", () -> { diagnostics.pair(endpoint, pairingCode); return "Paired. Enter the connection port and tap CHECK CONNECTION. This pairing also works for installation and tests."; });
+        });
+        button(connection, "CHECK CONNECTION", () -> {
+            LocalEndpoint endpoint = currentEndpoint();
+            run("Connection", () -> { diagnostics.checkConnection(endpoint); return "Connection verified. Choose a face APK below, then tap INSTALL TO WATCH."; });
         });
         text(connection, "The Android network permission is used only to reach the private watch address you enter. No public addresses or hostnames are accepted.", 12, PALE);
+
+        LinearLayout install = section("INSTALL WATCH FACE", true);
+        text(install, "Download the HALO watch-face APK onto this phone. Choose it here, review the face/version, then install using the same watch connection. The diagnostics phone APK belongs on the phone.", 12, PALE);
+        button(install, "CHOOSE FACE APK", () -> {
+            Intent picker = new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE)
+                    .putExtra(Intent.EXTRA_LOCAL_ONLY, true);
+            startActivityForResult(picker, PICK_APK);
+        });
+        selection = text(install, "No APK selected.", 12, PALE);
+        button(install, "INSTALL TO WATCH", () -> {
+            FaceApk apk = selectedApk;
+            if (apk == null) throw new IllegalStateException("Choose the HALO watch-face APK first.");
+            LocalEndpoint endpoint = currentEndpoint();
+            run("Installation", () -> { diagnostics.install(endpoint, apk); return "HALO installed and version verified. On the watch, long-press the current face, add a face, then choose HALO. Turn wireless debugging off when finished."; });
+        });
+        text(install, "Compatible updates preserve existing face data. Installation is blocked during a battery test. Interrupted installs need a check of the watch face list before retrying.", 12, PALE);
 
         LinearLayout setup = section("TEST SETUP", true);
         face = spinner(setup, "FACE", new String[]{"HALO", "STOCK / OTHER"});
@@ -121,12 +144,27 @@ public final class MainActivity extends Activity {
         report.setTextIsSelectable(true);
         button(results, "DELETE LOCAL REPORTS", () -> new AlertDialog.Builder(this).setMessage("Delete saved reports and raw captures from this phone? Pairing is retained.")
                 .setNegativeButton("KEEP", null).setPositiveButton("DELETE", (dialog, which) -> run(() -> { diagnostics.clearReports(); return "Local reports deleted."; })).show());
-        text("INSTALL HALO WITH WEAR INSTALLER 2\nUse this helper for diagnostics. No watch app is needed for these tests.", 12, CYAN);
+        text("ONE WATCH PAIRING FOR INSTALLATION AND DIAGNOSTICS\nNo additional watch app is needed.", 12, CYAN);
         button(page, "THIRD-PARTY NOTICES", () -> {
             try (var input = getAssets().open("third-party.txt")) {
                 new AlertDialog.Builder(this).setTitle("Third-party components").setMessage(new String(input.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8))
                         .setPositiveButton("CLOSE", null).show();
             }
+        });
+    }
+
+    /** Stage a picker-granted document off the UI thread; no storage permission or persistent grant. */
+    @Override protected void onActivityResult(int request, int result, Intent data) {
+        super.onActivityResult(request, result, data);
+        if (request != PICK_APK || result != RESULT_OK || data == null || data.getData() == null) return;
+        android.net.Uri document = data.getData();
+        run("APK selection", () -> {
+            FaceApk apk = FaceApk.select(this, document);
+            if (isDestroyed()) { apk.close(); throw new java.io.IOException("Screen closed during APK selection."); }
+            FaceApk previous = selectedApk; selectedApk = apk;
+            if (previous != null) previous.close();
+            runOnUiThread(() -> { if (!isDestroyed()) selection.setText(apk.summary()); });
+            return "HALO APK ready. Review its version, then tap INSTALL TO WATCH.";
         });
     }
 
@@ -147,21 +185,22 @@ public final class MainActivity extends Activity {
     }
     private void copy() {
         String text = diagnostics.latestReport();
-        if (text.isEmpty()) throw new IllegalStateException("Complete a test before copying a report.");
+        if (text.isEmpty()) throw new IllegalStateException("Run a connection check, installation or test before copying a report.");
         ClipboardManager clipboard = getSystemService(ClipboardManager.class);
         ClipData clip = ClipData.newPlainText("real_time diagnostics", text);
         PersistableBundle extras = new PersistableBundle(); extras.putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true); clip.getDescription().setExtras(extras);
         clipboard.setPrimaryClip(clip);
         status.setText(R.string.copied);
     }
-    private void run(Task task) {
+    private void run(Task task) { run("Diagnostics", task); }
+    private void run(String action, Task task) {
         if (busy) return;
         busy = true; for (View view : controls) view.setEnabled(false);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         worker.execute(() -> {
             String message;
             try { message = task.run(); }
-            catch (Exception error) { diagnostics.disconnect(); message = "Test did not complete: " + Measurements.clean(error.getMessage()) + "\nCheck pairing, the current connection port, and that the watch is on Wi-Fi. No incomplete test is marked successful."; }
+            catch (Exception error) { diagnostics.disconnect(); message = OperationFailure.describe(action, error); diagnostics.recordFailure(action, error); }
             String finalMessage = message;
             runOnUiThread(() -> {
                 if (isDestroyed()) return;
@@ -201,7 +240,11 @@ public final class MainActivity extends Activity {
     }
     private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
     /** Close active work and sockets when Android destroys the screen. Saved battery starts survive. */
-    @Override protected void onDestroy() { diagnostics.disconnect(); worker.shutdownNow(); super.onDestroy(); }
+    @Override protected void onDestroy() {
+        diagnostics.disconnect(); worker.shutdownNow();
+        FaceApk apk = selectedApk; if (apk != null) apk.close();
+        super.onDestroy();
+    }
     private interface Action { void run() throws Exception; }
     private interface Task { String run() throws Exception; }
 }

@@ -17,7 +17,7 @@ mkdir -p "$OUT" out/verification/phone
 VERSION=$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' diagnostics/phone/build.gradle.kts)
 BUILD=$(sed -n 's/.*versionCode = \([0-9]*\).*/\1/p' diagnostics/phone/build.gradle.kts)
 
-# Functional tests cover private destinations, data parsing and report redaction.
+# Functional tests include private destinations, bounded APK transfer, install failures and report redaction.
 ./gradlew :diagnostics:phone:testDebugUnitTest :diagnostics:phone:assembleRelease :diagnostics:phone:lintRelease --console=plain
 APK=diagnostics/phone/build/outputs/apk/release/phone-release.apk
 [[ -f "$APK" ]] || fail 'Phone APK missing.'
@@ -61,10 +61,12 @@ TAG="diagnostics-v$VERSION"
 NOTES=$(mktemp)
 trap 'rm -f "$NOTES"' EXIT
 cat > "$NOTES" <<'EOF'
-Phone helper for HALO and future real_time watch faces. Install this APK on the Android phone; keep using Wear Installer 2 to install watch faces.
+Phone helper for HALO and future real_time watch faces. Install or update this APK on the Android phone. It now installs locally selected HALO watch-face APKs using the same pairing as diagnostics; Wear Installer 2 is optional.
 
 Pair once with the watch, run a performance test or start/finish a battery interval, review the readable report and tap COPY DIAGNOSTICS. Raw captures and pairing keys stay locally; there are no analytics or automatic uploads. The only network destination accepted is the watch's private numeric Wi-Fi address.
 
-Requires an ARM64 phone running Android 13 or newer. Real phone/watch pairing, native trace processing and UI acceptance still need device testing. Unsupported metrics are reported as unavailable. Full instructions: diagnostics/phone/README.md in the repository.
+Choose the HALO watch-face APK through Android's file picker, review its version and tap INSTALL TO WATCH. The helper checks its release signature/resource-only footprint, watch compatibility and installed version. No broad storage permission, automatic download, uninstall or forced downgrade is added. Installation is blocked during a battery test. CHECK CONNECTION and copyable error reports help investigate connection problems.
+
+Requires an ARM64 phone running Android 13 or newer. Real phone/watch pairing, file selection, installation, native trace processing and UI acceptance still need device testing. Unsupported metrics are reported as unavailable. Full instructions: diagnostics/phone/README.md in the repository.
 EOF
 gh release create "$TAG" "$OUT/$NAME" "$OUT/SHA256SUMS" "$OUT/build-commit.txt" --prerelease --target "$(git rev-parse HEAD)" --title "real_time diagnostics $VERSION (build $BUILD)" --notes-file "$NOTES"

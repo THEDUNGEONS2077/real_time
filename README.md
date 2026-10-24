@@ -40,13 +40,13 @@ bash scripts/release-wear.sh --prerelease --publish
 
 ## Install from the phone
 
-Use [Wear Installer 2](https://freepoc.org/wear-installer-2-help-page/) on the Android phone to install HALO. For a run-test/copy/paste diagnostics flow, use the separate [real_time phone helper](diagnostics/phone/README.md). Bugjaeger is optional for the manual command/file workflow.
+Use the [real_time phone helper](diagnostics/phone/README.md) for both installation and the run-test/copy/paste diagnostics flow. Install the helper APK on the phone using Android's normal package installer; download the HALO watch-face APK onto the same phone. Wear Installer 2 and Bugjaeger are optional alternatives.
 
 1. On the watch, enable Developer options by opening About watch → Software information and repeatedly tapping Software version until the watch confirms developer mode.
 2. In Developer options, enable Wireless debugging and ADB debugging if separately shown. Put phone and watch on the same Wi-Fi network.
-3. Enter the watch's IP in Wear Installer 2. Choose Pair with watch in its menu; on the watch choose Pair new device, then enter the pairing code and pairing port as prompted.
-4. Connect using the IP and **connection port** on the main Wireless debugging screen. This port can differ from the pairing port and can change later.
-5. Download the APK and `SHA256SUMS` from the approved GitHub prerelease. In Wear Installer 2 choose Custom APK, select the downloaded HALO APK and tap Install.
+3. In the helper's WATCH CONNECTION section, enter the watch's IP. On the watch choose Pair new device; enter its pairing port and six-digit code in the helper and tap PAIR WITH WATCH.
+4. Enter the **connection port** on the watch's main Wireless debugging screen and tap CHECK CONNECTION. This port can differ from the pairing port and can change later. The helper uses its own pairing identity; pairing from another installer is not shared.
+5. Download the HALO APK and `SHA256SUMS` from the approved watch-face prerelease. In the helper tap CHOOSE FACE APK, select the HALO watch-face APK, review its version and tap INSTALL TO WATCH. The phone helper APK itself cannot be selected as a face.
 6. On the watch, long-press the current face → add a face → choose HALO. Edit it to select colours and effects.
 7. Edit TIMER SHORTCUT and select Timer if the watch offers it. An empty slot says SET TIMER. A configured slot shows the provider's text or icon, so another selected app is never falsely labelled TIMER. Tap it and verify the correct app opens.
 8. Turn wireless debugging off. Leave AOD off for normal use and the battery baseline.

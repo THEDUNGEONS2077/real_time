@@ -15,6 +15,7 @@ import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.File;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -31,9 +32,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.IntConsumer;
 
 /** One on-demand connection. No service, discovery, background polling or remote server. */
-public final class WatchConnection extends AbsAdbConnectionManager {
+public final class WatchConnection extends AbsAdbConnectionManager implements WatchInstallSession.Transport {
     private final PrivateKey privateKey;
     private final Certificate certificate;
     private final ScheduledExecutorService deadlines = Executors.newSingleThreadScheduledExecutor();
@@ -87,8 +89,10 @@ public final class WatchConnection extends AbsAdbConnectionManager {
 
     /** Connect using the separate connection port from Wireless debugging. */
     public void connectWatch(LocalEndpoint endpoint) throws Exception {
-        if (!connect(endpoint.host, endpoint.port) && !isConnected()) throw new IOException("Watch connection did not complete. Check the current connection port.");
-        activeConnection = getAdbConnection();
+        // Retain the transport even when authentication fails so the caller's finally block closes it.
+        try {
+            if (!connect(endpoint.host, endpoint.port) && !isConnected()) throw new IOException("Watch connection did not complete. Check the current connection port.");
+        } finally { activeConnection = getAdbConnection(); }
     }
 
     /** Execute an application-owned command, preserving exit status and bounding its duration. */
@@ -110,27 +114,51 @@ public final class WatchConnection extends AbsAdbConnectionManager {
         return read("exec:cat " + quote(path), 30, maxBytes);
     }
 
+    /** Android's standard streamed install protocol: the package manager reads the declared byte count.
+     * Reference: AOSP packages/modules/adb/client/adb_install.cpp, install_app_streamed.
+     */
+    @Override public String streamApk(File file, long size, IntConsumer progress) throws Exception {
+        AtomicBoolean expired = new AtomicBoolean();
+        var deadline = deadlines.schedule(() -> { expired.set(true); abort(); }, 120, TimeUnit.SECONDS);
+        try (AdbStream stream = openStream(InstallProtocol.service(size));
+             InputStream input = Files.newInputStream(file.toPath())) {
+            InstallProtocol.copy(input, stream.openOutputStream(), size, progress);
+            String response = new String(readResponse(stream.openInputStream(), 8192), StandardCharsets.UTF_8);
+            if (expired.get()) throw new IOException("Installation timed out. Check the watch face list before retrying.");
+            return response;
+        } catch (Exception error) {
+            if (expired.get()) throw new IOException("Installation timed out; its final status is unknown. Check the watch face list before retrying.", error);
+            throw error;
+        } finally { deadline.cancel(false); }
+    }
+
     private byte[] read(String service, int timeoutSeconds, int maxBytes) throws Exception {
         AtomicBoolean expired = new AtomicBoolean();
         // Close the transport on deadline even if opening the stream itself blocks.
         var deadline = deadlines.schedule(() -> { expired.set(true); abort(); }, timeoutSeconds, TimeUnit.SECONDS);
-        try (AdbStream stream = openStream(service); ByteArrayOutputStream output = new ByteArrayOutputStream()) {
-            InputStream input = stream.openInputStream();
+        try (AdbStream stream = openStream(service)) {
+            byte[] response = readResponse(stream.openInputStream(), maxBytes);
+            if (expired.get()) throw new IOException("Watch operation timed out. Check connectivity and try again.");
+            return response;
+        } finally { deadline.cancel(false); }
+    }
+
+    private byte[] readResponse(InputStream input, int maxBytes) throws IOException {
+        try (ByteArrayOutputStream output = new ByteArrayOutputStream()) {
             byte[] buffer = new byte[32768];
             while (true) {
                 int count;
                 try { count = input.read(buffer); }
                 catch (IOException error) {
-                    if (!expired.get() && "Stream closed.".equals(error.getMessage())) break;
+                    if ("Stream closed.".equals(error.getMessage())) break;
                     throw error;
                 }
                 if (count < 0) break;
-                if (output.size() + count > maxBytes) throw new IOException("Watch response exceeds the diagnostic size limit.");
+                if (output.size() + count > maxBytes) throw new IOException("Watch response exceeds the size limit.");
                 output.write(buffer, 0, count);
             }
-            if (expired.get()) throw new IOException("Watch operation timed out. Check connectivity and try again.");
             return output.toByteArray();
-        } finally { deadline.cancel(false); }
+        }
     }
 
     /** Quote internal shell literals; user fields never become commands. */

@@ -50,6 +50,47 @@ public final class Diagnostics {
         finally { disconnect(); }
     }
 
+    /** Confirm the saved pairing can reach a real watch, without requiring HALO or starting a test. */
+    public String checkConnection(LocalEndpoint endpoint) throws Exception {
+        try {
+            connect(endpoint);
+            int api = WatchInstallSession.watchApi(connection);
+            String model = Measurements.clean(command("getprop ro.product.model"));
+            String report = operationHeader("CONNECTION") + "Watch: " + model + "\nAndroid API: " + api
+                    + "\nConnection and watch identity verified. You can choose and install the HALO APK.\n";
+            writeText(reportFile, report); return report;
+        } finally { disconnect(); }
+    }
+
+    /** Install a reviewed private APK copy, using the same pairing as the measurement workflow. */
+    public String install(LocalEndpoint endpoint, FaceApk apk) throws Exception {
+        if (batteryPending()) throw new IllegalStateException("Finish or discard the battery test before installing a face.");
+        apk.verifyUnchanged();
+        try {
+            connect(endpoint);
+            progress.accept("Checking watch compatibility…");
+            WatchInstallSession.install(connection, apk.file, apk.size, apk.minSdk, apk.versionCode,
+                    percent -> progress.accept("Sending HALO to the watch: " + percent + "%. Waiting for Android to finish installation…"));
+            String report = operationHeader("INSTALLATION") + apk.summary()
+                    + "\nResult: watch reported Success; installed version verified.\n"
+                    + "On the watch, long-press the current face, add a face and select HALO.\n"
+                    + "Turn wireless debugging off when finished. Rendering and Timer still need device acceptance.\n";
+            writeText(reportFile, report); return report;
+        } finally { disconnect(); }
+    }
+
+    /** Save failures as copyable diagnostics so connection errors do not require retyping or screenshots. */
+    public String recordFailure(String action, Throwable error) {
+        String report = operationHeader(action) + OperationFailure.describe(action, error);
+        try { writeText(reportFile, report); } catch (IOException ignored) { }
+        return report;
+    }
+
+    private static String operationHeader(String action) {
+        return "REAL_TIME HELPER / " + action + "\nHelper: " + BuildConfig.VERSION_NAME + " / " + BuildConfig.SOURCE_COMMIT
+                + "\nTime (UTC): " + java.time.Instant.now() + "\nAddresses, pairing codes and device IDs are omitted. No automatic upload.\n\n";
+    }
+
     /** Collect and analyze a 30-second trace. Watch settings remain under the user's control. */
     public String performance(LocalEndpoint endpoint, JSONObject setup) throws Exception {
         if (batteryPending()) throw new IllegalStateException("Finish or discard the pending battery test before running performance tests.");

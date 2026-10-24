@@ -1,5 +1,13 @@
 # Changelog
 
+## Diagnostics 0.2.0 (build 2)
+
+- Added local HALO APK selection and installation through the helper's existing watch pairing. Wear Installer 2 is no longer required.
+- Added release-signature, package, resource-only footprint and watch/API checks, bounded streamed transfer and installed-version verification. Compatible updates preserve data; no automatic uninstall or forced downgrade is performed.
+- Added CHECK CONNECTION and copyable errors with distinct pairing, network and package-manager guidance. Installation is blocked during a saved battery test.
+- Kept the same package/signing identity and sole INTERNET permission. The document picker needs no storage or phone-install permission. APKs are chosen locally; there are no automatic downloads or uploads.
+- Real phone file selection, pairing and watch installation still require device acceptance. Local checks do not claim they are verified on the user's watch.
+
 ## Diagnostics 0.1.0 (build 1)
 
 - Added a separate phone helper: pair with the watch, run a performance test or save battery start/end readings, review the result and copy diagnostics to paste into the chat.
