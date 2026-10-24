@@ -76,6 +76,12 @@ it('keeps red restrained and uses a distinct low-battery warning',()=>{
   expect(nodeXml(arc,style)).toContain('[BATTERY_PERCENT] <= 15');
   expect(previewSvg(frame({battery:15}))).toContain('#ffb24a');expect(previewSvg(frame({battery:16}))).not.toContain('#ffb24a');
 });
+it('uses literal fixed colours without a runtime palette or white-fallback dependency',()=>{
+  const xml=watchfaceXml();
+  expect(xml).not.toContain('CONFIGURATION.palette');expect(xml).not.toContain('ColorConfiguration');
+  for(const colour of ['#030405','#ff202b','#edf0f1','#343a3e','#9c121b'])expect(xml).toContain(colour);
+  expect(xml).toContain('backgroundColor="#000000"');
+});
 it('keeps ambient time-only and does not include frame sequences or runtime blur',()=>{
   const xml=watchfaceXml(),ambient=xml.slice(xml.indexOf('name="ambient"'),xml.indexOf('<ComplicationSlot'));
   expect(ambient).not.toMatch(/Transform|Gyro|MILLISECOND|redline_mesh|STEP_COUNT/);

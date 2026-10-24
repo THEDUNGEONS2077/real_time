@@ -117,6 +117,11 @@ public final class MainActivity extends Activity {
         text(setup, "Match this setup in the watch-face editor before starting. These controls label the experiment; they do not change the watch face.", 12, PALE);
 
         LinearLayout tests = section("TESTS", true);
+        text(tests, "If applying or previewing a face fails, reproduce it once, then collect renderer diagnostics promptly. This reads recent renderer warnings/errors without changing the watch face.", 12, PALE);
+        button(tests, "COLLECT RENDERER DIAGNOSTICS", () -> {
+            LocalEndpoint endpoint = currentEndpoint(); JSONObject settings = setup();
+            run("Renderer diagnostics", () -> { diagnostics.rendererDiagnostics(endpoint, settings); return "Renderer report ready. Review it, then tap COPY DIAGNOSTICS. Turn wireless debugging off when finished."; });
+        });
         text(tests, "Performance: set the watch screen timeout to one minute and keep the face visible for the recording. Repeat each configuration three times.", 12, PALE);
         button(tests, "RUN 30-SECOND PERFORMANCE TEST", () -> {
             LocalEndpoint endpoint = currentEndpoint(); JSONObject settings = setup();

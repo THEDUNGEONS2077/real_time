@@ -62,6 +62,26 @@ public final class Diagnostics {
         } finally { disconnect(); }
     }
 
+    /** Capture existing renderer logs once, including errors that prevented a preview from opening. */
+    public String rendererDiagnostics(LocalEndpoint endpoint, JSONObject setup) throws Exception {
+        if (batteryPending()) throw new IllegalStateException("Finish or discard the battery test before renderer diagnostics.");
+        String id = runId(); File run = new File(storage, id); run.mkdirs();
+        JSONObject metadata = new JSONObject(setup.toString());
+        String processes, main, crash, status;
+        try {
+            connect(endpoint); prepare(); collectInfo(metadata);
+            progress.accept("Reading existing renderer warnings and crash records…");
+            capture("renderer", id, "", run);
+            File directory = new File(run, "renderer"); directory.mkdirs();
+            for (String name : new String[]{"processes.txt", "renderer-main.txt", "renderer-crash.txt", "status.tsv"})
+                Files.write(new File(directory, name).toPath(), connection.file(remote(id, "renderer/" + name), 4 * 1024 * 1024));
+            processes = readText(new File(directory, "processes.txt")); main = readText(new File(directory, "renderer-main.txt"));
+            crash = readText(new File(directory, "renderer-crash.txt")); status = readText(new File(directory, "status.tsv"));
+            save(metadata, new File(run, "run.json")); cleanup(id);
+        } finally { disconnect(); }
+        return finish(header("RENDERER", id, metadata) + RendererReport.summarize(processes, main, crash, status), run);
+    }
+
     /** Install a reviewed private APK copy, using the same pairing as the measurement workflow. */
     public String install(LocalEndpoint endpoint, FaceApk apk) throws Exception {
         if (batteryPending()) throw new IllegalStateException("Finish or discard the battery test before installing a face.");

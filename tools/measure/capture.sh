@@ -3,6 +3,7 @@
 # Usage: sh /data/local/tmp/real-time-capture.sh probe RUN_ID
 #        sh /data/local/tmp/real-time-capture.sh snapshot RUN_ID start|end
 #        sh /data/local/tmp/real-time-capture.sh trace RUN_ID
+#        sh /data/local/tmp/real-time-capture.sh renderer RUN_ID
 set -eu
 umask 077
 
@@ -10,7 +11,7 @@ umask 077
 command -v getprop >/dev/null 2>&1 || { echo 'Run this script in the watch shell.' >&2; exit 2; }
 ACTION=${1:-}; RUN_ID=${2:-}
 case "$RUN_ID" in ''|*[!a-zA-Z0-9_-]*) echo 'Use a run ID containing letters, numbers, _ or -.' >&2; exit 2;; esac
-case "$ACTION" in probe|snapshot|trace) ;; *) echo 'Expected probe, snapshot or trace.' >&2; exit 2;; esac
+case "$ACTION" in probe|snapshot|trace|renderer) ;; *) echo 'Expected probe, snapshot, trace or renderer.' >&2; exit 2;; esac
 BASE=/data/local/tmp/real_time/$RUN_ID
 mkdir -p "$BASE"
 
@@ -36,6 +37,15 @@ identity() {
 }
 
 case "$ACTION" in
+  renderer)
+    OUT=$BASE/renderer
+    [ ! -e "$OUT" ] || { echo 'Renderer capture exists; use a new run ID.' >&2; exit 2; }
+    mkdir "$OUT"; identity
+    # Read existing buffers once. Do not clear logs, start a logger, or change the watch face.
+    capture processes ps -A -o PID,NAME
+    capture renderer-main logcat -b main -b system -d -t 2000 -v brief
+    capture renderer-crash logcat -b crash -d -t 200 -v brief
+    ;;
   probe)
     OUT=$BASE/probe
     [ ! -e "$OUT" ] || { echo 'Probe exists; use a new run ID.' >&2; exit 2; }

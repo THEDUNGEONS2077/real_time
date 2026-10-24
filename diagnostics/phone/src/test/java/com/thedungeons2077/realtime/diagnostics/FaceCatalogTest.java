@@ -12,5 +12,6 @@ public final class FaceCatalogTest {
         assertEquals("unavailable", FaceCatalog.commit("REDLINE", "9.9.9"));
         assertEquals("unavailable", FaceCatalog.commit("STOCK", "0.1.0"));
         assertTrue(FaceCatalog.commit("REDLINE", "0.1.0").matches("[0-9a-f]{40}"));
+        assertTrue(FaceCatalog.commit("REDLINE", "0.1.1").matches("[0-9a-f]{40}"));
     }
 }

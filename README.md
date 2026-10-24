@@ -6,7 +6,7 @@ The cyan-and-amber design has stacked dot-matrix hours/minutes, today's steps, b
 
 The user has confirmed HALO installs, displays and feels good in use. Timer provider behaviour, every individual setting, traces and matched battery measurements remain acceptance items. AOD is unnecessary for this project; a dim static time display is retained only as an ambient fallback.
 
-[REDLINE](faces/redline/README.md) is the next independent face: a black/red concentric HUD with horizontal angular time, three instruments, subtle red glow and much faster counter-rotation with changing speed. Seven optional effects remain independently measurable. It uses the same generator, preview, release and phone measurement tools. The new design's watch behaviour still needs device verification.
+[REDLINE](faces/redline/README.md) is the next independent face: a black/red concentric HUD with horizontal angular time, three instruments, subtle red glow and much faster counter-rotation with changing speed. Seven optional effects remain independently measurable. It uses the same generator, preview, release and phone measurement tools. Its 0.1.0 preview/applied rendering failed on the watch with white output; 0.1.1 is a candidate fixed-colour workaround, awaiting confirmation. The helper's renderer diagnostic button collects evidence for this failure.
 
 ## Local development
 

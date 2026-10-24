@@ -16,6 +16,8 @@ On 2026-10-24 the user supplied a successful HALO installation/version-verificat
 
 REDLINE's initial resource evaluation passes at 3,204,224 active bytes and 38,016 ambient bytes. Its reference-red strokes and pre-rendered masks avoid runtime blur, while stable readouts sit outside rotating groups. These are implementation/resource findings, not measured power results. Follow the same experiment sequence below for REDLINE, using its own rotor/pulse/instrument/radar labels and selecting REDLINE in the phone helper. Consult [its design](faces/redline/README.md) for the precise profile and tradeoffs.
 
+Device acceptance subsequently failed for REDLINE 0.1.0: the user reports white output in preview and applied mode, with HALO rendering normally after switching back. This is a functional failure, despite the passing resource checks. REDLINE 0.1.1 removes the fixed-palette runtime lookup as a candidate workaround; do not record the issue as resolved without device confirmation. Collect existing renderer logs through the helper before interpreting the cause. No REDLINE performance or battery experiment is accepted while rendering is broken.
+
 Implementation choices awaiting measurement:
 
 - Prefer vector geometry and small, tightly bounded masks.

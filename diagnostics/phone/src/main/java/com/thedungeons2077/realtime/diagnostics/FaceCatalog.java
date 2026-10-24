@@ -18,6 +18,7 @@ public final class FaceCatalog {
     }
     /** Preserve known release provenance; unknown face versions are explicitly unavailable. */
     public static String commit(String face, String version) {
+        if ("REDLINE".equals(face) && "0.1.1".equals(version)) return BuildConfig.REDLINE_PATCH_SOURCE_COMMIT;
         if (!"0.1.0".equals(version)) return "unavailable";
         if ("HALO".equals(face)) return "053438dc20e5486f4db9604cfef5d32fe989b0fd";
         if ("REDLINE".equals(face)) return BuildConfig.REDLINE_SOURCE_COMMIT;

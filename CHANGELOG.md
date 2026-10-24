@@ -1,5 +1,17 @@
 # Changelog
 
+## REDLINE 0.1.1 (build 2)
+
+- Prepared a compatibility workaround for the reported white preview/applied face: embed the fixed reference colours directly instead of resolving a single-option runtime colour configuration. Artwork, glyphs, glow and full motion are unchanged.
+- Added a regression that rejects runtime palette references in REDLINE's fixed-colour output, and line breaks for useful parser error locations. HALO's three selectable palettes remain unchanged.
+- The user confirmed REDLINE 0.1.0 turns white in both preview and applied mode while HALO restores normal rendering. Theme-colour fallback is a hypothesis until renderer logs or the update's device test confirm it; local validation is not a claim that the watch issue is resolved.
+
+## Diagnostics 0.3.1 (build 5)
+
+- Added COLLECT RENDERER DIAGNOSTICS: one read-only capture of existing process/log buffers, filtered to attributed renderer warnings/errors and crash stacks for review and explicit copying.
+- Added missing-source labels, deduplication, an 80-entry summary bound and address/identifier filtering. Raw system logs stay private; buffers are never cleared, no continuous logger is started and battery intervals block this action.
+- Added known REDLINE 0.1.1 provenance. Pairing, signatures, install checks and the sole network permission are preserved.
+
 ## REDLINE 0.1.0 (build 1)
 
 - Added a standalone reference-derived black/red HUD: DUNGEONS name, angular horizontal 12/24-hour clock, full uppercase date, steps, battery instrument and editable Timer provider slot.

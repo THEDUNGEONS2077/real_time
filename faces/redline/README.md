@@ -18,7 +18,13 @@ The clock has original angular segmented bitmap glyphs, with spacing between adj
 | Radar sweep | A faint red sweep circles behind the readouts in 12 seconds | Overlay removed |
 | Wrist depth | Main carriers move at most ±2 units on both axes | Centred |
 
-All switches start enabled. Main rotor base speeds are 20°/s and 30°/s, versus HALO's 3°/s and 1.2°/s. Modulation preserves direction and remains continuous at phase resets. Time, date, steps, battery and the Timer touch target do not rotate or tilt. REFERENCE RED is the deliberately single colour palette. Ambient fallback is static, dim time on black; normal use assumes AOD off.
+All switches start enabled. Main rotor base speeds are 20°/s and 30°/s, versus HALO's 3°/s and 1.2°/s. Modulation preserves direction and remains continuous at phase resets. Time, date, steps, battery and the Timer touch target do not rotate or tilt. REFERENCE RED is a fixed palette; version 0.1.1 embeds its literal colours and has no colour-option editor control. Ambient fallback is static, dim time on black; normal use assumes AOD off.
+
+## White-screen investigation
+
+The user confirmed 0.1.0 installs but turns white in both preview and applied mode; switching to HALO restores normal rendering. WFF/schema, memory and SVG checks passed, which demonstrates their limits as runtime evidence. [Android's WFF debug guide](https://developer.android.com/training/wearables/wff/debug) documents white as a fallback when a theme-colour lookup fails. The single-option configuration is a face-specific suspect, not a confirmed cause from device logs.
+
+Version 0.1.1 removes that unnecessary lookup, preserving the fixed reference colours and complete motion. Its successful local checks do not establish that the watch issue is resolved. Helper 0.3.1 adds COLLECT RENDERER DIAGNOSTICS so the user can reproduce the failing preview, restore HALO, then capture existing renderer warnings/errors promptly and copy the filtered report. Capture before upgrading the face if possible, and again after an unsuccessful update. Old logs can refer to a previous face.
 
 ## Hardware and efficiency calibration
 
@@ -39,6 +45,6 @@ bash scripts/release-diagnostics.sh --verify-only
 
 Open `out/previews/redline/index.html` locally for the aligned reference, 12-second motion sample, still mode, motion extremes, low battery, date rollover, large step values, Timer example and minimal ambient clock. SVG previews approximate the watch renderer. The animation's 12 preview fps is unrelated to on-watch frame delivery.
 
-Local signed outputs are `dist/real_time-redline-v0.1.0.apk` and `dist/diagnostics/real_time-diagnostics-v0.3.0.apk`. Update the helper over its existing phone installation to retain pairing. Choose the REDLINE APK and INSTALL TO WATCH, then add/select REDLINE on the watch. The helper supports both HALO and REDLINE; its test setup uses the selected face's own package and palette. No extra permission or watch logger is added.
+Local signed outputs are `dist/real_time-redline-v0.1.1.apk` and `dist/diagnostics/real_time-diagnostics-v0.3.1.apk`. Update the helper over its existing phone installation to retain pairing. Choose the REDLINE APK and INSTALL TO WATCH, then add/select REDLINE on the watch. The helper supports both HALO and REDLINE; its test setup uses the selected face's own package and palette. No extra permission or continuous watch logger is added.
 
-Before acceptance, check readability, 12/24-hour transitions, date, actual steps/battery, every individual toggle, speed modulation, glow, tilt and Timer on the watch. Repeat performance captures with the same brightness/timeout/connectivity and AOD off. Publication uses a separate `redline-v0.1.0` prerelease and requires user approval. The helper is released separately as `diagnostics-v0.3.0`.
+Before acceptance, resolve the white-screen failure, then check readability, 12/24-hour transitions, date, actual steps/battery, every individual toggle, speed modulation, glow, tilt and Timer on the watch. Repeat performance captures with the same brightness/timeout/connectivity and AOD off. Publication uses a separate `redline-v0.1.1` prerelease and requires user approval. The helper is released separately as `diagnostics-v0.3.1`.

@@ -19,6 +19,8 @@ The probe checks Perfetto data sources, trace categories, services, battery fiel
 
 ## Performance capture
 
+For a broken face preview/applied render, use the helper's COLLECT RENDERER DIAGNOSTICS before performance testing. Reproduce the issue once, restore a readable face if needed, then collect promptly. It reads existing buffers without clearing logs or starting a continuous logger, and provides a filtered report for explicit copying. Raw system logs stay private. The optional manual equivalent is `sh /data/local/tmp/real-time-capture.sh renderer redline-render-01`; export that private run directory if requested. Source failures and absent errors are not proof of successful rendering.
+
 Before each run, choose the intended HALO switches. Keep the same palette, brightness, connectivity and watch position. Turn AOD off and temporarily use a one-minute screen timeout, recording its previous value so it can be restored. Keep the watch unplugged and at a comparable temperature.
 
 ```sh

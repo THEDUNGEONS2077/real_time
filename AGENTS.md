@@ -22,6 +22,7 @@ Resource-only Wear OS watch faces for the user's Galaxy Watch7 40 mm. Read ARCHI
 - Ask before creating the public GitHub repository, each push and each published release. Local commits are allowed. Describe a concrete reviewed artifact before requesting publication.
 - Preserve the configured human git identity. Do not copy another agent's coauthor trailer or put the user's email in source or requests.
 - Do not claim device acceptance or performance improvements until the user supplies device evidence. Use they/them when referring to the user.
+- For a failed WFF preview/applied render, use the helper's on-demand renderer diagnostics. Passing XML/memory checks does not resolve a runtime failure; keep candidate workarounds explicitly unconfirmed until device evidence arrives.
 - Every future face must consult OPTIMIZATION.md, expose measurable optional effects, and use the shared measurement protocol.
 
 For later helper builds, fetch the released face tags before building so catalogue provenance stays pinned. New faces require their own design/acceptance document and independent release tag.

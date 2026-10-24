@@ -61,13 +61,13 @@ TAG="diagnostics-v$VERSION"
 NOTES=$(mktemp)
 trap 'rm -f "$NOTES"' EXIT
 cat > "$NOTES" <<'EOF'
-Phone helper for HALO and REDLINE. Install/update this APK on the Android phone to retain its existing pairing. Choose either face APK, review its identity and tap INSTALL TO WATCH. Version verification now targets the chosen face's own package.
+Adds COLLECT RENDERER DIAGNOSTICS for watch faces that install but fail in preview/applied mode. Reproduce the failure, restore a readable face if needed, then collect promptly and review/copy the filtered report. This reads existing process/main/system/crash buffers once without clearing logs or starting a continuous logger.
 
-Pair once, install a face, run performance captures or battery endpoints, review the result and tap COPY DIAGNOSTICS. Face and palette choices now match HALO or REDLINE. Pairing keys and raw captures remain private and non-backed-up; there are no analytics, cloud endpoints or automatic uploads/downloads. Only a validated private numeric watch address is accepted.
+Warnings/errors are attributed to renderer processes or specific DWF/WFF tags, deduplicated and limited to 80 entries. Address/identifier patterns and explicitly sensitive fields are filtered; raw system logs remain in private non-backed-up phone storage. Missing sources or an empty error list are not proof that a face rendered successfully. Logs may include an earlier selected face.
 
-The helper preserves release-signature/resource-only checks, bounded streamed installation, explicit-copy reports and the battery-test exclusion. No extra Android permission is added. Packaged-APK selection tests cover both faces, including optimized WFF resource paths.
+Includes known REDLINE 0.1.1 provenance for its candidate fixed-colour workaround. The user confirmed 0.1.0 renders white in preview and applied mode while HALO remains normal; the underlying cause and success of the workaround still need device logs or confirmation.
 
-The user confirmed successful HALO installation/display through 0.2.1. REDLINE's first installation, new selector, native trace processing and remaining device acceptance still need testing. Requires an ARM64 phone running Android 13 or newer. Full instructions: diagnostics/phone/README.md.
+Install/update this APK on the Android phone to retain pairing. HALO/REDLINE APK installation, signatures, resource checks and measurement workflows remain available. No extra Android permission, automatic upload/download or cloud endpoint is added. Renderer diagnostics are blocked during a pending battery test. Requires an ARM64 phone on Android 13 or newer. Instructions: diagnostics/phone/README.md.
 
 EOF
 gh release create "$TAG" "$OUT/$NAME" "$OUT/SHA256SUMS" "$OUT/build-commit.txt" --prerelease --target "$(git rev-parse HEAD)" --title "real_time diagnostics $VERSION (build $BUILD)" --notes-file "$NOTES"
