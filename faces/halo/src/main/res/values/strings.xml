@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Generated face name and editor labels. -->
+<resources><string name="face_name">HALO</string><string name="palette">COLOURS</string><string name="timer_shortcut">TIMER SHORTCUT</string><string name="palette_reference">REFERENCE</string><string name="palette_phosphor">PHOSPHOR</string><string name="palette_ice">ICE</string><string name="effect_seconds">SECONDS MARKER</string><string name="effect_ring_a">OUTER RING ROTATION</string><string name="effect_ring_b">INNER RING ROTATION</string><string name="effect_breathing">BRACKET BREATHING</string><string name="effect_nodes">NODE DRIFT AND BLINK</string><string name="effect_scan">CORE SCAN LINE</string><string name="effect_tilt">WRIST TILT</string></resources>

@@ -1,0 +1,22 @@
+{
+  "name": "real-time",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Build-time tools for resource-only real_time watch faces.",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "compose": "node tools/compose/src/build.ts",
+    "previews": "node tools/check/run.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm test && npm run compose -- --check && npm run previews",
+    "measure": "node tools/measure/analyze.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "sharp": "^0.34.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  }
+}

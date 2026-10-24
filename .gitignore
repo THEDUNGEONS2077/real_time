@@ -1,0 +1,17 @@
+# Local build products, private diagnostics and signing material.
+.gradle/
+**/build/
+node_modules/
+dist/
+out/
+.tools/
+keys/
+keystore.properties
+local.properties
+measurements/raw/
+*.perfetto-trace
+*.pftrace
+*.hprof
+*.log
+__pycache__/
+*.pyc
