@@ -39,7 +39,7 @@ public final class InstallProtocol {
     /** A completed transfer is not an installation; require the watch's explicit Success response. */
     public static void requireSuccess(String response) throws IOException {
         if (!response.trim().equals("Success"))
-            throw new IOException("Watch installation result: " + Measurements.clean(response));
+            throw new IOException("Watch installation result: " + Text.clean(response));
     }
 
     /** Confirm that the requested version is registered after the watch reports success. */

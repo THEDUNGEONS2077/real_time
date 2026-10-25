@@ -17,7 +17,7 @@ tools/compose/
   fonts/                committed OFL fonts with their licences
 tools/check/            review gallery, release checker (verify_editor.py), packaged-pixel comparison
 tools/measure/          watch-shell collector and host analysis
-diagnostics/phone/      the phone helper app (Java): pair, install, test, report
+diagnostics/phone/      the phone installer app (Java): pair, install
 faces/<face>/           resource-only Android modules; generated res/ is committed
 ```
 
@@ -63,11 +63,12 @@ Font files are verified against pinned SHA-256s before use.
 - **`tools/check/verify_editor.py`:** resolves Conditions for 1,022 editor states and asserts what the watch would draw. The states cover every option, every font × glow × size, every speed × style × effect combination, and a fixed-seed random sample. It also checks every BitmapFont character against its PNG size, and the Timer slot's types, bounds and empty default. With `--apk` it compares packaged resources through AAPT2's resource table, because AAPT2 renames ZIP paths.
 - **`scripts/release-wear.sh`:** adds Google's WFF validator, lint, signature, no-code and no-permission checks, and the official memory evaluator.
 
-## Phone helper
+## Phone installer
 
-`diagnostics/phone` is a separate app with its own signing and version tags (`diagnostics-v*`). It pairs with the watch over Wireless debugging, installs inspected face APKs, and runs tests.
-- **Smoothness test:** samples `dumpsys SurfaceFlinger --latency` on the watch-face surface for 20 s. It reports delivered fps, frame times, missed frames and renderer CPU.
-- **Other tests:** the detailed 30 s Perfetto trace, battery interval and renderer logs.
+`diagnostics/phone` is a separate app with its own signing and version tags (`diagnostics-v*`). Its package name is kept so updates preserve pairing.
+- **What it does:** pairs with the watch over Wireless debugging, checks a chosen face APK (known package, release certificate, no code or permissions), and streams it to the watch's package manager with a progress bar. It then verifies the installed version.
+- **Opening APKs:** an APK can be picked in the app or opened into it via "Open with".
+- **No diagnostics:** smoothness and performance are reported by the user. `tools/measure` remains only as an unused record of the earlier collector.
 - **No PC connection:** the PC never connects to the watch.
 
 ## Release tags

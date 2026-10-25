@@ -13,6 +13,7 @@ Optimize from what the watch actually does. A small APK, a passing validator, th
 | 2026-10-25 | REDLINE 0.2.0 | Blank editor options, motion stopped after a face switch | user report |
 | 2026-10-25 | REDLINE 0.2.1 | All customization works, looks good | user report |
 | 2026-10-25 | REDLINE 0.3.0 | "Looks very smooth" (clock-refreshed 60 fps transitions) | user report |
+| 2026-10-25 | REDLINE 1.0.0 | Smooth and performant; up to ~1 s pause before motion after unlock/swipe | user report |
 
 No controlled trace, frame-rate or battery measurement has been collected yet.
 
@@ -31,17 +32,11 @@ No controlled trace, frame-rate or battery measurement has been collected yet.
 
   The growth in 1.0 is eight fonts × three glow levels of glyph masks. Both versions are well inside the 100 / 10 MB limits.
 
-## How to measure
+## How to evaluate
 
-Use the phone helper (`diagnostics/phone`).
-
-1. **Smoothness.** Use SMOOTHNESS TEST (20 s), three runs per setup.
-   - Keep brightness, timeout and wrist position matched, and keep the face on screen.
-   - Compare SMOOTH vs DYNAMIC at Slow, then the speeds, then each effect OFF against full motion.
-   - Delivered fps and missed frames are the smoothness answer. Renderer CPU is a hint, because the runtime is shared.
-2. **Detail.** Use RUN 30-SECOND TRACE when CPU by process is needed.
-3. **Battery.** Use a battery test: about 24 h unplugged, AOD off, debugging off between start and finish. Compare against a stock face over a matched day.
-4. **Review.** Repeat close or noisy results. Change one thing, then re-measure the whole face.
+The user judges smoothness and performance on the watch (decided 2026-10-25; the helper's test tools were removed in installer 0.7.0). When comparing changes:
+- Compare one change at a time at the same speed, brightness and wrist position.
+- For battery, compare a normal day on the face against a normal day on a stock face, with AOD off.
 
 ## Recording a finding
 

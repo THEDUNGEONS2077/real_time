@@ -57,17 +57,20 @@ describe('motion', () => {
     }
   });
 
-  it('turns the outer rotor fast and both inner bands once per two minutes at 0.5x', () => {
-    expect(motion.inner / speeds.SLOW).toBe(120);
-    for (const style of ['SMOOTH', 'DYNAMIC'] as const) for (let s = 0; s < 120; s += 0.25) {
+  it('turns the outer rotor clockwise and the two red bands counter-clockwise at different speeds', () => {
+    // Degrees per second at Slow: outer 10, inner band 5, inset band 7.5 (before Dynamic's wobble).
+    const expected: Record<string, number> = { outer_rotor: 10, inner_rotor: -5, inset_rotor: -7.5 };
+    for (const style of ['SMOOTH', 'GLIDE', 'DYNAMIC'] as const) for (let s = 0; s < 120; s += 0.25) {
       const a = frame({ time: new Date(Date.UTC(2026, 9, 24) + s * 1000) }), b = frame({ time: new Date(a.time.getTime() + 10) });
-      for (const n of flat(scene('SLOW', style))) if (n.kind === 'group' && (n.name === 'outer_rotor' || n.name === 'inner_rotor')) {
-        // Degrees per second, unwrapped across 360°.
+      for (const n of flat(scene('SLOW', style))) if (n.kind === 'group' && n.name in expected) {
         const rate = ((value(n.angle!, b) - value(n.angle!, a) + 540) % 360 - 180) / 0.01;
-        if (n.name === 'outer_rotor') { expect(rate).toBeGreaterThan(6); expect(rate).toBeLessThan(14); }
-        else { expect(-rate).toBeGreaterThan(2); expect(-rate).toBeLessThan(4); }
+        const target = expected[n.name];
+        expect(Math.sign(rate), `${style} ${n.name}`).toBe(Math.sign(target));
+        // Dynamic's wobble changes speed by at most about half.
+        expect(Math.abs(rate - target), `${style} ${n.name}`).toBeLessThanOrEqual(style === 'DYNAMIC' ? Math.abs(target) * 0.6 : 1e-6);
       }
     }
+    expect(motion.inner).not.toBe(motion.inset);
   });
 
   it('makes STILL and all-effects-off free of every clock and sensor source', () => {
@@ -85,22 +88,24 @@ describe('motion', () => {
     }
   });
 
-  it('refreshes non-repeating 60 fps transitions from the integer clock; Dynamic keeps the direct clock', () => {
-    const smooth = scene('SLOW', 'SMOOTH').map(n => nodeXml(n, red)).join('');
-    expect(smooth).toContain('fps="60" repeat="0"');
-    expect(smooth).not.toContain('MILLISECOND');
-    expect(smooth).not.toContain('repeat="-1"');
-    expect(smooth).toContain('angleDirection="COUNTER_CLOCKWISE"');
-    const dynamic = scene('SLOW', 'DYNAMIC').map(n => nodeXml(n, red)).join('');
-    expect(dynamic).not.toContain('<Animation');
-    expect(dynamic).toContain('[MILLISECOND]');
+  it('starts SMOOTH and DYNAMIC instantly from the live clock; GLIDE refreshes non-repeating transitions', () => {
+    for (const style of ['SMOOTH', 'DYNAMIC'] as const) {
+      const output = scene('SLOW', style).map(n => nodeXml(n, red)).join('');
+      expect(output, style).not.toContain('<Animation');
+      expect(output, style).toContain('[MILLISECOND]');
+    }
+    const glide = scene('SLOW', 'GLIDE').map(n => nodeXml(n, red)).join('');
+    expect(glide).toContain('fps="60" repeat="0"');
+    expect(glide).not.toContain('MILLISECOND');
+    expect(glide).not.toContain('repeat="-1"');
+    expect(glide).toContain('angleDirection="COUNTER_CLOCKWISE"');
   });
 
   it('interpolates in sub-pixel steps without reversing at the wrap, including midnight and re-entry gaps', () => {
     expect(smoothFps).toBe(60);
     for (const sample of ['2026-10-25T00:00:00.500Z', '2026-10-25T23:59:59.983Z', '2026-10-25T10:45:17.500Z']) {
       const f = frame({ time: new Date(sample) }), previous = frame({ time: new Date(f.time.getTime() - 1000) });
-      for (const n of flat(scene('SLOW', 'SMOOTH'))) if (n.kind === 'group' && n.angleTransition) {
+      for (const n of flat(scene('SLOW', 'GLIDE'))) if (n.kind === 'group' && n.angleTransition) {
         const a = value(n.angleTransition.value, previous), b = value(n.angleTransition.value, f);
         const direction = n.angleTransition.direction === 'CLOCKWISE' ? 1 : -1;
         const delta = direction * ((direction * (b - a) % 360 + 360) % 360);

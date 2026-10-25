@@ -68,7 +68,7 @@ public final class FaceApk implements AutoCloseable {
             TypedValue value = new TypedValue();
             resources.getValue(watchface, value, true);
             inspectContents(staged, value.string == null ? null : value.string.toString());
-            return new FaceApk(staged, info.packageName, Measurements.clean(info.versionName), info.getLongVersionCode(),
+            return new FaceApk(staged, info.packageName, Text.clean(info.versionName), info.getLongVersionCode(),
                     info.applicationInfo.minSdkVersion, hex(hash.digest()));
         } catch (Exception failure) { Files.deleteIfExists(staged.toPath()); throw failure; }
     }

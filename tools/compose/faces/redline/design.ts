@@ -2,11 +2,8 @@
  * REDLINE design layer: palettes, layout, motion and the decorative scene.
  *
  * Concentric red instrument rings turn around a fixed centre: battery, date,
- * time and a Timer complication. The motion maths is carried over unchanged
- * from 0.3.2, which the user accepted as "very smooth":
- * - Smooth mode moves each ring for one second toward a target refreshed by the
- *   clock every second (no infinite animation loops).
- * - Dynamic mode reads the millisecond clock directly.
+ * time and a Timer complication. Rings are driven by platform clock sources only
+ * (no infinite animation loops, which stopped after a face switch in 0.2.0).
  */
 import type { NumberValue } from '../../src/core/expr.ts';
 import { daySecond, daySeconds, op, second, tiltX, tiltY } from '../../src/core/expr.ts';
@@ -40,14 +37,24 @@ export const speeds = { STILL: 0, SLOW: 0.5, STANDARD: 1, FAST: 2 } as const;
 export type Speed = keyof typeof speeds;
 export const speedLabels: Record<Speed, string> = { STILL: 'STILL', SLOW: 'SLOW · 0.5×', STANDARD: 'STANDARD · 1×', FAST: 'FAST · 2×' };
 
-/** SMOOTH interpolates between clock-refreshed targets; DYNAMIC reads the millisecond clock with speed modulation. */
-export type MotionStyle = 'SMOOTH' | 'DYNAMIC';
+/**
+ * Rotation styles:
+ * - SMOOTH reads the live millisecond clock every frame, so motion starts the instant the face shows.
+ * - GLIDE moves for one second toward a target the clock refreshes every second (0.3.x–1.0 Smooth).
+ *   It can sit still for up to a second after wake, until the next tick starts a move.
+ * - DYNAMIC reads the live clock and adds a slow speed wobble.
+ */
+export type MotionStyle = 'SMOOTH' | 'GLIDE' | 'DYNAMIC';
 
 /** Requested interpolation rate. What the watch delivers is measured, not assumed. */
 export const smoothFps = 60;
 
-/** Base periods in seconds at 1× (they double at Slow). */
-export const motion = { outer: 18, inner: 60, outerModulation: 6, innerModulation: 20, pulse: 2.4, radar: 12 } as const;
+/**
+ * Base periods in seconds at 1× (they double at Slow). The two red counter-clockwise bands
+ * turn at different speeds: the outer band (inner rotor, r181) once per 72 s at Slow,
+ * the inset band (r163) once per 48 s.
+ */
+export const motion = { outer: 18, inner: 36, inset: 24, outerModulation: 6, innerModulation: 20, insetModulation: 14, pulse: 2.4, radar: 12 } as const;
 
 /** The six independently switchable effects. IDs are stable across releases. */
 export const effects = ['seconds', 'ring_a', 'ring_b', 'breathing', 'scan', 'tilt'] as const;
@@ -139,28 +146,34 @@ export function scene(speed: Speed = 'SLOW', style: MotionStyle = 'SMOOTH'): Nod
   const angleAt = (period: number, direction: number, time: NumberValue) =>
     op('*', op('%', op('*', time, rate), period), direction * 360 / period);
 
-  /** A steadily rotating ring; Smooth adds the one-second move to the next target. */
+  const glide = style === 'GLIDE';
+  /** Steady rotation from the live clock; GLIDE adds the one-second move to the next whole-second target. */
   const rotor = (name: string, children: Node[], period: number, direction: 1 | -1): Group => group(name, children, {
     angle: angleAt(period, direction, daySeconds),
-    ...(style === 'SMOOTH' ? { angleTransition: { value: angleAt(period, direction, ahead), fps: smoothFps, direction: direction > 0 ? 'CLOCKWISE' : 'COUNTER_CLOCKWISE' } } : {}),
+    ...(glide ? { angleTransition: { value: angleAt(period, direction, ahead), fps: smoothFps, direction: direction > 0 ? 'CLOCKWISE' : 'COUNTER_CLOCKWISE' } } : {}),
   });
+  /** DYNAMIC: steady rotation plus a sine wobble of `swing` degrees. */
+  const wobbling = (name: string, children: Node[], period: number, direction: 1 | -1, modulation: number, swing: number): Group =>
+    group(name, children, { angle: op('+', op('*', op('%', clock, period), direction * 360 / period), op('*', swing, op('sin', phase(modulation)))) });
+  /** One moving ring in the chosen style. */
+  const ring = (name: string, children: Node[], period: number, direction: 1 | -1, modulation: number, swing: number): Group =>
+    style === 'DYNAMIC' ? wobbling(name, children, period, direction, modulation, swing) : rotor(name, children, period, direction);
 
   const outer = outerRotor();
-  // Both inner red bands share one slow carrier. Breathing changes only the inset band's opacity.
+  const inner = innerRotor();
+  // The inset red band turns on its own carrier, faster than the inner rotor. Breathing changes only its opacity.
   const insetBand: Node[] = [24, 117, 204, 297].flatMap(a => glowArc(163, a, a + 39, 5.5));
   const breathing = (time: NumberValue) => op('+', 205, op('*', 35, op('sin', op('*', op('%', op('*', time, rate), motion.pulse), 2 * Math.PI / motion.pulse))));
   const pulse = group('red_pulse', insetBand, {
     alpha: breathing(daySeconds),
-    ...(style === 'SMOOTH' ? { alphaTransition: { value: breathing(ahead), fps: smoothFps } } : {}),
+    ...(glide ? { alphaTransition: { value: breathing(ahead), fps: smoothFps } } : {}),
   });
-  const inner: Node[] = [...innerRotor(), toggle('breathing', [pulse], insetBand)];
+  const inset: Node[] = [toggle('breathing', [pulse], insetBand)];
 
-  // Dynamic: steady rotation plus a slow sine wobble.
-  const outerDynamic = op('+', op('*', op('%', clock, motion.outer), 360 / motion.outer), op('*', 7, op('sin', phase(motion.outerModulation))));
-  const innerDynamic = op('+', op('*', op('%', clock, motion.inner), -360 / motion.inner), op('*', 5, op('sin', phase(motion.innerModulation))));
+  // ring_b switches both counter-clockwise bands; when off they hold their reference pose.
   const rings: Node[] = [
-    toggle('ring_a', [style === 'SMOOTH' ? rotor('outer_rotor', outer, motion.outer, 1) : group('outer_rotor', outer, { angle: outerDynamic })], outer),
-    toggle('ring_b', [style === 'SMOOTH' ? rotor('inner_rotor', inner, motion.inner, -1) : group('inner_rotor', inner, { angle: innerDynamic })], inner),
+    toggle('ring_a', [ring('outer_rotor', outer, motion.outer, 1, motion.outerModulation, 7)], outer),
+    toggle('ring_b', [ring('inner_rotor', inner, motion.inner, -1, motion.innerModulation, 5), ring('inset_rotor', inset, motion.inset, -1, motion.insetModulation, 4)], [...inner, ...inset]),
   ];
 
   // Reticle corners around the clock.
@@ -171,7 +184,7 @@ export function scene(speed: Speed = 'SLOW', style: MotionStyle = 'SMOOTH'): Nod
 
   const secondsBeacon = group('seconds_beacon', [arc(203, 0, 1.4, 'ink', 255, 2), arc(203, 0, 1.4, 'accent', 25, 7)], {
     angle: op('*', second, 6),
-    ...(style === 'SMOOTH' ? { angleTransition: { value: op('*', op('%', ahead, 60), 6), fps: smoothFps, direction: 'CLOCKWISE' as const } } : {}),
+    ...(glide ? { angleTransition: { value: op('*', op('%', ahead, 60), 6), fps: smoothFps, direction: 'CLOCKWISE' as const } } : {}),
   });
 
   const nodes: Node[] = [

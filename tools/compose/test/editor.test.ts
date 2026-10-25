@@ -23,7 +23,7 @@ const checker = resolve(root, 'tools/check/verify_editor.py');
 
 it('passes the release checker across every setting option, clock and motion combination', async () => {
   const result = await exec('python3', ['-I', checker, '--resources', res]);
-  expect(JSON.parse(result.stdout)).toMatchObject({ settings: 12, editorOptions: 38, packaged: false });
+  expect(JSON.parse(result.stdout)).toMatchObject({ settings: 12, editorOptions: 39, packaged: false });
   expect(JSON.parse(result.stdout).states).toBeGreaterThan(1000);
 }, 30000);
 

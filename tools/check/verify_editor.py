@@ -27,8 +27,8 @@ import xml.etree.ElementTree as ET
 import zipfile
 
 # Moving groups each effect controls. They must be active exactly when the effect is ON and motion is not STILL.
-EFFECT_GROUPS = {'seconds': 'seconds_beacon', 'ring_a': 'outer_rotor', 'ring_b': 'inner_rotor',
-                 'breathing': 'red_pulse', 'scan': 'radar_sweep', 'tilt': 'depth'}
+EFFECT_GROUPS = {'seconds': ['seconds_beacon'], 'ring_a': ['outer_rotor'], 'ring_b': ['inner_rotor', 'inset_rotor'],
+                 'breathing': ['red_pulse'], 'scan': ['radar_sweep'], 'tilt': ['depth']}
 # Clock size multipliers, matching tools/compose/faces/redline/fonts.ts.
 CLOCK_CELL = 118
 SIZES = {'SMALL': 0.85, 'MEDIUM': 117.5 / 118, 'LARGE': 1.1}
@@ -134,17 +134,20 @@ def check_state(active, state):
         require(x * 2 + w == 432 and t.find('Text').get('align') == 'CENTER', 'Readouts must be centred.')
 
     # Effects: each moving group is present exactly when its effect is on and motion is not STILL.
-    for effect, name in EFFECT_GROUPS.items():
-        moving = [n for n in active if n.tag == 'Group' and n.get('name') == name and any(
-            c.tag == 'Gyro' or c.tag == 'Transform' and LIVE_SOURCE.search(c.get('value', '')) for c in n)]
-        require(len(moving) == int(state['motion_speed'] != 'STILL' and state[effect] == 'TRUE'), 'Effect selection failed: ' + effect)
+    for effect, names in EFFECT_GROUPS.items():
+        for name in names:
+            moving = [n for n in active if n.tag == 'Group' and n.get('name') == name and any(
+                c.tag == 'Gyro' or c.tag == 'Transform' and LIVE_SOURCE.search(c.get('value', '')) for c in n)]
+            require(len(moving) == int(state['motion_speed'] != 'STILL' and state[effect] == 'TRUE'), 'Effect selection failed: ' + name)
     decorative = [n for n in active if n.tag in ('Transform', 'Gyro') and n.get('target') != 'width']
     if state['motion_speed'] == 'STILL' or all(state[e] == 'FALSE' for e in EFFECT_GROUPS):
         require(not any(n.tag == 'Gyro' or LIVE_SOURCE.search(n.get('value', '')) for n in decorative), 'Still/disabled motion keeps live sources.')
-    if state['motion_style'] == 'SMOOTH':
-        require(not any('MILLISECOND' in n.get('value', '') for n in active), 'Smooth must use clock-refreshed targets, not milliseconds.')
+    # GLIDE interpolates toward whole-second targets; SMOOTH and DYNAMIC read the live clock and never animate,
+    # so their motion starts the moment the face is shown.
+    if state['motion_style'] == 'GLIDE':
+        require(not any('MILLISECOND' in n.get('value', '') for n in active), 'Glide must use clock-refreshed targets, not milliseconds.')
     else:
-        require(not any(n.tag == 'Animation' for n in active), 'Dynamic must not animate.')
+        require(not any(n.tag == 'Animation' for n in active), 'Smooth and Dynamic must not animate.')
     require(not any(n.get('resource', '').startswith('editor_') for n in active), 'Editor artwork leaks into the face.')
     return sum(n.tag in ('PartDraw', 'PartImage', 'PartText', 'TimeText') for n in active)
 

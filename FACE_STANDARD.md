@@ -33,7 +33,7 @@ The TypeScript scene, geometry, glyph metrics, palette and motion calculations r
 
 `tools/compose/src/bake.ts` caches sufficiently large static runs into cropped lossless layers without changing painter order. Cache moving carriers' artwork while keeping their live transform. Resource names are content hashes, so identical neutral layers are shared across palettes. Keep vector source and live time/readouts; never flatten the face into a time-dependent bitmap sequence. Check cached artwork against source vectors at motion and tilt extremes.
 
-Drive continuously moving decoration from platform clock sources. Bounded interpolation may be refreshed by integer clock targets; it must never rely on an infinite constant-target loop. REDLINE 0.2.0's native repeat animations stopped after a face switch according to the user. Its replacement uses live clock expressions, which remain time-derived after activation. Do not adopt an animation lifecycle again without testing leave/re-enter, editor cancel/save, ambient/wake and restart. Never infer guaranteed frame rate from an SVG animation or XML request.
+Drive continuously moving decoration from platform clock sources, read live every frame (`[SECONDS_IN_DAY]+[MILLISECOND]/1000`), so motion starts the instant the face appears after unlock or a swipe. One-second interpolation toward whole-second targets (REDLINE's GLIDE) looked smooth but paused for up to a second after wake, so it is an option, not the default. Never rely on an infinite constant-target animation loop: REDLINE 0.2.0's stopped after a face switch. Test leave/re-enter, unlock and swipe-back, editor cancel/save and restart before accepting a motion lifecycle. Never infer a guaranteed frame rate from an SVG animation or XML request.
 
 Use a 432-unit canvas for the Watch7 40 mm. Include stroke, baked glow, rotated images' visible pixels and maximum simultaneous tilt when checking the circular six-unit foreground margin. Transparent bitmap corners are not illuminated content. Evaluate the signed APK against the official 100 MiB active/10 MiB ambient budgets. Record memory increases as well as decreases: caching trades decoded image memory for fewer separately drawn primitives.
 
@@ -52,10 +52,10 @@ Device acceptance is a separate gate. A build cannot be called fully functional 
 5. If a face includes a shortcut, select Timer once in the complication editor if available; verify displayed provider content and launch target on the watch. Record an unavailable provider as unresolved, never substitute Alarm silently.
 6. Verify the live fields the face exposes, time readability and the minimal ambient fallback. REDLINE now omits steps and Timer by user request.
 
-Record exact face/helper versions, watch firmware, Galaxy Wearable/Watch7-plugin versions where available, choices and results. For a failure, use the helper's renderer report and record the exact reproduction. Do not clear app data, remove pairing or reset the watch as a routine workaround.
+Record exact face and installer versions, watch firmware, choices and results. For a failure, record the exact reproduction. Do not clear app data, remove pairing or reset the watch as a routine workaround.
 
 ## Efficiency and optimization
 
-Every new face reads `OPTIMIZATION.md`, uses the shared measurement workflow and records palette/speed/style/effects. Compare full motion, still and each effect disabled with three short captures per setup. Compare stock and full-face battery use over matched 24-hour periods with AOD off and debugging disconnected between endpoints.
+Every new face reads `OPTIMIZATION.md`. The user judges smoothness and performance on the watch; compare one change at a time under the same settings, and record their observations there.
 
 Treat selected WFF part count, XML size, APK size and official memory estimates as engineering metrics. They do not establish delivered FPS, CPU time, jank or battery savings. Report unavailable metrics honestly and keep whole-watch power distinct from shared renderer activity. Choose further changes from measured results; there is no fixed battery cutoff. Keep raw captures private and commit only reviewed summaries with build/device, visual tradeoff, result and confidence.

@@ -151,8 +151,9 @@ function paletteXml(id: PaletteId, cache: LayerCache): string {
       const chosen = speed === 'STILL' ? stillNodes([node]) : [variant(speed, style)[index]];
       return tag('Group', { ...canvas, name: `${id}_${index}_${speed}_${style}` }, chosen.map(n => nodeXml(n, palette)).join(''));
     };
+    const styles = styleSetting.options.map(o => o.id as MotionStyle);
     return selectXml(speedSetting, Object.fromEntries((Object.keys(speeds) as Speed[]).map(speed => [speed,
-      speed === 'STILL' ? branch('STILL', 'SMOOTH') : selectXml(styleSetting, { SMOOTH: branch(speed, 'SMOOTH'), DYNAMIC: branch(speed, 'DYNAMIC') })])));
+      speed === 'STILL' ? branch('STILL', 'SMOOTH') : selectXml(styleSetting, Object.fromEntries(styles.map(style => [style, branch(speed, style)])))])));
   }).join('');
   return tag('Group', { ...canvas, name: `palette_${id}` }, body);
 }

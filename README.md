@@ -4,10 +4,10 @@ Moving sci-fi HUD watch faces for the Samsung Galaxy Watch7 40 mm (Wear OS 6). E
 
 | Face | Status | Docs |
 |---|---|---|
-| **REDLINE** 1.0 | Black/red concentric HUD. 8 clock fonts, glow and size, 6 palettes, 4 speeds, 6 effects, Timer complication | [faces/redline/README.md](faces/redline/README.md) |
+| **REDLINE** 1.1 | Black/red concentric HUD. 8 clock fonts, glow and size, 6 palettes, 4 speeds, 3 rotation styles, 6 effects, Timer complication | [faces/redline/README.md](faces/redline/README.md) |
 | **HALO** 0.1.0 | Cyan/amber dot-matrix HUD (frozen) | [DESIGN.md](DESIGN.md) |
 
-The [phone helper](diagnostics/phone/README.md) installs faces from the phone and runs the smoothness, trace and battery tests. New faces follow [FACE_STANDARD.md](FACE_STANDARD.md). See [ARCHITECTURE.md](ARCHITECTURE.md) for how the generator works and [OPTIMIZATION.md](OPTIMIZATION.md) for what has been measured.
+The [phone installer](diagnostics/phone/README.md) sends a face APK from the phone to the watch. New faces follow [FACE_STANDARD.md](FACE_STANDARD.md). See [ARCHITECTURE.md](ARCHITECTURE.md) for how the generator works and [OPTIMIZATION.md](OPTIMIZATION.md) for what has been measured.
 
 ## Develop
 
@@ -26,7 +26,6 @@ Open `out/previews/redline/index.html` (or `out/previews/index.html` for HALO) d
 ```bash
 node scripts/setup-signing.mjs        # once; back up keys/real_time-release.jks + keystore.properties privately
 bash scripts/setup-validators.sh      # Google's pinned WFF validator and memory evaluator
-bash scripts/setup-phone-tools.sh     # helper build inputs
 bash scripts/release-wear.sh --face redline --verify-only
 bash scripts/release-diagnostics.sh --verify-only
 ```
@@ -35,9 +34,9 @@ Verify-only builds `dist/` artifacts and reports under `out/verification/` witho
 
 ## Install and test
 
-1. Download the face APK (and the helper APK, once) from the GitHub prerelease onto the phone.
-2. In the helper: **1 · CONNECT** → **2 · INSTALL A FACE**. Then on the watch, long-press the face and add it.
-3. Customize it in Galaxy Wearable or on the watch. Set the bottom slot to Timer.
-4. In the helper, **3 · TEST SMOOTHNESS**, then **4 · REPORT** → COPY REPORT → paste into the chat.
+1. Download the face APK (and the installer APK, once) from the GitHub prerelease onto the phone.
+2. Open the face APK with **real_time installer** (or tap CHOOSE FACE APK in the app), then tap **INSTALL TO WATCH**. Wait for ✓ INSTALLED.
+3. On the watch, long-press the face and add it (updates apply straight away). Customize it in Galaxy Wearable or on the watch; set the bottom slot to Timer.
+4. Tell me how it looks and feels.
 
 The PC never connects to the watch; everything goes through the phone.

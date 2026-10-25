@@ -55,8 +55,10 @@ export const editorSettings: EditorSetting[] = [
   setting('motion_speed', 'MOTION SPEED', 'SLOW', (Object.keys(speedLabels) as Speed[]).map(id => ({
     id, label: speedLabels[id], caption: speedCaptions[id], colour: red,
   }))),
+  // SMOOTH keeps its ID so saved choices switch to the instant-start live clock; GLIDE is the 0.3.x–1.0 style.
   setting('motion_style', 'ROTATION STYLE', 'SMOOTH', [
-    { id: 'SMOOTH', label: 'SMOOTH / STEADY', caption: 'SMOOTH', colour: red },
+    { id: 'SMOOTH', label: 'SMOOTH / INSTANT START', caption: 'SMOOTH', colour: red },
+    { id: 'GLIDE', label: 'GLIDE / 1 S EASE', caption: 'GLIDE', colour: red },
     { id: 'DYNAMIC', label: 'DYNAMIC / MODULATED', caption: 'DYN', colour: red },
   ]),
   ...effects.map(id => toggleSetting(id, effectLabels[id], red)),

@@ -15,18 +15,18 @@ Resource-only Wear OS watch faces for the user's Galaxy Watch7 40 mm. Read ARCHI
 - Keys and passwords never go in git. Raw watch diagnostics are private and gitignored; commit only reviewed summaries.
 - Downloads go in their own new empty directory, with project scripts elsewhere. Run Python on untrusted exports using `python3 -I`. Do not execute files from captures.
 - Any preview server must bind to 127.0.0.1, be stopped by PID, and be checked with `ss -ltnp`. The supplied gallery needs no server.
-- Installation and watch diagnostics use the phone only. Do not connect this PC to the watch with ADB.
-- Prefer the separate phone helper for installing face APKs and testing/copying reports. Wear Installer 2 remains optional. The helper's sole INTERNET permission is for direct, validated private-LAN watch connections; no analytics or automatic uploads are allowed. Face APKs remain resource-only and permission-free.
-- For helper changes, run `scripts/release-diagnostics.sh --verify-only`. Preserve explicit-copy summaries, non-backed-up storage, fixed collector commands, missing-metric labels and private-address validation. New faces must extend the helper's face/effect catalogue as needed rather than mislabelling HALO settings as their own.
+- Installation uses the phone only. Do not connect this PC to the watch with ADB.
+- Install face APKs with the separate phone installer (`diagnostics/phone`). Since 0.7.0 it only installs: the user reports smoothness and performance themselves, so do not add measurement features back unless asked. Its sole INTERNET permission is for direct, validated private-LAN watch connections; no analytics or automatic uploads are allowed. Face APKs remain resource-only and permission-free.
+- For installer changes, run `scripts/release-diagnostics.sh --verify-only`. Preserve non-backed-up storage, explicit-copy error summaries and private-address validation. Add each new face's package to FaceCatalog.
 - Preserve the installer's explicit APK selection, face/signature/code/permission checks, bounded streaming, installed-version verification and battery-test exclusion. Add future faces to the installer catalogue intentionally; never add automatic uninstall, forced downgrade or silent installation.
 - Resolve packaged face resources by name through their resource table. AAPT2 renames ZIP paths; regression tests must include an actual built APK, not only archives with source-tree filenames.
 - Ask before creating the public GitHub repository, each push and each published release. Local commits are allowed. Describe a concrete reviewed artifact before requesting publication.
 - Preserve the configured human git identity. Do not copy another agent's coauthor trailer or put the user's email in source or requests.
 - Do not claim device acceptance or performance improvements until the user supplies device evidence. Use they/them when referring to the user.
-- For a failed WFF preview/applied render, use the helper's on-demand renderer diagnostics. Passing XML/memory checks does not resolve a runtime failure; keep candidate workarounds explicitly unconfirmed until device evidence arrives.
-- Every future face must consult OPTIMIZATION.md, expose measurable optional effects, and use the shared measurement protocol.
+- Passing XML and memory checks does not prove a face renders on the watch; keep candidate workarounds for a device failure explicitly unconfirmed until the user confirms them.
+- Every future face must consult OPTIMIZATION.md and expose switchable optional effects.
 
-For later helper builds, fetch the released face tags before building so catalogue provenance stays pinned. New faces require their own design/acceptance document and independent release tag.
+New faces require their own design/acceptance document and independent release tag.
 
 Commands:
 
@@ -37,7 +37,6 @@ npm run check
 ./gradlew :faces:halo:assembleDebug
 node scripts/setup-signing.mjs       # once; back up private signing files
 bash scripts/setup-validators.sh
-bash scripts/setup-perfetto.sh
 bash scripts/release-wear.sh --verify-only
 ```
 

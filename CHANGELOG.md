@@ -1,5 +1,17 @@
 # Changelog
 
+## REDLINE 1.1.0 (build 9)
+
+- **No pause on wake.** SMOOTH now drives the rings from the live clock every frame, so they move the instant the face appears after unlocking or swiping. Before, they waited up to a second for the next clock tick. Your saved SMOOTH setting switches automatically.
+- **GLIDE.** The 1.0 interpolated style is kept as a new ROTATION STYLE option, for comparison.
+- **Faster inner red bands.** The two counter-clockwise red bands now turn separately and faster, at different speeds. At Slow the inner band turns once per 72 s and the inset band once per 48 s; both shared one 120 s revolution before. INNER COUNTER-ROTOR still switches both.
+
+## Installer 0.7.0 (build 12)
+
+- **Install only.** The phone helper is now just an installer: connect, choose a face APK, INSTALL TO WATCH. A real 0–100% progress bar shows while the file is sent, and a large ✓ INSTALLED or ✗ NOT INSTALLED result appears at the end, with COPY ERROR DETAILS on failure.
+- **Open APKs directly.** A downloaded face APK can be opened straight into the installer with "Open with" from Files or the browser. Installing still needs a tap.
+- **Diagnostics removed.** Smoothness, trace, battery and renderer tests are gone, along with the bundled Perfetto processor and collector. The app also deletes its old test captures. Pairing is kept.
+
 ## REDLINE 1.0.0 (build 8)
 
 - **Clock fonts:** 8 to choose from. REDLINE angular (default), SEGMENT LCD with faint unlit segments, Rajdhani, Oxanium, Chakra Petch, Share Tech Mono, VT323 terminal and DOT matrix. Each is baked into glyph masks, so there is no runtime font. The date and battery follow the chosen font.
