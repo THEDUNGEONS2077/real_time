@@ -60,12 +60,7 @@ TAG="diagnostics-v$VERSION"
 ! gh release view "$TAG" >/dev/null 2>&1 || fail 'Release already exists.'
 NOTES=$(mktemp)
 trap 'rm -f "$NOTES"' EXIT
-cat > "$NOTES" <<'EOF'
-Adds exact REDLINE 0.3.2 source provenance for the centred-clock and slow-inner-ring patch. Existing helper versions can install that face; this optional phone update keeps diagnostic reports accurate.
-
-The face patch centres tight proportional time on both axes, increases its font size by 25%, and thickens/slows both inner red bands while retaining the clock-refreshed smoothing. The new layout and inner-ring behaviour require device review; no measured FPS or battery result is claimed.
-
-Install/update on the Android phone over the existing helper to retain pairing. APK verification, installation, local diagnostics, sole network permission and no automatic transfers/background service are preserved. Requires ARM64 Android 13 or newer.
-
-EOF
+# Release notes come from this version's CHANGELOG section, as for the faces.
+awk -v h="## Diagnostics $VERSION (build $BUILD)" '$0==h{f=1;next} /^## /{if(f)exit} f' CHANGELOG.md > "$NOTES"
+[[ -s "$NOTES" ]] || fail 'Changelog section missing.'
 gh release create "$TAG" "$OUT/$NAME" "$OUT/SHA256SUMS" "$OUT/build-commit.txt" --prerelease --target "$(git rev-parse HEAD)" --title "real_time diagnostics $VERSION (build $BUILD)" --notes-file "$NOTES"
