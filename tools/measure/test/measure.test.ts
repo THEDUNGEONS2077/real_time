@@ -89,3 +89,10 @@ it('requires REDLINE speed/style metadata and flags changes while retaining lega
   expect(()=>metadata({...a,motionSpeed:'TURBO'})).toThrow('Invalid motionSpeed');
   expect(metadata({...run,version:'0.1.1'}).motionSpeed).toBeUndefined();
 });
+
+it('uses the six-effect REDLINE catalogue while retaining legacy exports',()=>{
+  const run={schemaVersion:1,id:'focused-redline',face:'redline',version:'0.3.0',commit:'abcdef123',palette:'REFERENCE',effects:Object.fromEntries(['seconds','ring_a','ring_b','breathing','scan','tilt'].map(k=>[k,true])),motionSpeed:'SLOW',motionStyle:'SMOOTH',aod:false,brightness:'100',screenTimeoutSeconds:60,connectivity:'BT',firmware:'test',notes:'',kind:'performance'};
+  expect(Object.keys(metadata(run).effects)).toHaveLength(6);
+  expect(()=>metadata({...run,version:'0.2.1'})).toThrow('effects.nodes');
+  expect(()=>metadata({...run,face:'halo'})).toThrow('effects.nodes');
+});

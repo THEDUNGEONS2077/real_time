@@ -4,7 +4,7 @@ REDLINE establishes the shared architecture and design language for every new fa
 
 ## Visual and interaction principles
 
-- Make the time the clearest fixed element. Respect the watch's 12/24-hour setting. Size and place every other instrument around it; never allow motion, steps, date or a complication to obscure it. REDLINE 0.2.1 doubles its original time to 108-unit glyph height and 296-unit rendered width.
+- Make the time the clearest fixed element. Respect the watch's 12/24-hour setting. Size and place every other instrument around it; never allow motion, steps, date or a complication to obscure it. REDLINE 0.3.0 uses flatter 76-unit-high glyphs and 268 units of rendered width inside its inner opening, following a further user revision.
 - Use a dark background, hierarchical accent colours, fine mechanical detail and intentional negative space. New styles may reinterpret this HUD language rather than copy REDLINE's exact rings, red palette or instrument positions.
 - Use counter-motion and bounded depth to communicate mechanical structure. Keep time, live readouts and touch targets stationary. Seconds keep real time at every decorative speed.
 - Keep glow narrow and subtle. Bake blur at build time; do not add runtime bloom, full-screen filters or image sequences as decoration.
@@ -30,9 +30,9 @@ Each face is a separate resource-only WFF 4/API 36 module with a `.dev` debug pa
 
 The TypeScript scene, geometry, glyph metrics, palette and motion calculations remain authoritative for WFF and SVG. Commit generated Android resources. Test regeneration byte for byte and reject stale files. Preserve unchanged existing faces' resources when extending shared tools.
 
-`tools/compose/src/bake.ts` caches sufficiently large static runs into cropped lossless layers without changing painter order. Cache moving carriers' artwork while retaining their live transform. Preserve vector source and live time/readouts; do not flatten the entire face into a time-dependent bitmap sequence. Exclude editor assets from active rendering. Check cached artwork against source vectors at motion/tilt extremes; subpixel rotation can change antialiasing slightly.
+`tools/compose/src/bake.ts` caches sufficiently large static runs into cropped lossless layers without changing painter order. Cache moving carriers' artwork while retaining their live transform. Name cached resources by complete rendered content so identical neutral layers can be shared across palettes. Preserve vector source and live time/readouts; do not flatten the entire face into a time-dependent bitmap sequence. Exclude editor assets from active rendering. Check cached artwork against source vectors at motion/tilt extremes; subpixel rotation can change antialiasing slightly.
 
-Drive continuously moving decoration from platform clock sources. REDLINE 0.2.0's native repeat animations stopped after a face switch according to the user. Its replacement uses live clock expressions, which remain time-derived after activation. Do not adopt an animation lifecycle again without testing leave/re-enter, editor cancel/save, ambient/wake and restart. Never infer guaranteed frame rate from an SVG animation or XML request.
+Drive continuously moving decoration from platform clock sources. Bounded interpolation may be refreshed by integer clock targets; it must never rely on an infinite constant-target loop. REDLINE 0.2.0's native repeat animations stopped after a face switch according to the user. Its replacement uses live clock expressions, which remain time-derived after activation. Do not adopt an animation lifecycle again without testing leave/re-enter, editor cancel/save, ambient/wake and restart. Never infer guaranteed frame rate from an SVG animation or XML request.
 
 Use a 432-unit canvas for the Watch7 40 mm. Include stroke, baked glow, rotated images' visible pixels and maximum simultaneous tilt when checking the circular six-unit foreground margin. Transparent bitmap corners are not illuminated content. Evaluate the signed APK against the official 100 MiB active/10 MiB ambient budgets. Record memory increases as well as decreases: caching trades decoded image memory for fewer separately drawn primitives.
 
@@ -40,7 +40,7 @@ Use a 432-unit canvas for the Watch7 40 mm. Include stroke, baked glow, rotated 
 
 Local verification must cover glyphs/time formatting, rollover, steps, battery warnings, motion bounds, all settings and static ambient behaviour. Inspect the **packaged** resource table: AAPT2 may rename ZIP paths. Verify every editor label/icon, image and glyph survives packaging and matches the generated source. Run WFF, memory, signature, no-code and no-permission checks.
 
-`tools/check/verify_editor.py` currently contains REDLINE's selected-tree acceptance profile. It checks all 6,144 combinations, all 26 option icons/labels, still-mode sources, individual effects, fixed live clock and Timer slot, and ambient branches. The release script invokes it for every non-HALO face; before adding a future face, extend it with that face's explicit profile rather than bypassing the gate or inheriting REDLINE's exact coordinates/part count. Each new profile needs its own tests. The source/raster comparison tests and editor builder are shared.
+`tools/check/verify_editor.py` currently contains REDLINE's selected-tree acceptance profile. Its current 0.3.0 profile checks all 3,072 combinations, all 24 option icons/labels, still-mode sources, individual effects, the focused readout layout and bounded clock-refreshed transitions. The earlier 0.2.1 profile covered 6,144 combinations with instruments. The release script invokes it for every non-HALO face; before adding a future face, extend it with that face's explicit profile rather than bypassing the gate or inheriting REDLINE's exact coordinates/part count. Each new profile needs its own tests. The source/raster comparison tests and editor builder are shared.
 
 Device acceptance is a separate gate. A build cannot be called fully functional merely because these local checks pass. On the user's actual Galaxy Wearable/Watch7 combination:
 
@@ -48,8 +48,8 @@ Device acceptance is a separate gate. A build cannot be called fully functional 
 2. Close/reopen Customize and confirm saved values persist. Cancel a different choice and verify the previous selection survives.
 3. Repeat in the on-watch editor. Verify phone-to-watch and watch-to-phone changes agree after re-opening their editors.
 4. Switch to HALO/another face and back repeatedly. Motion must resume. Test Still, restore motion, allow timeout/wake, and reopen the editor. Recheck after a watch restart.
-5. Select Timer once in the complication editor if available; verify displayed provider content and launch target on the watch. Record an unavailable provider as unresolved, never substitute Alarm silently.
-6. Verify actual steps, battery, date, large time readability and the minimal ambient fallback.
+5. If a face includes a shortcut, select Timer once in the complication editor if available; verify displayed provider content and launch target on the watch. Record an unavailable provider as unresolved, never substitute Alarm silently.
+6. Verify the live fields the face exposes, time readability and the minimal ambient fallback. REDLINE now omits steps and Timer by user request.
 
 Record exact face/helper versions, watch firmware, Galaxy Wearable/Watch7-plugin versions where available, choices and results. For a failure, use the helper's renderer report and record the exact reproduction. Do not clear app data, remove pairing or reset the watch as a routine workaround.
 

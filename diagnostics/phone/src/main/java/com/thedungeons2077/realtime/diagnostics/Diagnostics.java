@@ -281,7 +281,7 @@ public final class Diagnostics {
             report.append(key).append(": ").append(Measurements.clean(metadata.optString(key, "unavailable"))).append('\n');
         report.append("Setup is user-declared; verify it matches the watch editor.\n");
         JSONObject effects = metadata.optJSONObject("effects");
-        if (effects != null) for (String key : Measurements.EFFECTS) report.append(key).append('=').append(effects.optBoolean(key) ? "on " : "off ");
+        if (effects != null) for (String key : FaceCatalog.reportEffects(metadata.optString("face"), metadata.optString("faceVersion"))) report.append(key).append('=').append(!effects.has(key) ? "unavailable " : effects.optBoolean(key) ? "on " : "off ");
         report.append("\n");
         JSONObject settings = metadata.optJSONObject("watchSettings");
         if (settings != null) for (String key : new String[]{"screen_brightness", "screen_brightness_mode", "screen_off_timeout", "wifi_on", "bluetooth_on", "airplane_mode_on", "mobile_data"})

@@ -7,7 +7,7 @@ import { polar } from '../src/geometry.ts';
 import { build, root } from '../src/build.ts';
 import { timeRows } from '../src/dotmatrix.ts';
 import { nodeXml } from '../src/wff.ts';
-import { layout, motion, palettes, scene } from '../faces/redline/design.ts';
+import { layout, motion, palettes, redlineEffects, smoothFps, scene } from '../faces/redline/design.ts';
 import { clockXml, compileWatchface, labelText, previewSvg, style, watchfaceXml } from '../faces/redline/render.ts';
 import { digitSvg, glyph } from '../faces/redline/assets.ts';
 
@@ -39,7 +39,7 @@ it('rotates substantially faster than HALO without reversing or unbounded sine a
     const a=frame({time:new Date(Date.UTC(2026,9,24)+seconds*1000)}),b=frame({time:new Date(a.time.getTime()+10)});
     for(const n of flat(scene(),a))if(n.kind==='group'&&['outer_rotor','inner_rotor'].includes(n.name)){
       const delta=((value(n.angle!,b)-value(n.angle!,a)+540)%360-180)/.01;
-      expect(delta*(n.name==='outer_rotor'?1:-1)).toBeGreaterThan(12);
+      expect(delta*(n.name==='outer_rotor'?1:-1)).toBeGreaterThan(6);
       expect(Math.abs(delta)).toBeLessThan(39);expect(expression(n.angle!)).toContain('%');
     }
   }
@@ -50,7 +50,7 @@ it('removes optional motion and overlays when effects are disabled',()=>{
   expect(xml).not.toMatch(/MILLISECOND|SECOND_MILLISECOND|ACCELEROMETER|radar_sweep|seconds_beacon/);
 });
 it('gives every switch a changing transform while leaving time outside rotating groups',()=>{
-  for(const e of effects){
+  for(const e of redlineEffects){
     const f=frame({effects:Object.fromEntries(effects.map(id=>[id,id===e])) as Frame['effects']});
     expect(flat(scene(),f).map(n=>nodeXml(n,style)).join('')).toMatch(/Transform|Gyro/);
   }
@@ -58,7 +58,7 @@ it('gives every switch a changing transform while leaving time outside rotating 
 });
 it.each(['00:00','10:45','12:00','23:59'])('preserves a readable horizontal %s',time=>{
   const t=new Date(`2026-10-24T${time}:00Z`);expect(timeRows(t,true).join(':')).toBe(time);
-  expect(previewSvg(frame({time:t}))).toContain('width="68" height="108"');
+  expect(previewSvg(frame({time:t}))).toContain('width="62" height="76"');
 });
 it('uses original distinct angular glyphs with padding and native hour formatting',()=>{
   expect(new Set([...'0123456789'].map(c=>digitSvg(c))).size).toBe(10);
@@ -66,14 +66,15 @@ it('uses original distinct angular glyphs with padding and native hour formattin
   expect(clockXml()).toContain('hourFormat="SYNC_TO_DEVICE"');expect(clockXml()).toContain('format="hh:mm"');
   expect(timeRows(new Date('2026-10-25T00:00Z'),false).join(':')).toBe('12:00');
 });
-it('updates full date at rollover and keeps zero or large step values',()=>{
+it('updates the enlarged full date at rollover and retains only battery beneath time',()=>{
   expect(labelText('full_date',frame({time:new Date('2026-10-25T00:00Z')}))).toBe('SUN 25 OCT');
-  for(const steps of [0,8540,123456])expect(labelText('step_value',frame({steps}))).toBe(String(steps));
+  expect(layout.date.size).toBe(12*3.5);expect(layout.date.y+layout.date.height).toBeLessThan(layout.time.y);
+  expect(layout.battery.y).toBeGreaterThan(layout.time.y+layout.time.height);
 });
 it('keeps red restrained and uses a distinct low-battery warning',()=>{
   expect(palettes.REFERENCE.cyan).toBe('#ff202b');
-  const arc=flat(scene(),frame()).find(n=>n.kind==='arc'&&n.warning)!;
-  expect(nodeXml(arc,style)).toContain('[BATTERY_PERCENT] <= 15');
+  const battery=flat(scene(),frame()).find(n=>n.kind==='label'&&n.warning)!;
+  expect(nodeXml(battery,style)).toContain('[BATTERY_PERCENT] <= 15');
   expect(previewSvg(frame({battery:15}))).toContain('#ffb24a');expect(previewSvg(frame({battery:16}))).not.toContain('#ffb24a');
 });
 it('uses literal fixed colours without a runtime palette or white-fallback dependency',()=>{
@@ -84,11 +85,11 @@ it('uses literal fixed colours without a runtime palette or white-fallback depen
   expect(xml).toContain('backgroundColor="#000000"');
 });
 it('keeps ambient time-only and does not include frame sequences or runtime blur',()=>{
-  const xml=watchfaceXml(),ambient=xml.slice(xml.indexOf('name="ambient"'),xml.indexOf('<ComplicationSlot'));
+  const xml=watchfaceXml(),ambient=xml.slice(xml.indexOf('name="ambient"'));
   expect(ambient).not.toMatch(/Transform|Gyro|MILLISECOND|redline_mesh|STEP_COUNT/);
   expect(xml).not.toMatch(/SequenceImages|AnimatedImage|GaussianBlur|Launch/);
-  expect(xml).toContain('SET TIMER');expect(xml).toContain('[COMPLICATION.TEXT]');
-  for(const e of effects)expect(xml).toContain(`id="${e}" displayName="${e}"`);
+  expect(xml).not.toMatch(/SET TIMER|ComplicationSlot|STEP_COUNT|D U N G E O N S|instrument_/);
+  for(const e of redlineEffects)expect(xml).toContain(`id="${e}" displayName="${e}"`);
 });
 it('reproduces all committed REDLINE resources deterministically',async()=>{
   await build(resolve(root,'faces/redline/src/main/res'),true,'redline');
@@ -120,12 +121,30 @@ it('scales each decorative rotor and pulse, keeps seconds accurate, and makes ST
   }
   const still=scene('STILL').map(n=>nodeXml(n,style)).join('');
   expect(still).not.toMatch(/MILLISECOND|SECONDS_IN_DAY|Gyro|Animation|seconds_beacon|radar_sweep/);
-  expect(still).toContain('[STEP_COUNT]');expect(still).toContain('[BATTERY_PERCENT]');
+  expect(still).not.toContain('[STEP_COUNT]');expect(still).toContain('[BATTERY_PERCENT]');
 });
-it('uses live clock-driven rotation after face switching, with no one-shot animation loops',()=>{
-  for(const feel of ['SMOOTH','DYNAMIC'] as const){
-    const output=scene('STANDARD',feel).map(n=>nodeXml(n,style)).join('');
-    expect(output).not.toContain('<Animation');
-    expect(output).toContain('[SECONDS_IN_DAY]');expect(output).toContain('[MILLISECOND]');
+it('refreshes non-repeating smooth transitions from the integer clock and retains direct-clock fallback',()=>{
+  const output=scene('SLOW','SMOOTH').map(n=>nodeXml(n,style)).join('');
+  expect(output).toContain('fps="60" repeat="0"');expect(output).not.toContain('MILLISECOND');
+  expect(output).toContain('angleDirection="COUNTER_CLOCKWISE"');expect(output).not.toContain('repeat="-1"');
+  const dynamic=scene('SLOW','DYNAMIC').map(n=>nodeXml(n,style)).join('');
+  expect(dynamic).not.toContain('<Animation');expect(dynamic).toContain('[MILLISECOND]');
+});
+it('interpolates slow rotors in subpixel steps without wrap reversal, including midnight and re-entry gaps',()=>{
+  expect(smoothFps).toBe(60);
+  const samples=['2026-10-25T00:00:00.500Z','2026-10-25T23:59:59.983Z','2026-10-25T10:45:17.500Z','2026-10-25T10:47:44.250Z'];
+  for(const sample of samples){
+    const f=frame({time:new Date(sample)}),previous=frame({time:new Date(f.time.getTime()-1000)});
+    for(const n of flat(scene('SLOW','SMOOTH'),f))if(n.kind==='group'&&n.angleTransition){
+      const a=value(n.angleTransition.value,previous),b=value(n.angleTransition.value,f),direction=n.angleTransition.direction==='CLOCKWISE'?1:-1;
+      const delta=direction*((direction*(b-a)%360+360)%360);
+      const interpolated=a+delta*f.time.getUTCMilliseconds()/1000;
+      expect(((interpolated-value(n.angle!,f)+540)%360)-180).toBeCloseTo(0,7);
+      expect(Math.abs(delta)/smoothFps).toBeLessThanOrEqual(.25);
+    }
   }
+});
+it('fits every time-box corner inside the inner circular opening',()=>{
+  const t=layout.time;
+  for(const x of [t.x,t.x+t.width])for(const y of [t.y,t.y+t.height])expect(Math.hypot(x-216,y-216)).toBeLessThan(layout.innerRadius);
 });

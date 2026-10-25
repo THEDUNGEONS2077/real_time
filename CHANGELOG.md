@@ -1,5 +1,19 @@
 # Changelog
 
+## REDLINE 0.3.0 (build 5)
+
+- Remove the DUNGEONS label, all three instrument dials, steps, battery icon/arc, instrument rotors and Timer complication. Retain only the live date, time and a centred battery percentage.
+- Fit flatter 62×76 glyphs (268 units across) to the inner circular opening. Put the full uppercase date above time at size 42, exactly 3.5× its former size, with an unclipped 56-unit text box. Battery percentage sits below time and retains the ≤15% warning colour.
+- Default new instances to Slow (0.5×) + Smooth. Smooth requests 60 fps linear, non-repeating transitions between next-second clock targets; directional wrapping prevents rotor reversals. Targets refresh each second rather than relying on a free-running loop. Dynamic remains the direct-clock fallback. Actual cadence, re-entry behaviour and battery cost require Watch7 testing.
+- Share identical neutral cached artwork across palettes rather than packaging six copies.
+- Remove the obsolete instrument control while retaining the working catalogue/Condition architecture. Verify all 3,072 combinations and 24 option icons. The cached scene has 14 parts instead of 26; official evaluation passes at 22,230,640 active bytes and 97,280 ambient bytes. These are structural/resource results, not measured FPS.
+- The user confirms 0.2.1 customization works and the face looks good; smoother motion remains their requested improvement.
+
+## Diagnostics 0.5.0 (build 8)
+
+- Use the six-effect REDLINE catalogue and face-specific effect presets while retaining HALO’s seven controls. Default the REDLINE speed declaration to Slow.
+- Add REDLINE 0.3.0 source provenance. Legacy reports retain their old control names; a missing legacy instrument declaration is shown as unavailable. Pairing, explicit installation, diagnostics and permissions are preserved.
+
 ## REDLINE 0.2.1 (build 4)
 
 - Repair candidate for blank/ineffective customization: supply captioned icons and accessible labels for all 26 options; replace nested native scene selectors with configuration-driven Conditions. Use explicit ON/OFF list tiles for effects. Both platform editors still need device acceptance.

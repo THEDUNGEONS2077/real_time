@@ -21,8 +21,8 @@ export function metadata(input:unknown):RunMetadata {
   if(typeof m.aod!=='boolean'||typeof m.screenTimeoutSeconds!=='number'||!Number.isFinite(m.screenTimeoutSeconds)||m.screenTimeoutSeconds<=0)throw new Error('Record AOD and a positive screen timeout.');
   if(!m.effects||typeof m.effects!=='object')throw new Error('Record every effect switch.');
   for(const [key,value] of Object.entries(m.effects))if(!/^[a-z][a-z0-9_]*$/.test(key)||typeof value!=='boolean')throw new Error('Effect names must be simple identifiers with boolean values.');
-  // Both current faces expose these seven stable switches; future faces may define their own catalogue.
-  if(m.face==='halo'||m.face==='redline')for(const e of effects)if(typeof (m.effects as Record<string,unknown>)[e]!=='boolean')throw new Error(`Record effects.${e}.`);
+  // REDLINE 0.3+ removes instrument rotors; keep the seven-effect contract for HALO and older REDLINE.
+  if(m.face==='halo'||m.face==='redline')for(const e of (m.face==='redline'&&!/^0\.[12]\./.test(String(m.version))?effects.filter(e=>e!=='nodes'):effects))if(typeof (m.effects as Record<string,unknown>)[e]!=='boolean')throw new Error(`Record effects.${e}.`);
   for(const key of ['rendererProcess','rendererLayer'])if(m[key]!==undefined&&typeof m[key]!=='string')throw new Error(`${key} must be a string when provided.`);
   for(const [key,allowed] of Object.entries({motionSpeed:['STILL','SLOW','STANDARD','FAST'],motionStyle:['SMOOTH','DYNAMIC']}))if(m[key]!==undefined&&!allowed.includes(String(m[key])))throw new Error(`Invalid ${key}.`);
   // Legacy runs remain readable; new REDLINE controls must be explicitly recorded.

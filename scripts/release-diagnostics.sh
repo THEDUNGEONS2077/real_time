@@ -61,11 +61,11 @@ TAG="diagnostics-v$VERSION"
 NOTES=$(mktemp)
 trap 'rm -f "$NOTES"' EXIT
 cat > "$NOTES" <<'EOF'
-Adds explicit source provenance for REDLINE 0.2.1, the candidate editor/rotation repair and larger-time build. Existing helper versions can install that face; this update improves the accuracy of copied reports. TEST SETUP records your choices and does not remotely change the watch face.
+Adds REDLINE 0.3.0 source provenance and face-specific effect declarations/presets. The new REDLINE layout removes instrument rotors, leaving six effects; HALO keeps seven. New REDLINE declarations start at Slow. TEST SETUP labels diagnostics and does not change watch settings.
 
-Install/update on the Android phone over the existing helper to retain pairing. Explicit APK selection, release-signature/resource checks, verified watch installation, on-demand renderer reports and battery/performance tools are preserved. REDLINE's Galaxy Wearable Save/persistence and motion re-entry still need device acceptance.
+Older stored reports retain the historical controls. A missing old instrument declaration is shown as unavailable; use the previous helper for complete historical instrument experiments. Existing helpers can still install REDLINE 0.3.0.
 
-No additional Android permission, background component, automatic transfer or cloud endpoint is added. Requires ARM64 Android 13 or newer. Instructions: diagnostics/phone/README.md.
+Install/update on the Android phone over the existing helper to retain pairing. APK signature/resource checks, installed-version verification, renderer reports, local analysis, sole network permission and no automatic transfers/background service are preserved. The user confirms 0.2.1 customization works; 0.3.0 smoothing still needs watch testing. Requires ARM64 Android 13 or newer.
 
 EOF
 gh release create "$TAG" "$OUT/$NAME" "$OUT/SHA256SUMS" "$OUT/build-commit.txt" --prerelease --target "$(git rev-parse HEAD)" --title "real_time diagnostics $VERSION (build $BUILD)" --notes-file "$NOTES"

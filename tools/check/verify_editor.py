@@ -11,7 +11,7 @@ import xml.etree.ElementTree as ET
 import zipfile
 
 EFFECTS = {'seconds': ['seconds_beacon'], 'ring_a': ['outer_rotor'], 'ring_b': ['inner_rotor'],
-           'breathing': ['red_pulse'], 'nodes': ['instrument_0', 'instrument_1', 'instrument_2'],
+           'breathing': ['red_pulse'],
            'scan': ['radar_sweep'], 'tilt': ['depth']}
 
 
@@ -83,10 +83,17 @@ def verify(resources, apk=None, aapt2=None):
     require(scene is not None, 'Scene missing.')
     require(not list(scene.iter('ListConfiguration')) and not list(scene.iter('BooleanConfiguration')),
             'Use Conditions in the scene; native configuration selectors cannot be nested.')
-    require(not list(scene.iter('Animation')), 'Clock-driven REDLINE must not use lifecycle-dependent animation loops.')
+    for transform in scene.iter('Transform'):
+        for animation in transform.findall('Animation'):
+            require(animation.get('repeat') == '0' and animation.get('duration') == '1' and animation.get('fps') == '60' and animation.get('interpolation') == 'LINEAR', 'Only bounded 60 fps clock-refreshed transitions are permitted.')
+            require('[SECONDS_IN_DAY]' in transform.get('value', '') and 'MILLISECOND' not in transform.get('value', ''), 'Every transition must refresh its target on the integer clock.')
+            if transform.get('target') == 'angle':
+                require(animation.get('angleDirection') in ('CLOCKWISE', 'COUNTER_CLOCKWISE'), 'Rotation must interpolate across its wrap in the correct direction.')
+    require(not any(n.tag == 'ComplicationSlot' for n in scene.iter()), 'Removed instrument/Timer UI must not remain active.')
+    require(b'D U N G E O N S' not in xml and b'STEP_COUNT' not in xml and b'instrument_' not in xml, 'Removed readouts or branding remain in the face.')
     require(strings.get('face_name') == 'REDLINE', 'Add this new face\'s explicit acceptance profile before releasing it; do not inherit REDLINE coordinates.')
     definitions = list(root.find('UserConfigurations'))
-    require(len(definitions) == 10, 'REDLINE requires its three selectors and seven explicit binary settings.')
+    require(len(definitions) == 9, 'REDLINE requires its three selectors and six explicit binary settings.')
     settings, referenced = {}, set()
     for setting in definitions:
         id = setting.get('id')
@@ -107,6 +114,7 @@ def verify(resources, apk=None, aapt2=None):
             require(data[:8] == b'\x89PNG\r\n\x1a\n', 'Editor icons must be PNG.')
             width, height = struct.unpack('>II', data[16:24])
             require(0 < width <= 400 and 0 < height <= 400 and len(data) <= 16384, 'Oversized editor icon: ' + icon)
+    require(next(d for d in definitions if d.get('id') == 'motion_speed').get('defaultValue') == 'SLOW', 'New instances must default to 0.5x.')
     require(set(settings) == {'palette', 'motion_speed', 'motion_style', *EFFECTS}, 'Unexpected setting IDs.')
     for effect in EFFECTS:
         require(settings[effect] == ['TRUE', 'FALSE'], 'Binary choice values changed: ' + effect)
@@ -134,14 +142,14 @@ def verify(resources, apk=None, aapt2=None):
             result = subprocess.run(['node', str(Path(__file__).with_name('image-pixels.mjs'))], input=json.dumps(png_pairs), text=True, capture_output=True)
             require(result.returncode == 0, result.stderr or 'Packaged PNG pixel verification failed.')
     maximum_parts, minimum_parts, combinations = 0, 10**9, 0
-    for palette, speed, style, bits in itertools.product(settings['palette'], settings['motion_speed'], settings['motion_style'], itertools.product(['TRUE', 'FALSE'], repeat=7)):
+    for palette, speed, style, bits in itertools.product(settings['palette'], settings['motion_speed'], settings['motion_style'], itertools.product(['TRUE', 'FALSE'], repeat=len(EFFECTS))):
         state = dict(zip(EFFECTS, bits), palette=palette, motion_speed=speed, motion_style=style, battery=80)
         active = selected(scene, state)
         groups = [n.get('name') for n in active if n.tag == 'Group']
         require([n for n in groups if n and n.startswith('palette_')] == ['palette_' + palette], 'Colour selection failed.')
         require(len([n for n in active if n.tag == 'TimeText']) == 1, 'Interactive clock missing/duplicated.')
         time = next(n for n in active if n.tag == 'TimeText')
-        require(time.get('width') == '300' and time.find('BitmapFont').get('size') == '108', 'Clock is not exactly doubled.')
+        require(time.get('width') == '272' and time.get('height') == '76' and time.find('BitmapFont').get('size') == '76', 'Clock must fit the inner opening with the flatter glyph metrics.')
         for effect, names in EFFECTS.items():
             for name in names:
                 moving = [n for n in active if n.tag == 'Group' and n.get('name') == name and any(c.tag == 'Gyro' or c.tag == 'Transform' and re.search('MILLISECOND|SECONDS_IN_DAY', c.get('value', '')) for c in n)]
@@ -149,7 +157,15 @@ def verify(resources, apk=None, aapt2=None):
         if speed == 'STILL' or all(b == 'FALSE' for b in bits):
             require(not any(n.tag == 'Gyro' or re.search('MILLISECOND|SECONDS_IN_DAY', n.get('value', '')) for n in active), 'Disabled motion still has active sources.')
         require(not any(n.get('resource', '').startswith('editor_') for n in active), 'Editor artwork leaks into the face.')
-        require(len([n for n in active if n.tag == 'ComplicationSlot']) == 1, 'Timer slot must remain independently editable.')
+        labels = [n for n in active if n.tag == 'PartText']
+        require(len(labels) == 2, 'Only date and battery should accompany the clock.')
+        require(sorted(n.find('Text/Font').get('size') for n in labels) == ['20', '42'], 'Date must be 3.5x the old size; battery is a plain percentage.')
+        require(any(n.get('y') == '130' and n.get('height') == '56' for n in labels), 'Enlarged date must sit above time with room for its glyphs.')
+        require(any(n.get('y') == '278' for n in labels), 'Battery must be below time.')
+        if style == 'SMOOTH':
+            require(not any('MILLISECOND' in n.get('value', '') for n in active), 'Smooth must use clock-refreshed interpolation, not millisecond expressions.')
+        else:
+            require(not any(n.tag == 'Animation' for n in active), 'Dynamic remains the direct-clock fallback.')
         parts = sum(n.tag in ('PartDraw', 'PartImage', 'PartText', 'TimeText') for n in active)
         maximum_parts, minimum_parts = max(maximum_parts, parts), min(minimum_parts, parts)
         combinations += 1

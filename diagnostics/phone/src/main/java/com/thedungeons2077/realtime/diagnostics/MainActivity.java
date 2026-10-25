@@ -104,17 +104,17 @@ public final class MainActivity extends Activity {
         face = spinner(setup, "FACE", new String[]{"HALO", "REDLINE", "STOCK / OTHER"});
         otherFace = field(setup, "OTHER FACE NAME", "Fill this in when testing a stock or other face", InputType.TYPE_CLASS_TEXT);
         palette = spinner(setup, "PALETTE", new String[]{"REFERENCE", "PHOSPHOR", "ICE", "STOCK"});
-        motionSpeed = spinner(setup, "REDLINE MOTION SPEED (0.2.0+)", new String[]{"STANDARD", "SLOW", "FAST", "STILL", "UNAVAILABLE / OLDER VERSION"});
+        motionSpeed = spinner(setup, "REDLINE MOTION SPEED (0.2.0+)", new String[]{"SLOW", "STANDARD", "FAST", "STILL", "UNAVAILABLE / OLDER VERSION"});
         motionStyle = spinner(setup, "REDLINE ROTATION STYLE (0.2.0+)", new String[]{"SMOOTH", "DYNAMIC", "UNAVAILABLE / OLDER VERSION"});
+        preset = spinner(setup, "EFFECTS", FaceCatalog.effectPresets("HALO"));
         face.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
             @Override public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
-                setChoices(palette, FaceCatalog.palettes(position < 2 ? (position == 0 ? "HALO" : "REDLINE") : "STOCK"));
+                String selected = position < 2 ? (position == 0 ? "HALO" : "REDLINE") : "STOCK";
+                setChoices(palette, FaceCatalog.palettes(selected));
+                setChoices(preset, FaceCatalog.effectPresets(selected));
             }
             @Override public void onNothingSelected(android.widget.AdapterView<?> parent) { }
         });
-        String[] presets = new String[9]; presets[0] = "FULL MOTION"; presets[1] = "ALL EFFECTS OFF";
-        for (int i = 0; i < 7; i++) presets[i + 2] = "FULL EXCEPT " + Measurements.EFFECTS[i].toUpperCase(java.util.Locale.ROOT);
-        preset = spinner(setup, "EFFECTS", presets);
         aod = new CheckBox(this); aod.setText(R.string.aod_enabled); aod.setTextColor(PALE); aod.setTypeface(Typeface.MONOSPACE); setup.addView(aod); controls.add(aod);
         text(setup, "Match this setup in the watch-face editor before starting. These controls label the experiment; they do not change the watch face.", 12, PALE);
 
@@ -200,7 +200,8 @@ public final class MainActivity extends Activity {
         }
         result.put("rendererProcess", renderer.getText().toString().trim()).put("rendererLayer", layer.getText().toString().trim());
         JSONObject effects = new JSONObject();
-        for (int i = 0; i < Measurements.EFFECTS.length; i++) effects.put(Measurements.EFFECTS[i], face.getSelectedItemPosition() < 2 && preset.getSelectedItemPosition() != 1 && preset.getSelectedItemPosition() != i + 2);
+        String[] effectIds = FaceCatalog.effects(selectedFace);
+        for (int i = 0; i < effectIds.length; i++) effects.put(effectIds[i], face.getSelectedItemPosition() < 2 && preset.getSelectedItemPosition() != 1 && preset.getSelectedItemPosition() != i + 2);
         return result.put("effects", effects);
     }
     private void copy() {

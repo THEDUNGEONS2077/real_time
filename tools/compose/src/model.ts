@@ -18,7 +18,7 @@ export function frame(overrides: Partial<Frame> = {}): Frame {
     tiltX: 0, tiltY: 0, shortcut: null, ...overrides };
 }
 /** A restricted numeric AST, avoiding separate handwritten WFF and preview formulas. */
-export type NumberValue = number | { source: 'second' | 'daySeconds' | 'battery' | 'tiltX' | 'tiltY' }
+export type NumberValue = number | { source: 'second' | 'daySeconds' | 'daySecond' | 'battery' | 'tiltX' | 'tiltY' }
   | { op: '+' | '-' | '*' | '/' | '%' | 'sin' | 'cos' | 'min' | 'max'; a: NumberValue; b?: NumberValue };
 /** Construct an arithmetic node. */
 export const op = (operator: Exclude<NumberValue, number | {source: string}>['op'], a: NumberValue, b?: NumberValue): NumberValue => ({ op: operator, a, b });
@@ -26,6 +26,8 @@ export const op = (operator: Exclude<NumberValue, number | {source: string}>['op
 export const second: NumberValue = { source: 'second' };
 /** Fractional local seconds since midnight; bounded phases prevent large sine arguments. */
 export const daySeconds: NumberValue = { source: 'daySeconds' };
+/** Integer local seconds tick drives bounded one-second transitions without a millisecond dependency. */
+export const daySecond: NumberValue = { source: 'daySecond' };
 /** Current watch battery percentage. */
 export const battery: NumberValue = { source: 'battery' };
 /** Evaluate only our known AST; never execute text from diagnostic exports. */
@@ -35,6 +37,7 @@ export function value(n: NumberValue, f: Frame): number {
     const t = f.time;
     return ({ second: t.getUTCSeconds() + t.getUTCMilliseconds() / 1000,
       daySeconds: t.getUTCHours() * 3600 + t.getUTCMinutes() * 60 + t.getUTCSeconds() + t.getUTCMilliseconds() / 1000,
+      daySecond: t.getUTCHours()*3600+t.getUTCMinutes()*60+t.getUTCSeconds(),
       battery: f.battery, tiltX: Math.max(-3, Math.min(3, f.tiltX)), tiltY: Math.max(-3, Math.min(3, f.tiltY)) })[n.source];
   }
   const a = value(n.a, f), b = n.b === undefined ? 0 : value(n.b, f);
@@ -47,7 +50,7 @@ export function value(n: NumberValue, f: Frame): number {
 /** Emit the exact same arithmetic tree for Wear OS. */
 export function expression(n: NumberValue): string {
   if (typeof n === 'number') return String(n);
-  if ('source' in n) return ({ second: '[SECOND_MILLISECOND]', daySeconds: '([SECONDS_IN_DAY]+[MILLISECOND]/1000)',
+  if ('source' in n) return ({ second: '[SECOND_MILLISECOND]', daySeconds: '([SECONDS_IN_DAY]+[MILLISECOND]/1000)', daySecond: '[SECONDS_IN_DAY]',
     battery: '[BATTERY_PERCENT]', tiltX: '(clamp([ACCELEROMETER_ANGLE_X],-30,30)/10)',
     tiltY: '(clamp([ACCELEROMETER_ANGLE_Y],-30,30)/10)' })[n.source];
   const a = expression(n.a), b = n.b === undefined ? '' : expression(n.b);
@@ -69,11 +72,14 @@ export interface Group {
   kind: 'group'; name: string; children: Node[]; angle?: NumberValue; scale?: NumberValue;
   x?: NumberValue; y?: NumberValue; gyro?: boolean; alpha?: NumberValue;
   pivot?: { x:number; y:number };
+  /** A new target every second re-arms interpolation after activation; repeat loops are never used. */
+  angleTransition?: {value:NumberValue;fps:number;direction:'CLOCKWISE'|'COUNTER_CLOCKWISE'};
+  alphaTransition?: {value:NumberValue;fps:number};
 }
 /** Conditional branches remove disabled high-frequency data sources from the active tree. */
 export interface Switch { kind: 'switch'; effect: Effect; enabled: Node[]; disabled: Node[] }
 /** Readouts use templates; the clock itself uses DigitalClock, not text expressions. */
-export interface Label { kind: 'label'; content: 'date' | 'steps' | 'battery' | string; x: number; y: number; width: number; size: number; role: Role; alpha?: NumberValue; align?:'START'|'CENTER' }
+export interface Label { kind: 'label'; content: 'date' | 'steps' | 'battery' | string; x: number; y: number; width: number; size: number; role: Role; alpha?: NumberValue; align?:'START'|'CENTER'; height?:number; warning?:boolean }
 /** A dot-matrix clock is rendered through the platform's time formatting. */
 export interface Clock { kind: 'clock'; ambient: boolean }
 /** Generated image layer. A monochrome background is tinted by the active palette. */

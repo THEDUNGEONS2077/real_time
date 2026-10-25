@@ -44,7 +44,8 @@ export class LayerCache {
     const width=Math.min(432,Math.ceil(Math.max(...boxes.map(b=>b[2]))))-x,height=Math.min(432,Math.ceil(Math.max(...boxes.map(b=>b[3]))))-y;
     const body=nodes.map(n=>nodeSvg(n,frame(),' ',this.style)).join('');
     const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="${x} ${y} ${width} ${height}">${body}</svg>`;
-    const resource=`cached_${this.palette.toLowerCase()}_${createHash('sha256').update(svg).digest('hex').slice(0,16)}`;
+    // Colour is already part of the SVG hash. Identical neutral layers share one resource across palettes.
+    const resource=`cached_layer_${createHash('sha256').update(svg).digest('hex').slice(0,16)}`;
     this.layers.set(resource,{resource,svg,x,y,width,height,primitives:nodes.length});
     return {kind:'image',resource,x,y,width,height,alpha:255,role:'white',tint:false};
   }

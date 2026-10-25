@@ -61,3 +61,13 @@ The 100% larger clock and repositioned instruments are a separate requested visu
 All future faces follow FACE_STANDARD.md and use the same measurement workflow, explicit editor contract and packaged resource verification.
 
 Official evaluation of the 0.2.1 candidate records 25,917,536 maximum active bytes (about 24.7 MiB) and 38,016 ambient bytes, within 100 MiB/10 MiB limits. This is a larger evaluated image-memory footprint, traded for fewer selected drawing parts; real renderer CPU/jank and whole-watch battery remain unavailable. Ambient preview coverage is about 4.82% with the doubled clock, below the 10% preview guardrail.
+
+## User acceptance and 0.3.0 candidate (2026-10-25)
+
+The user confirms all REDLINE 0.2.1 customization works and the face looks good. This accepts the reported editor repair qualitatively on their setup. It does not establish individual restart/cancel tests, FPS, jank or battery results. They request a simpler layout and smoother 0.5× rotation.
+
+The new design removes three instruments and uses 14 cached scene parts, compared with 26 in 0.2.1. Official evaluated memory decreases from 25,917,536 to 22,230,640 active bytes; ambient becomes 97,280 bytes because flatter glyphs are now authored at their displayed resolution. Ambient preview coverage is about 3.47%. These are resource metrics only.
+
+Smooth requests 60 fps, one-second linear transitions between clock-refreshed targets; it never uses repeat=-1. At 0.5×, ideal outer/inner speeds are 10°/s and 15°/s: a 60 fps delivery would mean about 0.58/0.79 pixel tangential steps at their track radii. Those are calculations, not observed frames. The first second after activation may settle to phase. Native frame limits, wake/re-entry, visible smoothness and energy must be checked on the watch. The fallback Dynamic mode remains clock-expression based.
+
+Hold speed at Slow when comparing Smooth and Dynamic, repeat three traces each and select the actual renderer/layer before interpreting timing. Faster requested cadence may increase work even though there are fewer parts. Keep the known-working editor architecture; do not infer a battery improvement or force an unrelated battery cutoff.

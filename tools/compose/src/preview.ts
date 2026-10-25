@@ -39,7 +39,7 @@ export function nodeSvg(n:Node,f:Frame,background:string,style:RenderStyle=haloS
     case 'group':return `<g transform="translate(${value(n.x??0,f)},${value(n.y??0,f)}) translate(${n.pivot?.x??216},${n.pivot?.y??216}) rotate(${value(n.angle??0,f)}) scale(${value(n.scale??1,f)}) translate(${-1*(n.pivot?.x??216)},${-1*(n.pivot?.y??216)})" opacity="${value(n.alpha??255,f)/255}">${n.children.map(c=>nodeSvg(c,f,background,style)).join('')}</g>`;
     case 'clock':return style.clockSvg?.(f)??clock(f);
     case 'image':return (n.x===undefined&&n.y===undefined&&n.width===undefined&&n.height===undefined?`<image width="432" height="432" opacity="${n.alpha/255}" href="${style.imageData?.[n.resource]??background}"/>`:`<image x="${n.x??0}" y="${n.y??0}" width="${n.width??432}" height="${n.height??432}" opacity="${n.alpha/255}" href="${style.imageData?.[n.resource]??background}"/>`);
-    case 'label':return `<text x="${n.align==='CENTER'?n.x+n.width/2:n.x}"${n.align==='CENTER'?' text-anchor="middle"':''} y="${n.y+n.size}" font-family="monospace" font-size="${n.size}" fill="${(style.palettes[f.palette]??style.palettes.REFERENCE)[n.role]}" opacity="${value(n.alpha??255,f)/255}">${xml(style.labelText?.(n.content,f)??labelContent(n.content,f))}</text>`;
+    case 'label':return `<text x="${n.align==='CENTER'?n.x+n.width/2:n.x}"${n.align==='CENTER'?' text-anchor="middle"':''} y="${n.y+n.size}" font-family="monospace" font-size="${n.size}" fill="${(style.palettes[f.palette]??style.palettes.REFERENCE)[n.warning&&f.battery<=15?'warning':n.role]}" opacity="${value(n.alpha??255,f)/255}">${xml(style.labelText?.(n.content,f)??labelContent(n.content,f))}</text>`;
     default:throw new Error(`Unrecognized node ${n.kind}`);
   }
 }

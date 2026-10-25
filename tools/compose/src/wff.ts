@@ -13,6 +13,7 @@ const canvas={x:0,y:0,width:432,height:432};
 const haloStyle:RenderStyle={roles,palettes};
 const colour=(role:Role,style:RenderStyle=haloStyle)=>style.roles.includes(role)?`[CONFIGURATION.palette.${style.roles.indexOf(role)}]`:style.palettes.REFERENCE[role];
 const transform=(target:string,n:NumberValue|undefined)=>n!==undefined&&typeof n!=='number'?tag('Transform',{target,value:expression(n)}):'';
+const transition=(target:string,n:{value:NumberValue;fps:number;direction?:string}|undefined)=>n?tag('Transform',{target,value:expression(n.value)},tag('Animation',{duration:1,interpolation:'LINEAR',fps:n.fps,repeat:0,angleDirection:n.direction})):'';
 const initial=(n:NumberValue|undefined,fallback:number)=>typeof n==='number'?n:fallback;
 
 function shape(n:Shape,style:RenderStyle):string {
@@ -43,14 +44,15 @@ export function nodeXml(n:Node,style:RenderStyle=haloStyle):string {
     case 'switch':return tag('Condition',{},tag('Expressions',{},tag('Expression',{name:'enabled'},`<![CDATA[[CONFIGURATION.${n.effect}] == "TRUE"]]>`))+tag('Compare',{expression:'enabled'},n.enabled.map(c=>nodeXml(c,style)).join(''))+(n.disabled.length?tag('Default',{},n.disabled.map(c=>nodeXml(c,style)).join('')):''));
     case 'group': {
       const gyros=n.gyro?tag('Gyro',{x:expression(n.x??0),y:expression(n.y??0)}):'';
-      const transforms=(n.gyro?'':transform('x',n.x)+transform('y',n.y))+transform('angle',n.angle)+transform('scaleX',n.scale)+transform('scaleY',n.scale)+transform('alpha',n.alpha);
+      const transforms=(n.gyro?'':transform('x',n.x)+transform('y',n.y))+(n.angleTransition?transition('angle',n.angleTransition):transform('angle',n.angle))+transform('scaleX',n.scale)+transform('scaleY',n.scale)+(n.alphaTransition?transition('alpha',n.alphaTransition):transform('alpha',n.alpha));
       return tag('Group',{...canvas,name:n.name,x:initial(n.x,0),y:initial(n.y,0),angle:initial(n.angle,0),scaleX:initial(n.scale,1),scaleY:initial(n.scale,1),alpha:initial(n.alpha,255),pivotX:(n.pivot?.x??216)/432,pivotY:(n.pivot?.y??216)/432},gyros+transforms+n.children.map(c=>nodeXml(c,style)).join(''));
     }
     case 'image': return tag('PartImage',{...canvas,x:Math.round(n.x??0),y:Math.round(n.y??0),width:n.width??432,height:n.height??432,alpha:n.alpha,tintColor:n.tint===false?undefined:colour(n.role,style)},tag('Image',{resource:n.resource}));
     case 'clock':return style.clockXml?.(n.ambient)??clockXml(n.ambient);
     case 'label': {
       const templates:Record<string,string>={date:tag('Upper',{},tag('Template',{},'%s %02d'+tag('Parameter',{expression:'[DAY_OF_WEEK_S]'})+tag('Parameter',{expression:'[DAY]'}))),steps:tag('Template',{},'▪ %d'+tag('Parameter',{expression:'[STEP_COUNT]'})),battery:tag('Template',{},'BAT %d%%'+tag('Parameter',{expression:'[BATTERY_PERCENT]'}))};
-      return tag('PartText',{x:n.x,y:n.y,width:n.width,height:22,alpha:initial(n.alpha,255)},tag('Text',{align:n.align??'START'},tag('Font',{family:'monospace',size:n.size,color:colour(n.role,style)},style.labelXml?.[n.content]??templates[n.content]??xml(n.content))));
+      const text=tag('PartText',{x:n.x,y:n.y,width:n.width,height:n.height??22,alpha:initial(n.alpha,255)},tag('Text',{align:n.align??'START'},tag('Font',{family:'monospace',size:n.size,color:colour(n.role,style)},style.labelXml?.[n.content]??templates[n.content]??xml(n.content))));
+      return n.warning?tag('Condition',{},tag('Expressions',{},tag('Expression',{name:'low_battery'},'<![CDATA[[BATTERY_PERCENT] <= 15]]>'))+tag('Compare',{expression:'low_battery'},text.replaceAll(colour(n.role,style),colour('warning',style)))+tag('Default',{},text)):text;
     }
     default:throw new Error(`Unrecognized node ${n.kind}`);
   }

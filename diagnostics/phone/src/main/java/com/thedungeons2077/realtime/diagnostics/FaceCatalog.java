@@ -22,8 +22,24 @@ public final class FaceCatalog {
         if ("HALO".equals(face)) return new String[]{"REFERENCE", "PHOSPHOR", "ICE"};
         return new String[]{"STOCK"};
     }
+    /** Match the current face editor; HALO keeps its original instrument/node controls. */
+    public static String[] effects(String face) {
+        return "REDLINE".equals(face) ? new String[]{"seconds", "ring_a", "ring_b", "breathing", "scan", "tilt"} : Measurements.EFFECTS.clone();
+    }
+    /** Named presets map directly to the catalogue order, avoiding stale disabled-effect choices. */
+    public static String[] effectPresets(String face) {
+        String[] ids = effects(face), result = new String[ids.length + 2];
+        result[0] = "FULL MOTION"; result[1] = "ALL EFFECTS OFF";
+        for (int i = 0; i < ids.length; i++) result[i + 2] = "FULL EXCEPT " + ids[i].toUpperCase(java.util.Locale.ROOT);
+        return result;
+    }
+    /** Old reports retain the historical control names; missing declarations are printed as unavailable. */
+    public static String[] reportEffects(String face, String version) {
+        return "REDLINE".equals(face) && version.matches("0\\.[12]\\..*") ? Measurements.EFFECTS.clone() : effects(face);
+    }
     /** Preserve known release provenance; unknown face versions are explicitly unavailable. */
     public static String commit(String face, String version) {
+        if ("REDLINE".equals(face) && "0.3.0".equals(version)) return BuildConfig.REDLINE_FOCUS_SOURCE_COMMIT;
         if ("REDLINE".equals(face) && "0.2.1".equals(version)) return BuildConfig.REDLINE_EDITOR_SOURCE_COMMIT;
         if ("REDLINE".equals(face) && "0.2.0".equals(version)) return BuildConfig.REDLINE_CONTROLS_SOURCE_COMMIT;
         if ("REDLINE".equals(face) && "0.1.1".equals(version)) return BuildConfig.REDLINE_PATCH_SOURCE_COMMIT;

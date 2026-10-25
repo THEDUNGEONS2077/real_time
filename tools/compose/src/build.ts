@@ -59,7 +59,7 @@ async function redlineResources():Promise<Map<string,Buffer>> {
   result.set('xml/watch_face_info.xml',Buffer.from('<?xml version="1.0" encoding="utf-8"?>\n<!-- Generated picker metadata. -->\n<WatchFaceInfo><Preview value="@drawable/preview"/><Editable value="true"/><MultipleInstancesAllowed value="true"/></WatchFaceInfo>\n'));
   for(const [name,svg] of Object.entries({...icons,redline_mesh:meshSvg()}))result.set(`drawable-nodpi/${name}.webp`,await sharp(Buffer.from(svg)).webp({lossless:true,effort:6}).toBuffer());
   for(const character of '0123456789:')for(const ambient of [false,true])result.set(`drawable-nodpi/segment_${ambient?'ambient_':''}${character===':'?'colon':character}.png`,await sharp(Buffer.from(segmentSvg(character,!ambient))).png({compressionLevel:9}).toBuffer());
-  result.set('drawable-nodpi/preview.png',await sharp(Buffer.from(redline.previewSvg(frame({time:new Date('2026-10-24T10:45:00Z'),battery:87,steps:8540})))).png({compressionLevel:9}).toBuffer());
+  result.set('drawable-nodpi/preview.png',await sharp(Buffer.from(redline.previewSvg(frame({time:new Date('2026-10-25T10:45:00Z'),battery:87,motionSpeed:'SLOW'})))).png({compressionLevel:9}).toBuffer());
   return result;
 }
 /** Build to an explicit directory, or verify committed resources without changing them. */

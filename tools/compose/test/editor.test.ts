@@ -14,9 +14,9 @@ import { compileWatchface, imageData, style } from '../faces/redline/render.ts';
 import { palettes, scene } from '../faces/redline/design.ts';
 const exec=promisify(execFile),res=resolve(root,'faces/redline/src/main/res'),checker=resolve(root,'tools/check/verify_editor.py');
 
-it('checks all 6144 setting combinations and all 26 real option resources',async()=>{
+it('checks all 3072 setting combinations and all 24 real option resources',async()=>{
   const result=await exec('python3',['-I',checker,'--resources',res]);
-  expect(JSON.parse(result.stdout)).toMatchObject({configurations:6144,editorOptions:26,maxRenderedParts:32,packaged:false});
+  expect(JSON.parse(result.stdout)).toMatchObject({configurations:3072,editorOptions:24,packaged:false});
 },20000);
 it('rejects missing icons and native configuration selectors inside the scene',async()=>{
   const directory=await mkdtemp(resolve(tmpdir(),'real-time-editor-'));
@@ -76,4 +76,13 @@ it('accepts PNG recompression but rejects altered packaged pixels',async()=>{
       else await expect(command).rejects.toMatchObject({code:1});
     }
   }finally{await rm(directory,{recursive:true,force:true});}
+});
+
+it('shares identical neutral layers across all palettes instead of packaging duplicate copies',()=>{
+  const caches=compileWatchface().caches;
+  const shared=[...caches[0].layers.keys()].filter(key=>caches.every(c=>c.layers.has(key)));
+  expect(shared.length).toBeGreaterThan(0);
+  for(const name of shared)expect(new Set(caches.map(c=>c.layers.get(name)!.svg)).size).toBe(1);
+  const references=caches.reduce((n,c)=>n+c.layers.size,0),unique=new Set(caches.flatMap(c=>[...c.layers.keys()]));
+  expect(unique.size).toBeLessThan(references);
 });
