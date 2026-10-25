@@ -1,94 +1,64 @@
-/** Asset pipeline: deterministic images, WFF, editor labels and picker preview. */
+/**
+ * Build layer: write each face's generated Android resources, or check them byte for byte.
+ *
+ *   node tools/compose/src/build.ts                 # regenerate HALO and REDLINE
+ *   node tools/compose/src/build.ts --check         # fail if anything differs or is stale
+ *   node tools/compose/src/build.ts --face redline --out DIR
+ */
 import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
-import { resolve, dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import sharp from 'sharp';
-import { frame } from './model.ts';
-import { optionSvg } from './editor.ts';
-import { editorSettings } from '../faces/redline/editor.ts';
-import { digitSvg } from './dotmatrix.ts';
-import { previewSvg } from './preview.ts';
-import { stringsXml, watchfaceXml } from './wff.ts';
-import { palettes } from '../faces/halo/design.ts';
-import * as redline from '../faces/redline/render.ts';
-import { digitSvg as segmentSvg, icons, meshSvg } from '../faces/redline/assets.ts';
-/** Independent resource modules share the generator and render backends. */
-export type FaceName='halo'|'redline';
+import { haloResources } from '../halo/resources.ts';
+import { redlineResources } from '../faces/redline/resources.ts';
+
+/** Faces with their own resource-only module under faces/. */
+export type FaceName = 'halo' | 'redline';
 
 /** Repository root, independent of the caller's working directory. */
-export const root = resolve(dirname(fileURLToPath(import.meta.url)),'../../..');
-/** Reproducible, authored bokeh rather than a copy of the reference photograph. */
-export function backgroundSvg():string {
-  const circles=Array.from({length:27},(_,i)=>{
-    const angle=i*2.3999632297,r=80+(i*37%120),x=216+Math.sin(angle)*r,y=216+Math.cos(angle)*r;
-    return `<circle cx="${x}" cy="${y}" r="${2+i%5}" opacity="${0.28+i%4*0.08}"/>`;
-  }).join('');
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="432" height="432"><defs><radialGradient id="haze"><stop stop-color="white" stop-opacity="0.2"/><stop offset="0.7" stop-color="white" stop-opacity="0.08"/><stop offset="1" stop-color="white" stop-opacity="0"/></radialGradient><filter id="b"><feGaussianBlur stdDeviation="2.4"/></filter></defs><rect width="432" height="432" fill="url(#haze)"/><g fill="white" filter="url(#b)">${circles}</g></svg>`;
+export const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
+
+/** The complete generated resource set of a face. Nothing is written. */
+export function resources(face: FaceName): Promise<Map<string, Buffer>> {
+  return face === 'halo' ? haloResources() : redlineResources();
 }
-/** Tint only visible pixels; alpha remains unchanged across all palettes. */
-export async function backgroundData(palette:keyof typeof palettes):Promise<string> {
-  // Match WFF's SRC_IN colour filter exactly: RGB is the palette colour, alpha is the mask.
-  // Sharp.tint preserves source lightness, which would leave this white mask almost white.
-  const {data,info}=await sharp(Buffer.from(backgroundSvg())).ensureAlpha().raw().toBuffer({resolveWithObject:true});
-  const rgb=palettes[palette].cyan.slice(1).match(/../g)!.map(v=>parseInt(v,16));
-  for(let i=0;i<data.length;i+=4){data[i]=rgb[0];data[i+1]=rgb[1];data[i+2]=rgb[2];}
-  const buffer=await sharp(data,{raw:{width:info.width,height:info.height,channels:4}}).webp({lossless:true,effort:6}).toBuffer();
-  return 'data:image/webp;base64,'+buffer.toString('base64');
-}
-/** Return the complete generated resource set without writing project files. */
-export async function resources(face:FaceName='halo'):Promise<Map<string,Buffer>> {
-  if(face==='redline')return redlineResources();
-  const result=new Map<string,Buffer>();
-  result.set('raw/watchface.xml',Buffer.from(watchfaceXml()));
-  result.set('values/strings.xml',Buffer.from(stringsXml()));
-  result.set('xml/watch_face_info.xml',Buffer.from('<?xml version="1.0" encoding="utf-8"?>\n<!-- Generated picker metadata. -->\n<WatchFaceInfo><Preview value="@drawable/preview"/><Editable value="true"/><MultipleInstancesAllowed value="true"/></WatchFaceInfo>\n'));
-  result.set('drawable-nodpi/bg_halo.webp',await sharp(Buffer.from(backgroundSvg())).webp({lossless:true,effort:6}).toBuffer());
-  for(let i=0;i<10;i++)for(const ambient of [false,true])result.set(`drawable-nodpi/digit_${ambient?'ambient_':''}${i}.png`,await sharp(Buffer.from(digitSvg(i,!ambient))).png({compressionLevel:9}).toBuffer());
-  const preview=previewSvg(frame(),await backgroundData('REFERENCE'));
-  result.set('drawable-nodpi/preview.png',await sharp(Buffer.from(preview)).png({compressionLevel:9}).toBuffer());
-  return result;
-}
-/** Small static masks and original segmented glyphs accompany REDLINE's vector scene. */
-async function redlineResources():Promise<Map<string,Buffer>> {
-  const result=new Map<string,Buffer>();
-  const compiled=redline.compileWatchface();
-  result.set('raw/watchface.xml',Buffer.from(compiled.xml));
-  for(const cache of compiled.caches)for(const [name,data] of await cache.resources())result.set(name,data);
-  for(const setting of editorSettings)for(const option of setting.options)result.set(`drawable-nodpi/${option.icon}.png`,await sharp(Buffer.from(optionSvg(option))).png({compressionLevel:9}).toBuffer());
-  result.set('values/strings.xml',Buffer.from(redline.stringsXml()));
-  result.set('xml/watch_face_info.xml',Buffer.from('<?xml version="1.0" encoding="utf-8"?>\n<!-- Generated picker metadata. -->\n<WatchFaceInfo><Preview value="@drawable/preview"/><Editable value="true"/><MultipleInstancesAllowed value="true"/></WatchFaceInfo>\n'));
-  for(const [name,svg] of Object.entries({...icons,redline_mesh:meshSvg()}))result.set(`drawable-nodpi/${name}.webp`,await sharp(Buffer.from(svg)).webp({lossless:true,effort:6}).toBuffer());
-  for(const character of '0123456789:')for(const ambient of [false,true])result.set(`drawable-nodpi/segment_${ambient?'ambient_':''}${character===':'?'colon':character}.png`,await sharp(Buffer.from(segmentSvg(character,!ambient))).png({compressionLevel:9}).toBuffer());
-  result.set('drawable-nodpi/preview.png',await sharp(Buffer.from(redline.previewSvg(frame({time:new Date('2026-10-25T10:45:00Z'),battery:87,motionSpeed:'SLOW'})))).png({compressionLevel:9}).toBuffer());
-  return result;
-}
-/** Build to an explicit directory, or verify committed resources without changing them. */
-export async function build(destination:string,check=false,face:FaceName='halo'):Promise<void> {
-  const files=await resources(face);
-  for(const [name,data] of files){
-    const path=resolve(destination,name);
-    if(check){
-      const existing=await readFile(path).catch(()=>Buffer.alloc(0));
-      if(!existing.equals(data))throw new Error(`Generated resource differs: ${name}. Run npm run compose.`);
-    }else{await mkdir(dirname(path),{recursive:true});await writeFile(path,data);}
-  }
-  // Stale generated assets must fail too: Android would otherwise package them silently.
-  for(const entry of await readdir(destination,{recursive:true,withFileTypes:true})){
-    if(!entry.isFile())continue;
-    const relative=resolve(entry.parentPath,entry.name).slice(resolve(destination).length+1);
-    if(!files.has(relative)){
-      // Only this generator's content-addressed layers/editor tiles are auto-pruned on regeneration.
-      if(!check&&/^drawable-nodpi\/(?:cached_[a-z]+_[0-9a-f]{16}\.webp|editor_[a-z0-9_]+\.png)$/.test(relative))await rm(resolve(destination,relative));
-      else if(check)throw new Error(`Unexpected resource: ${relative}`);
+
+/**
+ * Files this generator owns and may delete when they are no longer produced:
+ * content-addressed layers, editor tiles and glyph masks.
+ */
+const generatedName = /^drawable-nodpi\/(?:cached_[a-z]+_[0-9a-f]{16}\.webp|editor_[a-z0-9_]+\.png|(?:clock|readout)_[a-z0-9_]+\.png|segment_[a-z_0-9]+\.png)$/;
+
+/** Write (or with `check`, verify) a face's resources into a res/ directory. */
+export async function build(destination: string, check = false, face: FaceName = 'halo'): Promise<void> {
+  const files = await resources(face);
+  for (const [name, data] of files) {
+    const path = resolve(destination, name);
+    if (check) {
+      const existing = await readFile(path).catch(() => Buffer.alloc(0));
+      if (!existing.equals(data)) throw new Error(`Generated resource differs: ${name}. Run npm run compose.`);
+    } else {
+      await mkdir(dirname(path), { recursive: true });
+      await writeFile(path, data);
     }
   }
-}
-if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
-  const args=process.argv.slice(2),out=args.indexOf('--out'),faceFlag=args.indexOf('--face');
-  const selected=faceFlag>=0?[args[faceFlag+1]]:out>=0?['halo']:['halo','redline'];
-  for(const face of selected){
-    if(face!=='halo'&&face!=='redline')throw new Error(`Unknown face: ${face}`);
-    await build(out>=0?resolve(args[out+1]):resolve(root,`faces/${face}/src/main/res`),args.includes('--check'),face);
+  // Stale files must fail too: Android would otherwise package them silently.
+  for (const entry of await readdir(destination, { recursive: true, withFileTypes: true })) {
+    if (!entry.isFile()) continue;
+    const relative = resolve(entry.parentPath, entry.name).slice(resolve(destination).length + 1);
+    if (files.has(relative)) continue;
+    if (check) throw new Error(`Unexpected resource: ${relative}`);
+    if (generatedName.test(relative)) await rm(resolve(destination, relative));
   }
-  console.log(args.includes('--check')?'Generated resources match byte for byte.':`${selected.join(', ')} resources generated.`);
+}
+
+// Command-line entry point.
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const args = process.argv.slice(2);
+  const out = args.indexOf('--out'), faceFlag = args.indexOf('--face');
+  const selected = faceFlag >= 0 ? [args[faceFlag + 1]] : out >= 0 ? ['halo'] : ['halo', 'redline'];
+  for (const face of selected) {
+    if (face !== 'halo' && face !== 'redline') throw new Error(`Unknown face: ${face}`);
+    await build(out >= 0 ? resolve(args[out + 1]) : resolve(root, `faces/${face}/src/main/res`), args.includes('--check'), face);
+  }
+  console.log(args.includes('--check') ? 'Generated resources match byte for byte.' : `${selected.join(', ')} resources generated.`);
 }

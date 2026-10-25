@@ -4,7 +4,7 @@
 
 # HALO design
 
-REDLINE's separate reference, rotation profile, subtle glow and hardware/resource calibration are documented in [faces/redline/README.md](faces/redline/README.md). Shared renderer extensions preserve HALO's generated resources byte for byte.
+HALO is frozen: its generator lives in `tools/compose/halo` and its resources stay byte-identical. REDLINE is documented in [faces/redline/README.md](faces/redline/README.md).
 
 ## Reference and adaptation
 

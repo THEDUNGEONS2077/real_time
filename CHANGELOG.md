@@ -1,5 +1,24 @@
 # Changelog
 
+## REDLINE 1.0.0 (build 8)
+
+- **Clock fonts:** 8 to choose from. REDLINE angular (default), SEGMENT LCD with faint unlit segments, Rajdhani, Oxanium, Chakra Petch, Share Tech Mono, VT323 terminal and DOT matrix. Each is baked into glyph masks, so there is no runtime font. The date and battery follow the chosen font.
+- **CLOCK GLOW:** OFF / LOW / HIGH, baked into the glyphs.
+- **CLOCK SIZE:** SMALL / MEDIUM / LARGE. Medium is 0.3.2's size, and every font stays centred.
+- **Timer slot:** a new tappable complication at the bottom. It shows a provider's text, icon or progress bar, and SET TIMER until you choose Timer in Customize.
+- **Layout:** battery moves above the date to make room for the slot.
+- **Motion and defaults:** unchanged from 0.3.2 (Slow + Smooth, the same rings and effects). New settings default to the 0.3.2 look, and saved choices are kept.
+- **Rebuilt generator:** readable, commented modules (core, WFF, SVG, editor, fonts). HALO's generator is frozen and byte-identical.
+- **Release checker:** now covers 1,022 editor states plus every glyph's size and the slot, instead of a full product that no longer scales.
+- **Memory:** the official evaluator gives 30.0 MB active and 1.3 MB ambient (limits 100 / 10). Delivered smoothness is to be measured with the helper.
+
+## Diagnostics 0.6.0 (build 11)
+
+- **New layout:** a four-step screen (CONNECT, INSTALL, TEST, REPORT) with a status line, progress bar and CANCEL. First-time pairing folds away once it has worked.
+- **SMOOTHNESS TEST (20 s):** one tap. It finds the watch-face surface itself and reports delivered fps, frame times, missed frames and renderer CPU from SurfaceFlinger's frame history.
+- **Moved under MORE TESTS:** the 30 s trace, battery test, renderer logs and trace reanalysis.
+- **Test labels:** settings now include REDLINE 1.0's font, size and glow, and the provenance list includes REDLINE 1.0.0.
+
 ## REDLINE 0.3.2 (build 7)
 
 - Centre visible time on both axes at (216,216), fixing the right-biased fixed-width cell around 1. Use tightly cropped proportional advances, no inserted spaces/tracking, and minimal antialiasing clearance so digits and colon remain distinct.

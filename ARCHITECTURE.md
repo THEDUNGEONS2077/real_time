@@ -1,101 +1,75 @@
 # Architecture
 
-## Build layers
+## Layers
 
-`tools/compose` owns pure design data, the numeric expression AST and both renderers. A numeric motion formula is serialized to WFF and evaluated for SVG from the same tree. Geometry starts at twelve and increases clockwise in both outputs. A preview frame uses UTC fields as a synthetic local wall clock; installed WFF uses the watch's current local time.
+```
+tools/compose/
+  src/                  the generator engine (REDLINE and future faces)
+    core/               expr.ts (numeric expression tree) · scene.ts (decorative nodes) · frame.ts (preview inputs) · geometry.ts
+    wff/                xml.ts (builder, Condition) · nodes.ts (scene → WFF) · complication.ts (slot + preview)
+    svg/                nodes.ts (scene → SVG previews)
+    editor/             catalogue.ts (settings, selectXml) · icons.ts (96 px tiles) · letters.ts (5×7 alphabet)
+    fonts/              outline.ts (pinned OFL TTFs) · glyphs.ts (cell layout, glow, masks)
+    bake.ts             build-time layer cache
+    build.ts            write or byte-check each face's res/ tree
+  faces/redline/        design.ts · fonts.ts · editor.ts · render.ts (WFF) · preview.ts (SVG) · resources.ts · assets.ts
+  halo/                 HALO's frozen generator (byte-identical; no new features)
+  fonts/                committed OFL fonts with their licences
+tools/check/            review gallery, release checker (verify_editor.py), packaged-pixel comparison
+tools/measure/          watch-shell collector and host analysis
+diagnostics/phone/      the phone helper app (Java): pair, install, test, report
+faces/<face>/           resource-only Android modules; generated res/ is committed
+```
 
-`faces/halo` is one Android application with resources only. It declares WFF 4, API 36 and `hasCode=false`. There is no Kotlin, AndroidX, service, launcher activity, runtime permission or network code. Further faces get independent modules and package IDs.
+One expression tree drives both outputs. `expression()` writes the WFF expression and `value()` evaluates it for previews and tests. Geometry starts at twelve and runs clockwise in both.
 
-`faces/redline` is the second independent module with the same packaging constraints. Its design and original glyph/icon masks live under `tools/compose/faces/redline`. Both faces use the shared numeric AST and vector renderers; optional per-face styling, clock layout, labels, local arc centres, group pivots and positioned image masks avoid copying the renderer. The default HALO backend remains byte-identical. REDLINE uses fixed readouts and faster modulated main carriers plus independently rotating instrument verniers. Narrow alpha strokes and small static masks provide glow; there is no runtime blur.
+## A REDLINE watchface.xml
 
-R8 is enabled in both variants to remove AGP's generated R bytecode; resource shrinking stays off because WFF resolves artwork and labels by name. The .dev variant uses a different package and debug signing key but is not debuggable: the APK contains no application code to debug. Capture tools inspect the system renderer instead.
+```
+Scene
+  interactive group (alpha 0 in ambient)
+    ground
+    palette ▸ decoration; each effect switch ▸ speed ▸ style
+    clock_font ▸ glow ▸ clock_size ▸ DigitalClock (BitmapFont)
+    clock_font ▸ battery + date (BitmapFont, or system font for REDLINE)
+  ambient group (alpha 255 in ambient)
+    clock_font ▸ dim DigitalClock
+  ComplicationSlot (hidden in ambient)
+```
 
-`tools/check` rasterizes SVG with Sharp, produces a standalone gallery and measures ambient coverage. The scene is shared, but font metrics, glow, complication content and runtime rendering can differ on the watch. These checks never stand in for device acceptance.
+- **Only Conditions select branches.** Declarations stay flat in UserConfigurations; nesting native selectors left the editors blank in 0.2.0.
+- **Colours are literals.** A theme-colour lookup turned 0.1.0 white on the watch.
+- **Readouts sit outside every moving group** and are declared once, not once per palette.
+- **Fonts are bitmaps.** Each clock font has three families, `clock_<font>_off|low|high` (`_off` is also the ambient face). Fonts with a readout face add `readout_<font>`, whose lowercase letters reuse the capital masks.
 
-`tools/measure` contains the watch-shell collector and host-only analysis. It does not run inside a face. The PC processes exports; only the phone connects to the watch.
+## Fonts
 
-`diagnostics/phone` is the preferred native phone frontend. It embeds the shared collector, pairs directly over local Wi-Fi, downloads captures into non-backed-up storage, runs a checksum-pinned ARM64 processor on the phone and formats an explicit-copy report. Its own executable code and network permission are isolated in a separate package. Battery starts are persisted atomically; no service or live connection runs through the daily interval. Pairing identity is private and separate from Wear Installer 2's.
+`layoutFace` turns any InkSource (a TTF via opentype.js, or a vector design such as REDLINE's segments or DOT's 5×7 cells) into glyph cells:
+- **Scale:** one reference ink height for all fonts.
+- **Cell width:** the glyph's ink plus a pad that holds the baked glow.
+- **Colon:** centred on the digits' vertical middle.
+- **Fit:** the face shrinks to fit the widest `hh:mm`.
+- **Output:** the cell widths become WFF `Character` widths, and the same masks drive the SVG previews.
 
-The same phone frontend installs locally selected face APKs. Android's document picker grants one file without a storage permission; a bounded private copy is inspected for the known face package, release signing certificate, watch feature and resource-only footprint. The user's install action streams this exact copy to Android's package manager over paired ADB, as `exec:cmd package install -r -S <bytes>`. Success requires the watch's explicit response and the registered version code. There is no automatic download, uninstall, downgrade or face selection. Interrupted commits can have an unknown final state and are not retried automatically. A saved battery interval blocks installation. Connection checks and operation failures produce copyable summaries without addresses or pairing codes.
+Font files are verified against pinned SHA-256s before use.
 
-APK inspection resolves the named `raw/watchface` resource through Android's resource table. AAPT2 can shorten its ZIP entry to a name such as `res/li.xml`; source-tree paths cannot be used to identify packaged resources. Helper unit tests build a HALO APK and inspect its real table/ZIP with the pinned SDK's AAPT2. The fixture can be overridden with `-PhaloSelectionFixture=/absolute/path/to/released.apk` to repeat the regression against a downloaded, checksum-verified release.
+## Layer cache
 
-The phone helper's FaceCatalog explicitly allows HALO and REDLINE and supplies their accurate labels/package names. Selection still checks the shared release certificate and absence of code/permissions. Installed-version verification targets the selected face, never a default HALO package. Palette choices follow the selected face; both faces currently expose the same seven stable effect IDs with face-specific meanings. Known REDLINE 0.1.0 provenance resolves the local `redline-v0.1.0` commit, with HEAD used for the initial combined review build. Fetch that tag before building later helper releases; version changes require updating the explicit catalogue. Other versions remain unavailable.
+`LayerCache` flattens runs of at least eight static primitives into one cropped lossless WebP, keeping painter order. Moving groups keep their live transforms; only their artwork is cached. Names are content hashes, so identical neutral layers are shared across palettes.
 
-REDLINE 0.1.1 embeds literal reference colours instead of a one-option ColorConfiguration. The renderer style's empty configurable-role list selects literal values for every draw/image colour; its clock and complication use the same literals. This removes theme resolution as a potential white-fallback dependency while keeping SVG/artwork/motion identical. HALO retains its three configurable palettes. The user confirmed 0.1.1 renders correctly on their Watch7; the precise failure cause remains unverified without logs. REDLINE 0.2.0 keeps literal colours in six native ListConfiguration branches. Static artwork is shared across speed/style selections within each palette. Its four speed selections choose active or fully static subtrees; smooth decorative rotations use native 30 fps looping Transform/Animation elements, while Dynamic retains time-expression modulation. The shared group model carries native rotation parameters and an SVG phase approximation; native loops may restart their decorative phase on activation.
+## Checks
 
-`capture.sh renderer RUN_ID` reads current process names and bounded existing main/system/crash log buffers. The phone retains raw files privately and selects only attributed renderer warnings/errors for its copyable report; crash Process records establish attribution even after a process exits. Process IDs are not copied. The report redacts address/identifier patterns, omits explicitly sensitive fields, deduplicates and bounds output, and labels missing sources. Logs can include earlier faces and are not proof of current render success. No log buffer is cleared or persistent logger installed. This action is blocked during a saved battery interval. Known REDLINE 0.1.1 provenance is separately pinned to `redline-v0.1.1`, with HEAD for its initial review build.
+- **`npm run check`:** typecheck, vitest, byte-for-byte resource reproduction and the preview gallery. The gallery enforces under 10% ambient lit pixels for every font.
+- **`tools/check/verify_editor.py`:** resolves Conditions for 1,022 editor states and asserts what the watch would draw. The states cover every option, every font × glow × size, every speed × style × effect combination, and a fixed-seed random sample. It also checks every BitmapFont character against its PNG size, and the Timer slot's types, bounds and empty default. With `--apk` it compares packaged resources through AAPT2's resource table, because AAPT2 renames ZIP paths.
+- **`scripts/release-wear.sh`:** adds Google's WFF validator, lint, signature, no-code and no-permission checks, and the official memory evaluator.
 
-## Generated resources
+## Phone helper
 
-The generator returns the entire resource tree as a map and can write it to any directory. Tests build in a temporary directory and compare every file with committed resources, including PNG/WebP bytes. `--check` also rejects stale extra resources. Lockfiles pin the image toolchain; dependencies changing encoded output require intentional regeneration.
+`diagnostics/phone` is a separate app with its own signing and version tags (`diagnostics-v*`). It pairs with the watch over Wireless debugging, installs inspected face APKs, and runs tests.
+- **Smoothness test:** samples `dumpsys SurfaceFlinger --latency` on the watch-face surface for 20 s. It reports delivered fps, frame times, missed frames and renderer CPU.
+- **Other tests:** the detailed 30 s Perfetto trace, battery interval and renderer logs.
+- **No PC connection:** the PC never connects to the watch.
 
-The clock uses two TimeText rows in DigitalClock with SYNC_TO_DEVICE and original bitmap glyphs. A second glyph family without glow serves the minimal ambient clock. The background is one monochrome WebP with palette tinting; the SVG backend embeds a tinted equivalent.
+## Release tags
 
-## Motion
-
-The scene has seven independent configuration switches. Conditions select moving or static subtrees, so disabling an effect removes its high-frequency expressions from the selected subtree. Clock phases are bounded before sine/cosine evaluation. Ring periods divide a day; the watch's local-day source is appropriate for decoration, and changing local time can rephase it.
-
-Interactive artwork is grouped behind an ambient variant. The ambient group contains only static time rows; the system changes the displayed time. Geometry checks include stroke thickness, bracket scale and simultaneous three-unit shifts on both axes. Full-background artwork is clipped by the round display and is exempt from the foreground safe margin.
-
-The shortcut is a customizable complication slot with empty, short-text, monochrome-image and small-image renderings. WFF owns provider taps. No Samsung component name is guessed or bundled.
-
-## Measurement interfaces
-
-`capture.sh probe RUN_ID` records supported services, data sources, battery fields, processes and Timer candidates. `snapshot RUN_ID start|end` captures read-only endpoints. `trace RUN_ID` records a 30-second, 8 MiB Perfetto ring buffer from advertised sources. Existing captures are never overwritten. Commands unavailable on a device have error files and status entries.
-
-The analyzer accepts a directory with `run.json`, optional `probe/`, `start/`, `end/` and `trace/`. Metadata schema 1 records source commit, version, face, palette, seven effect values, optional motionSpeed/motionStyle (required for REDLINE 0.2.0+), AOD, brightness, timeout, connectivity, firmware and operator notes. It optionally identifies the discovered renderer process and exact frame layer. It emits report.json, report.csv and report.md; `--baseline` adds comparison.json.
-
-Battery results use whole-watch endpoint deltas. Android modeled mAh is separately named. Boot IDs, monotonic time, checkin start clock, incremental history and setting differences identify contaminated intervals. Unsupported fields remain null and uncertain intervals are flagged. Battery history is not replaced or reset by the collector.
-
-The optional pinned Perfetto processor is invoked by explicit absolute path with argument arrays, never a shell. CPU time is grouped by process from scheduling events; frame metrics require an exact recorded surface selection. Renderer measurements remain shared-process/surface data, not exclusive face energy. Raw exports never supply code, SQL or executable paths.
-
-Effect metadata is a boolean map so future faces can name their own effects. HALO's known seven switches are additionally required for HALO runs. Performance comparisons check trace coverage and data-loss counters rather than requiring battery endpoints that do not belong to short traces.
-
-## Release gates
-
-The release script validates the signed APK, not just the source: package identity, SDKs, certificate, no permissions, no DEX/native libraries and official memory limits. It parses the XML validator's PASS/FAIL output because that validator may return status zero on invalid XML. Verify-only mode has no remote GitHub operations.
-
-Generated artwork and source are committed; keys, captures, analysis output, downloaded validators and build products are ignored. Reviewed measurements and optimization decisions may be committed only after checking their contents.
-
-Face verification reports are separated under `out/verification/<face>`. HALO retains its original `v*` release tag scheme; subsequent faces use `<face>-v*`, allowing independent versions and monotonic version codes. The shared helper uses its separate `diagnostics-v*` release scheme.
-
-## REDLINE 0.2.1 repair and shared face contract
-
-The user reports 0.2.0 has blank, ineffective options on both phone and watch, and motion stops after switching away and back. It supplied no list-option artwork and nested native scene selectors, which Android's personalization guide forbids despite XSD accepting the structure. `editor.ts` now emits flat catalogue definitions, captioned 96-pixel icons, accessible labels and Conditions for scene selection. All effects use explicit TRUE/FALSE list choices so companion apps need no implicit Boolean icon artwork. The IDs/defaults remain stable; old Boolean selections may restore their default once when their schema changes. Palette colours remain literal.
-
-`bake.ts` replaces sufficiently large static vector/image runs with cropped lossless coloured masks, preserving painter order and live group transforms. Forty-two deduplicated layers cover six palettes; each active palette uses seven. Source geometry and numeric transforms remain shared with SVG. The same revised full-motion scene has 325 source parts and 26 cached scene parts; the complete selected WFF has at most 32 parts counting every Timer-provider branch conservatively. This is a structural metric, not measured FPS. XML falls from 4,496,431 to 446,118 bytes. Watch memory and device acceptance are reported separately.
-
-Repeating native Animation elements are removed. Smooth is steady clock-driven rotation; Dynamic retains clock-driven speed modulation. Every moving group reads live clock sources, eliminating dependence on a constant-target animation restarting after activation. No 30 fps delivery claim is made.
-
-Time glyphs are doubled to 68×108 units, using a 300×114 TimeText box and the same original glyph assets at size 108. Battery moves above time, Timer/steps below. Ambient also uses the larger dim time. The selected-tree checker covers all 6,144 configurations, independent live Timer editing and ambient/static branches. Signed-APK verification resolves renamed resource paths through AAPT2 and checks labels, option icons, masks and glyphs against their generated contents (decoded pixels for AAPT2-reencoded PNGs). Device Save/persistence, provider behaviour and motion re-entry remain mandatory acceptance tests.
-
-Every new face follows [FACE_STANDARD.md](FACE_STANDARD.md); extend its explicit test profile instead of copying REDLINE's coordinates or claiming its measured performance.
-
-## REDLINE 0.3.0 focused layout and bounded smoothing
-
-The user confirms all 0.2.1 customization works and the visual result looks good. They now request removal of branding/instrument circles, a flatter time, a 3.5× larger date above it, battery percentage below it, and maximum practical smoothness at 0.5×. The 0.3.0 scene removes steps, Timer/complication, instrument verniers and their node control. HALO retains its own instruments. The catalogue has six effects and 24 explicit option tiles; the selected-tree profile covers 3,072 combinations.
-
-Time uses new 62×76 source glyphs in a 272×76 box, 268 units of rendered width. Every box corner lies within the 145-unit inner circle. Date is size 42 (12×3.5) in a 280×56 box above time; battery is a centred percentage below, with the warning colour at ≤15%. Labels now support explicit height and optional warning colour without changing HALO output.
-
-Smooth mode replaces per-frame clock expressions for moving properties with predictive, integer-clock targets. A new `daySecond` source serializes to `[SECONDS_IN_DAY]`. `angleTransition`/`alphaTransition` emit one-second LINEAR Animations at a requested 60 fps with repeat=0. Angular direction is explicit at modulo wraps. The ideal pose and next-second target derive from the same AST calculations; tests reconstruct intermediate poses, including midnight and re-entry time gaps. These transitions refresh on each clock tick and do not depend on the constant-target infinite loops that stopped in 0.2.0. Activation can settle during its first second, and the actual platform cadence/lifecycle remains a device test.
-
-Dynamic retains millisecond-derived motion as a fallback. Editor IDs for retained options remain stable. New instances default to Slow + Smooth; existing saved choices remain user-owned, so explicitly select Slow (0.5×) for acceptance. Still/all-disabled selected branches contain no transition, gyro or decorative clock source.
-
-The same revised design has 206 source parts and 14 cached scene parts (at most 15 selected WFF parts including the background). Six layers per palette refer to 31 unique resources; the neutral backing layer is shared across all palettes. Official memory evaluation records 22,230,640 active bytes and 97,280 ambient bytes, within the same limits; no delivered FPS or energy benefit is inferred.
-
-Helper 0.5.0 now derives presets and report effect names from FaceCatalog. REDLINE 0.3.0 has six controls; HALO and legacy REDLINE had seven. Old saved reports remain interpretable. A new capture of an old instrument build without its old declaration labels that field unavailable; use an earlier helper for complete historical experiments. The host analyzer requires six REDLINE controls for 0.3.0+, preserving seven for older exports.
-
-## REDLINE 0.3.1 typography
-
-The user reports 0.3.0 looks very smooth. This revision changes only typography: 65×94 digit cells (20×94 colon) in a centred 280×94 native TimeText box at (76,178). For full-width digits, visible solid ink spans approximately x=80…351 and y=183…266 inside the existing bracket edges x=79/353, y=183/267. Font viewport padding is retained for glow and glyph metrics; it is not the illuminated boundary. The date is size 21 (half of 42), centred horizontally in its existing 280-unit width with a 28-unit box at y=144. Motion ASTs and all interpolation targets are unchanged.
-
-## REDLINE 0.3.2 optical centring and slow inner bands
-
-The user reports the time appears right-biased and requests centring on both axes, 25% larger type, tight characters and a thicker slowly rotating inner red ring. The previous fixed-width digit cell placed 1 at its right edge. The new bitmap font uses cropped proportional advances: 74 units normally, 64 for 3/7, 16 for 1 and 12 for the colon, all 118 high. The font size is 117.5, exactly 94×1.25; whole-pixel mask widths approximate the same horizontal enlargement. One pixel of edge clearance (two for the colon) preserves antialiasing and legible punctuation, with no tracking or inserted spaces. Both stems of 1 reach the common cap/baseline. WFF's centred native TimeText and SVG use the same character widths; the 350×118 clock box at (41,157) centres on (216,216). Date moves to y=120 and battery to y=282 to clear the enlarged time; corner marks also centre on the display.
-
-Both inner red bands at radii 181/163 use 5.5-unit solid cores instead of 3.2, keeping the same narrow 8/12-unit low-alpha glow layers. The inset breathing band now sits inside the existing inner carrier, so both turn counterclockwise together. Its base period is 60 seconds (120 at Slow); the Dynamic modulation period lengthens to 20 seconds to preserve counter-rotation without reversals. Ring B disables rotation of both bands; breathing independently controls inset opacity. This adds no new animated carrier or runtime blur. The proven clock-refreshed interpolation, outer rotation and real-time seconds are retained. Helper 0.5.2 adds exact source provenance for this patch; previous helpers can still install it.
-
-The dim ambient fallback retains a centred 94-unit font; the requested 25% increase applies to interactive time. Dense 08:08 at 117.5 would illuminate 10.77% of the preview, exceeding the 10% guard. At 94 it uses 7.30%; previews now check dense and midnight samples as well as the default time and report the maximum.
-
-The pinned 1.5.1 memory tool's optional optimization-hint estimator uses Integer.parseInt for font sizes, although the WFF 4 schema accepts positive floats. The release script omits that optional estimate, retains the official active/ambient budget checks and JSON report, and now rejects exceptions/missing PASS/FAIL explicitly. The validator pin is unchanged. Current evaluated memory is 22,379,376 active / 159,064 ambient bytes; the scene still has 14 cached parts (15 including background).
+HALO uses `v*`; REDLINE uses `redline-v*`; the helper uses `diagnostics-v*`. Each has its own monotonic versionCode.

@@ -1,88 +1,192 @@
-/** REDLINE's focused angular clock, enlarged date and plain battery percentage. */
-import type { Frame, Node, RenderStyle, Role } from '../../src/model.ts';
-import { configurationXml, editorStrings, selectXml } from '../../src/editor.ts';
+/**
+ * REDLINE WFF layer: compile the face into watchface.xml.
+ *
+ * Scene structure (only one branch of each Condition is active):
+ *
+ *   interactive group (hidden in ambient)
+ *     ground
+ *     palette ▸ decorative scene; each effect ▸ speed ▸ style
+ *     clock font ▸ glow ▸ size ▸ DigitalClock
+ *     clock font ▸ battery + date
+ *   ambient group (shown in ambient)
+ *     clock font ▸ dim static DigitalClock
+ *   Timer complication slot (hidden in ambient)
+ *
+ * Clock, readouts and slot sit outside every moving group, so ring motion never
+ * re-draws text. Their colours are palette-independent (neutral ink), so they are
+ * declared once instead of once per palette.
+ */
 import { LayerCache } from '../../src/bake.ts';
-import { editorSettings } from './editor.ts';
-import { timeRows } from '../../src/dotmatrix.ts';
-import { nodeXml, tag, xml } from '../../src/wff.ts';
-import { nodeSvg } from '../../src/preview.ts';
-import { digitSvg, glyph, glyphWidth, icons, meshSvg } from './assets.ts';
-import { layout, palettes, speeds, timeScale, scene } from './design.ts';
-const canvas={x:0,y:0,width:432,height:432};
-// Every selected branch contains literal colours, preserving the confirmed 0.1.1 workaround.
-const colour=(role:Role)=>palettes.REFERENCE[role];
-/** Live labels retain the full date and current battery percentage. */
-export function labelText(content:string,f:Frame):string {
-  if(content==='full_date')return `${['SUN','MON','TUE','WED','THU','FRI','SAT'][f.time.getUTCDay()]} ${String(f.time.getUTCDate()).padStart(2,'0')} ${['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][f.time.getUTCMonth()]}`;
-  if(content==='percent')return `${f.battery}%`;
-  return content;
+import type { Node } from '../../src/core/scene.ts';
+import { stillNodes } from '../../src/core/scene.ts';
+import { configurationXml, editorStrings, selectXml } from '../../src/editor/catalogue.ts';
+import type { GlyphFace } from '../../src/fonts/glyphs.ts';
+import { glyphResource } from '../../src/fonts/glyphs.ts';
+import { slotXml } from '../../src/wff/complication.ts';
+import type { SlotSpec } from '../../src/wff/complication.ts';
+import { nodeXml } from '../../src/wff/nodes.ts';
+import { breakLines, canvas, condition, escapeXml, lowBattery, tag } from '../../src/wff/xml.ts';
+import { maskImages } from './assets.ts';
+import { layout, palettes, scene, speeds } from './design.ts';
+import type { MotionStyle, PaletteId, Speed } from './design.ts';
+import { settingById, editorSettings } from './editor.ts';
+import { ambientScale, clockCellHeight, clockFace, clockMaxWidth, clockSizes, fontIds, glows, readoutFace } from './fonts.ts';
+import type { ClockSize, FontId, GlowId } from './fonts.ts';
+
+/** Neutral readout colours, identical in every palette. */
+export const ink = palettes.REFERENCE.ink;
+export const warning = palettes.REFERENCE.warning;
+/** The ambient clock is dim grey at low alpha: under 10% of the screen lights up. */
+export const ambientInk = '#98a0a4';
+export const ambientAlpha = 65;
+
+/** The Timer complication slot. */
+export const slot: SlotSpec = {
+  id: 0, name: 'timer_slot', ...layout.complication,
+  ink, dim: '#87909a', emptyText: 'SET TIMER', fontFamily: 'monospace',
+};
+
+/* ------------------------------------------------------------ bitmap fonts */
+
+/** BitmapFont family name and glyph resource prefix for a clock font at one glow level. */
+export const clockFamily = (font: FontId, glow: GlowId) => `clock_${font.toLowerCase()}_${glow.toLowerCase()}`;
+/** BitmapFont family name and glyph resource prefix for a readout font. */
+export const readoutFamily = (font: FontId) => `readout_${font.toLowerCase()}`;
+
+/** A BitmapFont declaration. Lowercase letters reuse the capital masks, so provider casing never matters. */
+function bitmapFontXml(name: string, face: GlyphFace): string {
+  const characters = [...face.glyphs.values()].flatMap(g => {
+    const resource = glyphResource(name, g.char);
+    const entry = (c: string) => tag('Character', { name: c, resource, width: g.width, height: g.height });
+    return /[A-Z]/.test(g.char) ? [entry(g.char), entry(g.char.toLowerCase())] : [entry(g.char)];
+  });
+  return tag('BitmapFont', { name }, characters.join(''));
 }
-const template=(format:string,expressions:string[])=>tag('Template',{},format+expressions.map(expression=>tag('Parameter',{expression})).join(''));
-/** Single native TimeText follows the watch's 12/24-hour setting, including midnight/noon. */
-export function clockXml(ambient=false):string {
-  const box=ambient?layout.ambientTime:layout.time,size=ambient?layout.ambientTime.height:glyph.height*timeScale;
-  return tag('DigitalClock',canvas,tag('TimeText',{...box,format:'hh:mm',hourFormat:'SYNC_TO_DEVICE',align:'CENTER',alpha:ambient?65:255},
-    tag('BitmapFont',{family:ambient?'segments_ambient':'segments',size,color:ambient?'#98a0a4':colour('pale')})));
-}
-/** Share original glyph polygons and metrics with the generated BitmapFont. */
-export function clockSvg(f:Frame):string {
-  const scale=f.ambient?layout.ambientTime.height/glyph.height:timeScale,box=f.ambient?layout.ambientTime:layout.time;
-  const text=timeRows(f.time,f.hour24).join(':'),width=[...text].reduce((sum,c)=>sum+glyphWidth(c)*scale,0);
-  let x=216-width/2;
-  const y=box.y+(box.height-glyph.height*scale)/2;
-  return [...text].map(character=>{
-    const w=glyphWidth(character)*scale,svg=digitSvg(character,!f.ambient).replaceAll('fill="white"',`fill="${f.ambient?'#98a0a4':palettes.REFERENCE.pale}"`);
-    const image=`<image x="${x}" y="${y}" width="${w}" height="${glyph.height*scale}" opacity="${f.ambient?65/255:1}" href="data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}"/>`;x+=w;return image;
+
+/** Every BitmapFont the face declares. */
+function bitmapFontsXml(): string {
+  return fontIds.flatMap(font => {
+    const clocks = glows.map(glow => bitmapFontXml(clockFamily(font, glow), clockFace(font)));
+    const readout = readoutFace(font);
+    return readout ? [...clocks, bitmapFontXml(readoutFamily(font), readout)] : clocks;
   }).join('');
 }
-/** Resource masks are tinted identically to WFF SRC_IN tinting; all are white alpha images. */
-export const style:RenderStyle={roles:[],palettes,clockXml,clockSvg,labelText,
-  labelXml:{full_date:tag('Upper',{},template('%s %02d %s',['[DAY_OF_WEEK_S]','[DAY]','[MONTH_S]'])),percent:template('%d%%',['[BATTERY_PERCENT]'])},
-};
-/** Match tintColor semantics in SVG without adding runtime filter layers to the watch. */
-export function imageData(palette: keyof typeof palettes='REFERENCE'):Record<string,string>{return Object.fromEntries(Object.entries({...icons,redline_mesh:meshSvg()}).map(([name,svg])=>{
-  const role=name==='redline_mesh'?'teal':name==='redline_glow'?'cyan':'pale';
-  return [name,'data:image/svg+xml;base64,'+Buffer.from(svg.replaceAll('white',palettes[palette][role])).toString('base64')];
-}));}
-/** Build WFF 4 with no executable code, sequence animations or runtime blur. */
-export function compileWatchface():{xml:string;caches:LayerCache[]} {
-  const caches:LayerCache[]=[];
-  const font=(ambient:boolean)=>tag('BitmapFont',{name:ambient?'segments_ambient':'segments'},[...'0123456789:'].map(character=>tag('Character',{name:character,resource:`segment_${ambient?'ambient_':''}${character===':'?'colon':character}`,width:glyphWidth(character),height:glyph.height})).join(''));
-  const config=configurationXml(editorSettings),[paletteSetting,speedSetting,styleSetting]=editorSettings;
-  // Configurations are declared once. Scene Conditions are freely composable; native selectors are not.
-  const branches=selectXml(paletteSetting,Object.fromEntries(Object.entries(palettes).map(([palette,p])=>{
-    const literalStyle={...style,palettes:{REFERENCE:p}},cache=new LayerCache(palette,{...literalStyle,imageData:imageData(palette as keyof typeof palettes)});
-    caches.push(cache);
-    const variants=new Map<string,Node[]>();
-    const variant=(speed:keyof typeof speeds,feel:'SMOOTH'|'DYNAMIC')=>{
-      const key=`${speed}_${feel}`;if(!variants.has(key))variants.set(key,cache.scene(scene(speed,feel)));return variants.get(key)!;
-    };
-    const still=(nodes:Node[]):Node[]=>nodes.flatMap(n=>n.kind==='switch'?still(n.disabled):n.kind==='group'?[{...n,children:still(n.children)}]:[n]);
-    const base=variant('STANDARD','SMOOTH');
-    const motion=base.map((node,index)=>{
-      if(node.kind!=='switch')return nodeXml(node,literalStyle);
-      return selectXml(speedSetting,Object.fromEntries((Object.keys(speeds) as (keyof typeof speeds)[]).map(speed=>{
-        const subtree=(feel:'SMOOTH'|'DYNAMIC')=>tag('Group',{...canvas,name:`${palette}_${index}_${speed}_${feel}`},(speed==='STILL'?still([node]):[variant(speed,feel)[index]]).map(n=>nodeXml(n,literalStyle)).join(''));
-        return [speed,speed==='STILL'?subtree('SMOOTH'):selectXml(styleSetting,{SMOOTH:subtree('SMOOTH'),DYNAMIC:subtree('DYNAMIC')})];
-      })));
-    }).join('');
-    return [palette,tag('Group',{...canvas,name:`palette_${palette}`},motion)];
+
+/* ------------------------------------------------------------------- clock */
+
+/** Clock box for a scale: centred on (216,216), wide enough for the widest time. */
+export function clockBox(scale: number) {
+  // WFF requires integer boxes. An even width and height keep the centre exactly on (216,216).
+  const even = (n: number) => 2 * Math.ceil(n / 2);
+  const width = even((clockMaxWidth + 40) * scale), height = even(clockCellHeight * scale);
+  return { x: 216 - width / 2, y: 216 - height / 2, width, height };
+}
+
+/** One native clock. TimeText follows the watch's 12/24-hour setting and centres its own text. */
+function clockXml(family: string, scale: number, colour: string, alpha = 255): string {
+  const box = clockBox(scale);
+  return tag('DigitalClock', canvas, tag('TimeText', { ...box, format: 'hh:mm', hourFormat: 'SYNC_TO_DEVICE', align: 'CENTER', alpha },
+    tag('BitmapFont', { family, size: Number((clockCellHeight * scale).toFixed(2)), color: colour })));
+}
+
+/** Interactive clock: font ▸ glow ▸ size. */
+function interactiveClockXml(): string {
+  const [fontSetting, glowSetting, sizeSetting] = ['clock_font', 'glow', 'clock_size'].map(settingById);
+  return selectXml(fontSetting, Object.fromEntries(fontIds.map(font => [font,
+    selectXml(glowSetting, Object.fromEntries(glows.map(glow => [glow,
+      selectXml(sizeSetting, Object.fromEntries((Object.keys(clockSizes) as ClockSize[]).map(size => [size,
+        clockXml(clockFamily(font, glow), clockSizes[size], ink)])))])))])));
+}
+
+/** Ambient clock: one compact, crisp, dim size per font. */
+function ambientClockXml(): string {
+  return selectXml(settingById('clock_font'), Object.fromEntries(fontIds.map(font =>
+    [font, clockXml(clockFamily(font, 'OFF'), ambientScale, ambientInk, ambientAlpha)])));
+}
+
+/* ---------------------------------------------------------------- readouts */
+
+/** Date template: weekday, day and month separated by the '_' gap glyph (system fonts get spaces). */
+const dateTemplate = (gap: string) => tag('Template', {}, `%s${gap}%02d${gap}%s`
+  + ['[DAY_OF_WEEK_S]', '[DAY]', '[MONTH_S]'].map(expression => tag('Parameter', { expression })).join(''));
+const batteryTemplate = tag('Template', {}, '%d%%' + tag('Parameter', { expression: '[BATTERY_PERCENT]' }));
+
+/** One centred readout, switching to the warning colour at low battery when asked. */
+function readoutXml(box: { x: number; y: number; width: number; height: number }, font: (colour: string) => string, warns: boolean): string {
+  const text = (colour: string) => tag('PartText', box, tag('Text', { align: 'CENTER' }, font(colour)));
+  return warns ? condition([{ when: lowBattery, then: text(warning) }], text(ink)) : text(ink);
+}
+
+/** Battery above, date below, in the selected font's readout face. */
+function readoutsXml(): string {
+  return selectXml(settingById('clock_font'), Object.fromEntries(fontIds.map(font => {
+    const face = readoutFace(font);
+    if (!face) {
+      // REDLINE keeps 0.3.2's system monospace readouts, uppercased by WFF.
+      const system = (size: number, content: string) => (colour: string) => tag('Font', { family: 'monospace', size, color: colour }, content);
+      return [font, readoutXml(layout.battery, system(20, batteryTemplate), true) + readoutXml(layout.date, system(21, tag('Upper', {}, dateTemplate(' '))), false)];
+    }
+    const bitmap = (content: string) => (colour: string) => tag('BitmapFont', { family: readoutFamily(font), size: face.height, color: colour }, content);
+    return [font, readoutXml(layout.battery, bitmap(batteryTemplate), true) + readoutXml(layout.date, bitmap(dateTemplate('_')), false)];
   })));
-  const active=tag('Group',{...canvas,name:'interactive'},tag('Variant',{mode:'AMBIENT',target:'alpha',value:0})+nodeXml({kind:'rect',...canvas,role:'navy'},style)+branches);
-  const ambient=tag('Group',{...canvas,name:'ambient',alpha:0},tag('Variant',{mode:'AMBIENT',target:'alpha',value:255})+clockXml(true));
-  const document='<?xml version="1.0" encoding="utf-8"?>\n<!-- Generated by tools/compose/faces/redline; edit the shared design. -->\n'+tag('WatchFace',{width:432,height:432},tag('Metadata',{key:'PREVIEW_TIME',value:'10:45:00'})+tag('BitmapFonts',{},font(false)+font(true))+tag('UserConfigurations',{},config)+tag('Scene',{backgroundColor:'#000000'},active+ambient)).replaceAll('</PartDraw>','</PartDraw>\n').replaceAll('</Group>','</Group>\n').replaceAll('</Condition>','</Condition>\n')+'\n';
-  return {xml:document,caches};
 }
-/** Generate the same optimized XML used in the APK; no scene-level configuration selectors remain. */
-export function watchfaceXml():string { return compileWatchface().xml; }
-/** Preview follows the shared scene and ideal steady-state path; delivered cadence requires watch testing. */
-export function previewSvg(f:Frame):string {
-  const palette=(f.redlinePalette??f.palette) as keyof typeof palettes,p=palettes[palette]??palettes.REFERENCE;
-  const images=imageData(palette in palettes?palette:'REFERENCE'),s={...style,palettes:{...palettes,REFERENCE:p},imageData:images};
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="432" height="432" viewBox="0 0 432 432"><defs><clipPath id="round"><circle cx="216" cy="216" r="216"/></clipPath></defs><g clip-path="url(#round)"><rect width="432" height="432" fill="${f.ambient?'#000000':palettes.REFERENCE.navy}"/>${f.ambient?clockSvg(f):scene(f.motionSpeed,f.motionStyle).map(n=>nodeSvg(n,{...f,palette:'REFERENCE'},'',s)).join('')}</g></svg>`;
+
+/* ------------------------------------------------------------- decoration */
+
+/** Decorative scene for one palette, with each effect switch expanded into speed ▸ style branches. */
+function paletteXml(id: PaletteId, cache: LayerCache): string {
+  const palette = palettes[id];
+  const [speedSetting, styleSetting] = ['motion_speed', 'motion_style'].map(settingById);
+  // Each speed/style scene has the same top-level shape, so index i is the same node in all of them.
+  const variants = new Map<string, Node[]>();
+  const variant = (speed: Speed, style: MotionStyle) => {
+    const key = `${speed}_${style}`;
+    if (!variants.has(key)) variants.set(key, cache.scene(scene(speed, style)));
+    return variants.get(key)!;
+  };
+  const base = variant('STANDARD', 'SMOOTH');
+  const body = base.map((node, index) => {
+    if (node.kind !== 'switch') return nodeXml(node, palette);
+    const branch = (speed: Speed, style: MotionStyle) => {
+      const chosen = speed === 'STILL' ? stillNodes([node]) : [variant(speed, style)[index]];
+      return tag('Group', { ...canvas, name: `${id}_${index}_${speed}_${style}` }, chosen.map(n => nodeXml(n, palette)).join(''));
+    };
+    return selectXml(speedSetting, Object.fromEntries((Object.keys(speeds) as Speed[]).map(speed => [speed,
+      speed === 'STILL' ? branch('STILL', 'SMOOTH') : selectXml(styleSetting, { SMOOTH: branch(speed, 'SMOOTH'), DYNAMIC: branch(speed, 'DYNAMIC') })])));
+  }).join('');
+  return tag('Group', { ...canvas, name: `palette_${id}` }, body);
 }
-/** Localized editor strings live in Android resources; telemetry IDs remain stable. */
-export function stringsXml():string {
-  const strings={face_name:'REDLINE',...editorStrings(editorSettings)};
-  return '<?xml version="1.0" encoding="utf-8"?>\n'+tag('resources',{},Object.entries(strings).map(([name,s])=>tag('string',{name},xml(s))).join(''))+'\n';
+
+/* ---------------------------------------------------------------- document */
+
+/** The compiled face plus the layer caches whose images must be packaged. */
+export interface Compiled { xml: string; caches: LayerCache[] }
+
+/** Build watchface.xml. Pure: the same inputs always give the same bytes. */
+export function compileWatchface(): Compiled {
+  const caches: LayerCache[] = [];
+  const decoration = selectXml(settingById('palette'), Object.fromEntries((Object.keys(palettes) as PaletteId[]).map(id => {
+    const cache = new LayerCache(palettes[id], maskImages(palettes[id]));
+    caches.push(cache);
+    return [id, paletteXml(id, cache)];
+  })));
+  const ground = nodeXml({ kind: 'rect', ...canvas, role: 'ground' }, palettes.REFERENCE);
+  const interactive = tag('Group', { ...canvas, name: 'interactive' },
+    tag('Variant', { mode: 'AMBIENT', target: 'alpha', value: 0 }) + ground + decoration + interactiveClockXml() + readoutsXml());
+  const ambient = tag('Group', { ...canvas, name: 'ambient', alpha: 0 },
+    tag('Variant', { mode: 'AMBIENT', target: 'alpha', value: 255 }) + ambientClockXml());
+  const face = tag('WatchFace', { width: 432, height: 432 },
+    tag('Metadata', { key: 'PREVIEW_TIME', value: '10:45:00' }) +
+    tag('BitmapFonts', {}, bitmapFontsXml()) +
+    tag('UserConfigurations', {}, configurationXml(editorSettings)) +
+    tag('Scene', { backgroundColor: '#000000' }, interactive + ambient + slotXml(slot)));
+  const xml = '<?xml version="1.0" encoding="utf-8"?>\n<!-- Generated by tools/compose/faces/redline; edit the design, then run npm run compose. -->\n' + breakLines(face) + '\n';
+  return { xml, caches };
+}
+
+/** Android string resources: face name, editor labels and the slot's label. */
+export function stringsXml(): string {
+  const strings: Record<string, string> = { face_name: 'REDLINE', ...editorStrings(editorSettings), [slot.name]: 'TIMER / SHORTCUT' };
+  const body = Object.entries(strings).map(([name, s]) => tag('string', { name }, escapeXml(s))).join('');
+  return '<?xml version="1.0" encoding="utf-8"?>\n' + tag('resources', {}, body) + '\n';
 }

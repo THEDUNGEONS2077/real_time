@@ -1,58 +1,134 @@
-/** REDLINE previews, animation samples and reference alignment. These are not on-watch measurements. */
+/**
+ * Check layer: the REDLINE review gallery (out/previews/redline/index.html).
+ *
+ * It renders every palette, clock font, size and glow, the complication states and
+ * the ambient clock for each font, plus a motion loop and the optimized (cached) tree.
+ * Ambient coverage is enforced: under 10% of the round screen may light up.
+ * These are design previews, not watch measurements.
+ */
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import sharp from 'sharp';
 import { root } from '../compose/src/build.ts';
+import { frame } from '../compose/src/core/frame.ts';
+import type { Frame } from '../compose/src/core/frame.ts';
+import { optionSvg } from '../compose/src/editor/icons.ts';
+import { palettes, scene } from '../compose/faces/redline/design.ts';
 import { editorSettings } from '../compose/faces/redline/editor.ts';
-import { optionSvg } from '../compose/src/editor.ts';
+import { clockSizes, fontIds, glows } from '../compose/faces/redline/fonts.ts';
+import { previewSvg } from '../compose/faces/redline/preview.ts';
 import { compileWatchface } from '../compose/faces/redline/render.ts';
-import { nodeSvg } from '../compose/src/preview.ts';
-import { effects, frame } from '../compose/src/model.ts';
-import type { Frame } from '../compose/src/model.ts';
-import { palettes, speeds, scene } from '../compose/faces/redline/design.ts';
-import { previewSvg } from '../compose/faces/redline/render.ts';
-/** Generate the complete local review gallery without an HTTP server. */
-export async function redlinePreviews():Promise<void>{
-  const out=resolve(root,'out/previews/redline');await mkdir(out,{recursive:true});
-  const base={time:new Date('2026-10-25T10:45:00Z'),battery:87,motionSpeed:'SLOW' as const};
-  const states:[string,Partial<Frame>][]=[['reference',{}],...Object.keys(palettes).filter(k=>k!=='REFERENCE').map(k=>[k.toLowerCase(),{redlinePalette:k}] as [string,Partial<Frame>]),...Object.keys(speeds).map(k=>[`speed-${k.toLowerCase()}`,{motionSpeed:k as Frame['motionSpeed']}] as [string,Partial<Frame>]),['dynamic',{motionStyle:'DYNAMIC'}],['ambient',{ambient:true}],['low-battery',{battery:15}],['empty-battery',{battery:0}],
-    ['still',{effects:Object.fromEntries(effects.map(e=>[e,false])) as Frame['effects']}],['tilt-positive',{tiltX:3,tiltY:3}],['tilt-negative',{tiltX:-3,tiltY:-3}],
-    ['midnight',{time:new Date('2026-10-25T00:00:00Z'),steps:0}],['12-hour-noon',{time:new Date('2026-10-24T12:00:00Z'),hour24:false}],
-    ['narrow-digits',{time:new Date('2026-10-25T11:11:00Z')}],['wide-digits',{time:new Date('2026-10-25T08:08:00Z')}],['mixed-digits',{time:new Date('2026-10-25T17:37:00Z')}],
-    ['ambient-wide',{ambient:true,time:new Date('2026-10-25T08:08:00Z')}],['ambient-midnight',{ambient:true,time:new Date('2026-10-25T00:00:00Z')}],
-    ['motion-extreme',{time:new Date('2026-10-24T10:45:07.500Z')}]];
-  const cards:string[]=[],ambientSamples:{name:string;litFraction:number}[]=[];
-  for(const [name,override] of states){
-    const svg=previewSvg(frame({...base,...override}));await writeFile(resolve(out,`${name}.svg`),svg);
-    const png=await sharp(Buffer.from(svg)).png().toBuffer();await writeFile(resolve(out,`${name}.png`),png);
-    cards.push(`<figure><img src="${name}.png" width="320" height="320"/><figcaption>${name}</figcaption></figure>`);
-    if(override.ambient){
-      const {data,info}=await sharp(png).removeAlpha().raw().toBuffer({resolveWithObject:true});let lit=0,total=0;
-      for(let y=0;y<432;y++)for(let x=0;x<432;x++)if(Math.hypot(x+.5-216,y+.5-216)<=216){const p=(y*432+x)*info.channels;total++;if(data[p]+data[p+1]+data[p+2]>0)lit++;}
-      ambientSamples.push({name,litFraction:lit/total});
-      if(lit/total>=.10)throw new Error(`REDLINE ambient coverage exceeds 10%: ${name}.`);
+
+/** Fraction of the round screen with any lit pixel. */
+async function litFraction(png: Buffer): Promise<number> {
+  const { data, info } = await sharp(png).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  let lit = 0, total = 0;
+  for (let y = 0; y < 432; y++) for (let x = 0; x < 432; x++) {
+    if (Math.hypot(x + 0.5 - 216, y + 0.5 - 216) > 216) continue;
+    const p = (y * 432 + x) * info.channels;
+    total++;
+    if (data[p] + data[p + 1] + data[p + 2] > 0) lit++;
+  }
+  return lit / total;
+}
+
+/** Tile PNGs into one contact sheet, `columns` wide, at 432 px per tile. */
+async function sheet(files: string[], columns: number, out: string): Promise<void> {
+  const rows = Math.ceil(files.length / columns);
+  await sharp({ create: { width: columns * 432, height: rows * 432, channels: 3, background: '#08090b' } })
+    .composite(files.map((input, i) => ({ input, left: (i % columns) * 432, top: Math.floor(i / columns) * 432 })))
+    .png().toFile(out);
+}
+
+/** Generate the whole gallery without an HTTP server. */
+export async function redlinePreviews(): Promise<void> {
+  const out = resolve(root, 'out/previews/redline');
+  await mkdir(out, { recursive: true });
+  const at = (time: string) => new Date(`2026-10-25T${time}Z`);
+
+  // Named review states. Fonts are shown at Medium + Low glow, then sizes and glows separately.
+  const states: [string, Partial<Frame>][] = [
+    ['reference', {}],
+    ...Object.keys(palettes).filter(k => k !== 'REFERENCE').map(k => [`palette-${k.toLowerCase()}`, { config: { palette: k } }] as [string, Partial<Frame>]),
+    ...fontIds.map(font => [`font-${font.toLowerCase()}`, { config: { clock_font: font } }] as [string, Partial<Frame>]),
+    ...fontIds.flatMap(font => (Object.keys(clockSizes) as string[]).filter(s => s !== 'MEDIUM').map(size =>
+      [`size-${size.toLowerCase()}-${font.toLowerCase()}`, { config: { clock_font: font, clock_size: size }, time: at('08:08:00') }] as [string, Partial<Frame>])),
+    ...glows.filter(g => g !== 'LOW').flatMap(glow => ['REDLINE', 'RAJDHANI', 'SEGMENT'].map(font =>
+      [`glow-${glow.toLowerCase()}-${font.toLowerCase()}`, { config: { clock_font: font, glow } }] as [string, Partial<Frame>])),
+    ['timer-running', { complication: { type: 'SHORT_TEXT', text: '04:32', icon: true } }],
+    ['timer-progress', { complication: { type: 'RANGED_VALUE', text: '04:32', value: 272, min: 0, max: 600 } }],
+    ['timer-icon', { complication: { type: 'MONOCHROMATIC_IMAGE' } }],
+    ['low-battery', { battery: 15 }],
+    ['still', { config: Object.fromEntries(['seconds', 'ring_a', 'ring_b', 'breathing', 'scan', 'tilt'].map(e => [e, 'FALSE'])) }],
+    ['speed-still', { config: { motion_speed: 'STILL' } }],
+    ['dynamic', { config: { motion_style: 'DYNAMIC' } }],
+    ['tilt-positive', { tiltX: 3, tiltY: 3 }],
+    ['tilt-negative', { tiltX: -3, tiltY: -3 }],
+    ['midnight', { time: at('00:00:00') }],
+    ['12-hour-noon', { time: at('12:00:00'), hour24: false }],
+    ['narrow-digits', { time: at('11:11:00') }],
+    ['wide-digits', { time: at('08:08:00') }],
+    ['month-wide', { time: new Date('2026-05-27T10:45:00Z'), config: { clock_font: 'CHAKRA' } }],
+    ...fontIds.map(font => [`ambient-${font.toLowerCase()}`, { ambient: true, time: at('08:08:00'), config: { clock_font: font } }] as [string, Partial<Frame>]),
+  ];
+
+  const cards: string[] = [];
+  const ambient: { name: string; litFraction: number }[] = [];
+  for (const [name, override] of states) {
+    const svg = previewSvg(frame(override));
+    const png = await sharp(Buffer.from(svg)).png().toBuffer();
+    await writeFile(resolve(out, `${name}.png`), png);
+    cards.push(`<figure><img src="${name}.png" width="320" height="320" alt="${name}"/><figcaption>${name}</figcaption></figure>`);
+    if (override.ambient) {
+      const fraction = await litFraction(png);
+      ambient.push({ name, litFraction: fraction });
+      if (fraction >= 0.10) throw new Error(`REDLINE ambient coverage exceeds 10%: ${name} (${(fraction * 100).toFixed(2)}%).`);
     }
   }
-  await writeFile(resolve(out,'ambient.json'),JSON.stringify({litFraction:Math.max(...ambientSamples.map(s=>s.litFraction)),threshold:.10,samples:ambientSamples},null,2)+'\n');
-  await sharp({create:{width:1296,height:864,channels:3,background:'#08090b'}}).composite(Object.keys(palettes).map((palette,i)=>({input:resolve(out,`${palette==='REFERENCE'?'reference':palette.toLowerCase()}.png`),left:i%3*432,top:Math.floor(i/3)*432}))).png().toFile(resolve(out,'palettes.png'));
-  const options=editorSettings.flatMap(s=>s.options),tiles=await Promise.all(options.map(async(o,i)=>({input:await sharp(Buffer.from(optionSvg(o))).png().toBuffer(),left:i%7*96,top:Math.floor(i/7)*96})));
-  await sharp({create:{width:672,height:384,channels:3,background:'#08090b'}}).composite(tiles).png().toFile(resolve(out,'editor-options.png'));
-  // Inspect the actual optimized image layers too; SVG renderers may need PNG rather than WebP data URIs.
-  const compiled=compileWatchface(),cache=compiled.caches[0],images={...cache.style.imageData};
-  for(const [path,data] of await cache.resources())images[path.split('/')[1].replace('.webp','')]='data:image/png;base64,'+(await sharp(data).png().toBuffer()).toString('base64');
-  const optimizedSvg=`<svg xmlns="http://www.w3.org/2000/svg" width="432" height="432"><rect width="432" height="432" fill="#030405"/>${cache.scene(scene()).map(n=>nodeSvg(n,frame(base),'',{...cache.style,imageData:images})).join('')}</svg>`;
-  await sharp(Buffer.from(optimizedSvg)).png().toFile(resolve(out,'optimized.png'));
-  const frames:string[]=[];
-  for(let i=0;i<720;i++){const name=`motion-${String(i).padStart(3,'0')}.svg`;await writeFile(resolve(out,name),previewSvg(frame({...base,time:new Date(base.time.getTime()+i*1000/60)})));frames.push(name);}
-  const reference='/mnt/c/Users/57298327/Desktop/GENS/Dungeons Cyberpunk HUD Watch Face.png';
-  let comparison='';
-  try{
-    const source=await readFile(reference);const meta=await sharp(source).metadata(),size=Math.min(meta.width!,meta.height!);
-    const crop={left:Math.floor((meta.width!-size)/2),top:Math.floor((meta.height!-size)/2),width:size,height:size};
-    await sharp(source).extract(crop).resize(432,432).png().toFile(resolve(out,'reference-aligned.png'));
-    comparison='<figure><img src="reference-aligned.png" width="432" height="432"/><figcaption>Aligned user reference</figcaption></figure>';
-    await writeFile(resolve(out,'reference-comparison.json'),JSON.stringify({reference,crop,adaptation:'Concentric red rings with a focused date/time/battery centre; instrument dials and branding removed by user request. Reauthored vectors and masks. Original reference is not packaged.',limits:'SVG approximates WFF. Glow, fonts and device motion require watch acceptance.'},null,2)+'\n');
-  }catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;}
-  await writeFile(resolve(out,'index.html'),`<!doctype html><html lang="en"><meta charset="utf-8"><title>REDLINE review</title><style>body{background:#08090b;color:#edf0f1;font:14px monospace;margin:28px}main,.compare{display:flex;flex-wrap:wrap;gap:24px}figure{margin:0}figcaption{padding:12px}button{background:#111;color:#eee;border:1px solid #ff202b;padding:10px}a{color:#ff6470}</style><h1>REAL_TIME / REDLINE</h1><p>Reference-derived design previews. Faster rotors, fixed readouts, subtle baked/alpha glow. Device performance remains unmeasured.</p><div class="compare">${comparison}<figure><img id="motion" src="${frames[0]}" width="432" height="432"><figcaption>12-second sample at 60 preview fps; resets at loop end. <button id="pause">Pause</button></figcaption></figure></div><p><a href="editor-options.png">All editor option icons</a> · <a href="optimized.png">Optimized image-layer rendering</a></p><main>${cards.join('')}</main><script>const frames=${JSON.stringify(frames)};let i=0,play=true;document.getElementById('pause').onclick=()=>{play=!play;document.getElementById('pause').textContent=play?'Pause':'Play'};setInterval(()=>{if(play)document.getElementById('motion').src=frames[++i%frames.length]},1000/60)</script></html>`);
-  console.log(`REDLINE previews: ${out}/index.html`);
+  await writeFile(resolve(out, 'ambient.json'), JSON.stringify({ maxLitFraction: Math.max(...ambient.map(a => a.litFraction)), threshold: 0.10, samples: ambient }, null, 2) + '\n');
+
+  // Contact sheets for quick comparison.
+  await sheet(fontIds.map(f => resolve(out, `font-${f.toLowerCase()}.png`)), 4, resolve(out, 'fonts.png'));
+  await sheet(['reference', ...Object.keys(palettes).filter(k => k !== 'REFERENCE').map(k => `palette-${k.toLowerCase()}`)].map(n => resolve(out, `${n}.png`)), 3, resolve(out, 'palettes.png'));
+  const options = editorSettings.flatMap(s => s.options);
+  const tiles = await Promise.all(options.map(async (o, i) => ({ input: await sharp(Buffer.from(optionSvg(o))).png().toBuffer(), left: (i % 8) * 96, top: Math.floor(i / 8) * 96 })));
+  await sharp({ create: { width: 768, height: Math.ceil(options.length / 8) * 96, channels: 3, background: '#08090b' } }).composite(tiles).png().toFile(resolve(out, 'editor-options.png'));
+
+  // The optimized tree as packaged: cached layers instead of source vectors.
+  const cache = compileWatchface().caches[0];
+  const optimized = previewSvg(frame(), { optimized: { nodes: cache.scene(scene()), images: await cache.previewImages() } });
+  await sharp(Buffer.from(optimized)).png().toFile(resolve(out, 'optimized.png'));
+
+  // A 4-second motion loop at 30 preview fps. It samples the ideal path; it is not the watch's frame rate.
+  const frames: string[] = [];
+  for (let i = 0; i < 120; i++) {
+    const name = `motion-${String(i).padStart(3, '0')}.svg`;
+    await writeFile(resolve(out, name), previewSvg(frame({ time: new Date(at('10:45:00').getTime() + i * 1000 / 30) })));
+    frames.push(name);
+  }
+
+  // Optional side-by-side with the user's reference artwork (never packaged).
+  const reference = '/mnt/c/Users/57298327/Desktop/GENS/Dungeons Cyberpunk HUD Watch Face.png';
+  let comparison = '';
+  try {
+    const source = await readFile(reference);
+    const meta = await sharp(source).metadata(), size = Math.min(meta.width!, meta.height!);
+    await sharp(source).extract({ left: Math.floor((meta.width! - size) / 2), top: Math.floor((meta.height! - size) / 2), width: size, height: size }).resize(432, 432).png().toFile(resolve(out, 'reference-aligned.png'));
+    comparison = '<figure><img src="reference-aligned.png" width="432" height="432" alt="reference"/><figcaption>Aligned user reference</figcaption></figure>';
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+  }
+
+  const html = `<!doctype html><html lang="en"><meta charset="utf-8"><title>REDLINE review</title>
+<style>body{background:#08090b;color:#edf0f1;font:14px monospace;margin:28px}main,.compare{display:flex;flex-wrap:wrap;gap:24px}figure{margin:0}figcaption{padding:12px}button{background:#111;color:#eee;border:1px solid #ff202b;padding:10px}a{color:#ff6470}</style>
+<h1>REAL_TIME / REDLINE 1.0</h1><p>Design previews. Delivered smoothness and battery cost are measured on the watch.</p>
+<div class="compare">${comparison}<figure><img id="motion" src="${frames[0]}" width="432" height="432" alt="motion"><figcaption>4-second sample at 30 preview fps. <button id="pause">Pause</button></figcaption></figure></div>
+<p><a href="fonts.png">All fonts</a> · <a href="palettes.png">All palettes</a> · <a href="editor-options.png">Editor option icons</a> · <a href="optimized.png">Optimized layers</a></p>
+<main>${cards.join('')}</main>
+<script>const frames=${JSON.stringify(frames)};let i=0,play=true;document.getElementById('pause').onclick=()=>{play=!play;document.getElementById('pause').textContent=play?'Pause':'Play'};setInterval(()=>{if(play)document.getElementById('motion').src=frames[++i%frames.length]},1000/30)</script></html>`;
+  await writeFile(resolve(out, 'index.html'), html);
+  console.log(`REDLINE previews: ${out}/index.html (ambient max ${(Math.max(...ambient.map(a => a.litFraction)) * 100).toFixed(2)}%)`);
 }
+
+// Allow running this gallery alone: node tools/check/redline.ts
+if (process.argv[1]?.endsWith('redline.ts')) await redlinePreviews();

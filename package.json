@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "description": "Build-time tools for resource-only real_time watch faces.",
-  "engines": { "node": ">=24" },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "compose": "node tools/compose/src/build.ts",
     "previews": "node tools/check/run.ts",
@@ -15,6 +17,7 @@
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
+    "opentype.js": "^1.3.4",
     "sharp": "^0.34.0",
     "typescript": "^5.9.0",
     "vitest": "^3.2.0"

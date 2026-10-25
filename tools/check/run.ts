@@ -2,11 +2,12 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import sharp from 'sharp';
-import { root, backgroundData } from '../compose/src/build.ts';
-import { effects, frame } from '../compose/src/model.ts';
-import type { Frame } from '../compose/src/model.ts';
-import { palettes } from '../compose/faces/halo/design.ts';
-import { previewSvg } from '../compose/src/preview.ts';
+import { root } from '../compose/src/build.ts';
+import { backgroundData } from '../compose/halo/resources.ts';
+import { effects, frame } from '../compose/halo/model.ts';
+import type { Frame } from '../compose/halo/model.ts';
+import { palettes } from '../compose/halo/design.ts';
+import { previewSvg } from '../compose/halo/preview.ts';
 import { redlinePreviews } from './redline.ts';
 
 const out=resolve(root,'out/previews');

@@ -4,17 +4,18 @@ REDLINE establishes the shared architecture and design language for every new fa
 
 ## Visual and interaction principles
 
-- Make the time the clearest fixed element. Respect the watch's 12/24-hour setting. Size and place every other instrument around it; never allow motion, steps, date or a complication to obscure it. Centre visible ink on both axes, including times with narrow digits such as 11:11. REDLINE 0.3.2 uses tight proportional bitmap advances and a 117.5-unit font, centred at (216,216). Never mistake transparent cell padding for an illuminated glyph boundary; avoid added tracking or space characters in the clock.
+- Make the time the clearest fixed element. Respect the watch's 12/24-hour setting. Size and place every other instrument around it; never let motion, readouts or a complication obscure it. Centre visible ink on both axes, including narrow times such as 11:11: use tight per-character cell widths (`layoutFace`), not fixed cells or added tracking. A deliberately fixed-cell font (an LCD) must say so.
 - Use a dark background, hierarchical accent colours, fine mechanical detail and intentional negative space. New styles may reinterpret this HUD language rather than copy REDLINE's exact rings, red palette or instrument positions.
 - Use counter-motion and bounded depth to communicate mechanical structure. Keep time, live readouts and touch targets stationary. Seconds keep real time at every decorative speed.
 - Keep glow narrow and subtle. Bake blur at build time; do not add runtime bloom, full-screen filters or image sequences as decoration.
 - Supply useful colour choices, Still/Slow/Standard/Fast motion choices, and independent effect controls where applicable. Still removes decorative clock/sensor dependencies and overlays; it does not freeze time or live data.
+- Offer clock font choices by baking pinned OFL fonts into BitmapFont glyph masks at build time (`tools/compose/src/fonts`). Never ship a TTF or rely on a runtime font fallback. Glow is baked per level; all fonts share one ink height and the face's clock width.
 - Keep a static, dim time-only ambient fallback on black. Normal use and battery baselines assume AOD off.
 - Use an actual editable complication for shortcuts. Display setup instructions while empty and actual selected-provider content after setup. Never label Alarm as Timer or guess an untested Samsung component.
 
 ## Configuration architecture
 
-`tools/compose/src/editor.ts` is the shared catalogue/metadata/icon/selection builder. A face supplies its own settings, option labels, defaults, captions and accent colours. Both platform editors consume the same APK metadata.
+`tools/compose/src/editor/catalogue.ts` is the shared catalogue, metadata and selection builder; `editor/icons.ts` draws the option tiles. A face supplies its own settings, option labels, defaults, captions and accent colours. Options may carry their own tile artwork (REDLINE's font tiles show "12" in each font). Both platform editors consume the same APK metadata.
 
 - Keep configuration declarations flat under `UserConfigurations`.
 - Use `Condition` expressions to compose selections in the scene. Do not nest native `ListConfiguration`/`BooleanConfiguration` scene selectors through groups or other options. [Android documents this restriction](https://developer.android.com/training/wearables/wff/personalization/user-configurations); passing XSD validation alone does not catch it.
@@ -30,7 +31,7 @@ Each face is a separate resource-only WFF 4/API 36 module with a `.dev` debug pa
 
 The TypeScript scene, geometry, glyph metrics, palette and motion calculations remain authoritative for WFF and SVG. Commit generated Android resources. Test regeneration byte for byte and reject stale files. Preserve unchanged existing faces' resources when extending shared tools.
 
-`tools/compose/src/bake.ts` caches sufficiently large static runs into cropped lossless layers without changing painter order. Cache moving carriers' artwork while retaining their live transform. Name cached resources by complete rendered content so identical neutral layers can be shared across palettes. Preserve vector source and live time/readouts; do not flatten the entire face into a time-dependent bitmap sequence. Exclude editor assets from active rendering. Check cached artwork against source vectors at motion/tilt extremes; subpixel rotation can change antialiasing slightly.
+`tools/compose/src/bake.ts` caches sufficiently large static runs into cropped lossless layers without changing painter order. Cache moving carriers' artwork while keeping their live transform. Resource names are content hashes, so identical neutral layers are shared across palettes. Keep vector source and live time/readouts; never flatten the face into a time-dependent bitmap sequence. Check cached artwork against source vectors at motion and tilt extremes.
 
 Drive continuously moving decoration from platform clock sources. Bounded interpolation may be refreshed by integer clock targets; it must never rely on an infinite constant-target loop. REDLINE 0.2.0's native repeat animations stopped after a face switch according to the user. Its replacement uses live clock expressions, which remain time-derived after activation. Do not adopt an animation lifecycle again without testing leave/re-enter, editor cancel/save, ambient/wake and restart. Never infer guaranteed frame rate from an SVG animation or XML request.
 
@@ -40,7 +41,7 @@ Use a 432-unit canvas for the Watch7 40 mm. Include stroke, baked glow, rotated 
 
 Local verification must cover glyphs/time formatting, rollover, steps, battery warnings, motion bounds, all settings and static ambient behaviour. Inspect the **packaged** resource table: AAPT2 may rename ZIP paths. Verify every editor label/icon, image and glyph survives packaging and matches the generated source. Run WFF, memory, signature, no-code and no-permission checks.
 
-`tools/check/verify_editor.py` currently contains REDLINE's selected-tree acceptance profile. Its current 0.3.0 profile checks all 3,072 combinations, all 24 option icons/labels, still-mode sources, individual effects, the focused readout layout and bounded clock-refreshed transitions. The earlier 0.2.1 profile covered 6,144 combinations with instruments. The release script invokes it for every non-HALO face; before adding a future face, extend it with that face's explicit profile rather than bypassing the gate or inheriting REDLINE's exact coordinates/part count. Each new profile needs its own tests. The source/raster comparison tests and editor builder are shared.
+`tools/check/verify_editor.py` holds REDLINE's acceptance profile. It resolves Conditions for 1,022 editor states: every option, every font × glow × size, every speed × style × effect combination, and a fixed-seed random sample. It also checks every BitmapFont character against its PNG size, and the complication slot. Full products no longer scale once fonts are added, so cover each axis fully and their interactions by sampling. A new face adds its own profile and tests rather than inheriting REDLINE's coordinates.
 
 Device acceptance is a separate gate. A build cannot be called fully functional merely because these local checks pass. On the user's actual Galaxy Wearable/Watch7 combination:
 

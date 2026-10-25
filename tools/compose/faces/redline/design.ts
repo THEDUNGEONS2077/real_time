@@ -1,98 +1,204 @@
-/** REDLINE: reference-derived red instrument rings with faster, continuously modulated rotation. */
-import { daySeconds, daySecond, second, op } from '../../src/model.ts';
-import type { Effect, Group, Node, NumberValue, Role, Shape } from '../../src/model.ts';
-import { polar } from '../../src/geometry.ts';
+/**
+ * REDLINE design layer: palettes, layout, motion and the decorative scene.
+ *
+ * Concentric red instrument rings turn around a fixed centre: battery, date,
+ * time and a Timer complication. The motion maths is carried over unchanged
+ * from 0.3.2, which the user accepted as "very smooth":
+ * - Smooth mode moves each ring for one second toward a target refreshed by the
+ *   clock every second (no infinite animation loops).
+ * - Dynamic mode reads the millisecond clock directly.
+ */
+import type { NumberValue } from '../../src/core/expr.ts';
+import { daySecond, daySeconds, op, second, tiltX, tiltY } from '../../src/core/expr.ts';
+import { polar } from '../../src/core/geometry.ts';
+import type { Group, Node, Palette, Role, Shape } from '../../src/core/scene.ts';
+import { stillNodes } from '../../src/core/scene.ts';
 
-/** Retain the shared five-role index contract; cyan/amber denote primary/secondary accents here. */
-export const roles:Role[]=['navy','cyan','pale','teal','amber'];
-/** Accent-only variants retain readable white instruments, black backgrounds and fixed warning amber. */
-const neutral={navy:'#030405',pale:'#edf0f1',teal:'#343a3e',white:'#ffffff',warning:'#ffb24a'};
-export const palettes={
-  REFERENCE:{...neutral,cyan:'#ff202b',amber:'#9c121b'},
-  AMBER:{...neutral,cyan:'#ffe160',amber:'#a87921'},
-  CYAN:{...neutral,cyan:'#20dcff',amber:'#14738e'},
-  GREEN:{...neutral,cyan:'#74ff6b',amber:'#328f41'},
-  VIOLET:{...neutral,cyan:'#c78aff',amber:'#7044aa'},
-  ICE:{...neutral,cyan:'#c8edff',amber:'#658aab'},
+/* ------------------------------------------------------------------ palettes */
+
+/** Roles shared by every palette: near-black ground, light ink, graphite lines and the warning amber. */
+const neutral = { ground: '#030405', ink: '#edf0f1', line: '#343a3e', warning: '#ffb24a' } as const;
+
+/** Six accent palettes. Only the accent pair changes, so readouts stay equally legible in all of them. */
+export const palettes = {
+  REFERENCE: { ...neutral, accent: '#ff202b', accentDeep: '#9c121b' },
+  AMBER: { ...neutral, accent: '#ffe160', accentDeep: '#a87921' },
+  CYAN: { ...neutral, accent: '#20dcff', accentDeep: '#14738e' },
+  GREEN: { ...neutral, accent: '#74ff6b', accentDeep: '#328f41' },
+  VIOLET: { ...neutral, accent: '#c78aff', accentDeep: '#7044aa' },
+  ICE: { ...neutral, accent: '#c8edff', accentDeep: '#658aab' },
+} satisfies Record<string, Palette>;
+export type PaletteId = keyof typeof palettes;
+
+/** Editor labels; the IDs above are stable and stored in saved settings. */
+export const paletteLabels: Record<PaletteId, string> = { REFERENCE: 'REFERENCE RED', AMBER: 'AMBER', CYAN: 'CYAN', GREEN: 'GREEN', VIOLET: 'VIOLET', ICE: 'ICE' };
+
+/* -------------------------------------------------------------------- motion */
+
+/** Speed multipliers. STILL removes every decorative clock and sensor dependency. */
+export const speeds = { STILL: 0, SLOW: 0.5, STANDARD: 1, FAST: 2 } as const;
+export type Speed = keyof typeof speeds;
+export const speedLabels: Record<Speed, string> = { STILL: 'STILL', SLOW: 'SLOW · 0.5×', STANDARD: 'STANDARD · 1×', FAST: 'FAST · 2×' };
+
+/** SMOOTH interpolates between clock-refreshed targets; DYNAMIC reads the millisecond clock with speed modulation. */
+export type MotionStyle = 'SMOOTH' | 'DYNAMIC';
+
+/** Requested interpolation rate. What the watch delivers is measured, not assumed. */
+export const smoothFps = 60;
+
+/** Base periods in seconds at 1× (they double at Slow). */
+export const motion = { outer: 18, inner: 60, outerModulation: 6, innerModulation: 20, pulse: 2.4, radar: 12 } as const;
+
+/** The six independently switchable effects. IDs are stable across releases. */
+export const effects = ['seconds', 'ring_a', 'ring_b', 'breathing', 'scan', 'tilt'] as const;
+export type EffectId = typeof effects[number];
+export const effectLabels: Record<EffectId, string> = {
+  seconds: 'SECONDS BEACON', ring_a: 'OUTER ROTOR', ring_b: 'INNER COUNTER-ROTOR',
+  breathing: 'SUBTLE ACCENT PULSE', scan: 'RADAR SWEEP', tilt: 'WRIST DEPTH',
 };
-/** A master still mode removes every optional effect, including sensors and seconds overlays. */
-export const speeds={STILL:0,SLOW:0.5,STANDARD:1,FAST:2} as const;
-export type Speed=keyof typeof speeds;
-export type MotionStyle='SMOOTH'|'DYNAMIC';
-/** Editor labels are shared with previews; helper metadata stores these stable IDs. */
-export const paletteLabels={REFERENCE:'REFERENCE RED',AMBER:'AMBER',CYAN:'CYAN',GREEN:'GREEN',VIOLET:'VIOLET',ICE:'ICE'};
-export const speedLabels={STILL:'STILL',SLOW:'SLOW · 0.5×',STANDARD:'STANDARD · 1×',FAST:'FAST · 2×'};
-/** Exactly 25% larger than the previous 94-unit font; source masks round up to whole pixels. */
-export const timeScale=117.5/118;
-/** Six controls remain after removal of the instrument dials. HALO retains its seven effects. */
-export const redlineEffects=['seconds','ring_a','ring_b','breathing','scan','tilt'] as const;
-/** Request native interpolation between clock-refreshed targets; actual delivered cadence is device-dependent. */
-export const smoothFps=60;
-/** Editor labels describe this face's actual effects, while stable IDs support shared experiments. */
-export const effectLabels:Record<typeof redlineEffects[number],string>={seconds:'SECONDS BEACON',ring_a:'OUTER ROTOR',ring_b:'INNER COUNTER-ROTOR',breathing:'SUBTLE ACCENT PULSE',scan:'RADAR SWEEP',tilt:'WRIST DEPTH'};
-/** Includes stroke/glow extent and simultaneous two-unit x/y tilt. Readouts remain stationary. */
-export const layout={size:432,centre:216,margin:6,maxTilt:2,outerRadius:201,innerRadius:145,time:{x:41,y:157,width:350,height:118},ambientTime:{x:41,y:169,width:350,height:94},date:{x:76,y:120,width:280,height:28,size:21},battery:{x:176,y:282,width:80,height:30,size:20}} as const;
-/** Clock-driven motion resumes after switching faces; it never depends on a one-shot animation lifecycle. */
-export const motion={outer:18,inner:60,outerModulation:6,innerModulation:20,pulse:2.4,radar:12} as const;
-const line=(x:number,y:number,x2:number,y2:number,role:Role='teal',alpha=130,stroke=0.7):Shape=>({kind:'line',x,y,x2,y2,role,alpha,stroke});
-const arc=(r:number,start:number,end:NumberValue,role:Role='cyan',alpha:NumberValue=220,stroke=2,cx=216,cy=216):Shape=>({kind:'arc',r,start,end,role,alpha,stroke,cx,cy});
-const group=(name:string,children:Node[],extra:Partial<Group>={}):Group=>({kind:'group',name,children,...extra});
-const toggle=(effect:Effect,moving:Node[],still:Node[]=[]):Node=>({kind:'switch',effect,enabled:moving,disabled:still});
-/** A small fixed number of alpha strokes creates a red halo without runtime blur or image sequences. */
-export const glowArc=(r:number,start:number,end:NumberValue,cx=216,cy=216,stroke=3.2):Node[]=>[
-  arc(r,start,end,'cyan',12,12,cx,cy),arc(r,start,end,'cyan',32,8,cx,cy),arc(r,start,end,'cyan',235,stroke,cx,cy),
+
+/* -------------------------------------------------------------------- layout */
+
+/**
+ * Fixed layout on the 432-unit canvas (Watch7 40 mm is 432 px).
+ * Everything readable sits inside the 145-unit inner opening:
+ * battery (top) · date · time (centred on 216,216) · complication (bottom).
+ */
+export const layout = {
+  size: 432,
+  centre: 216,
+  /** Foreground clearance from the round edge, including glow and tilt. */
+  margin: 6,
+  maxTilt: 2,
+  innerRadius: 145,
+  battery: { x: 176, y: 80, width: 80, height: 24 },
+  date: { x: 96, y: 118, width: 240, height: 30 },
+  complication: { x: 156, y: 290, width: 120, height: 52 },
+} as const;
+
+/* ---------------------------------------------------------- shape shorthands */
+
+const line = (x: number, y: number, x2: number, y2: number, role: Role = 'line', alpha = 130, stroke = 0.7): Shape =>
+  ({ kind: 'line', x, y, x2, y2, role, alpha, stroke });
+const arc = (r: number, start: number, end: number, role: Role = 'accent', alpha: NumberValue = 220, stroke = 2): Shape =>
+  ({ kind: 'arc', r, start, end, role, alpha, stroke });
+const group = (name: string, children: Node[], extra: Partial<Group> = {}): Group => ({ kind: 'group', name, children, ...extra });
+const toggle = (setting: EffectId, on: Node[], off: Node[] = []): Node => ({ kind: 'switch', setting, on, off });
+
+/** A red halo from three alpha strokes: no runtime blur, no image sequence. */
+export const glowArc = (r: number, start: number, end: number, stroke = 3.2): Node[] => [
+  arc(r, start, end, 'accent', 12, 12), arc(r, start, end, 'accent', 32, 8), arc(r, start, end, 'accent', 235, stroke),
 ];
-const ticks=(r:number,count:number,cx=216,cy=216):Node[]=>Array.from({length:count},(_,i)=>{
-  const a=polar(r-(i%5===0?4:1.8),i*360/count,cx,cy),b=polar(r,i*360/count,cx,cy);
-  return line(...a,...b,i%5===0?'pale':'teal',i%5===0?145:110,i%5===0?1:0.65);
+
+/** Fine tick ring; every fifth tick is longer and lighter. */
+const ticks = (r: number, count: number): Node[] => Array.from({ length: count }, (_, i) => {
+  const major = i % 5 === 0;
+  const a = polar(r - (major ? 4 : 1.8), i * 360 / count), b = polar(r, i * 360 / count);
+  return line(...a, ...b, major ? 'ink' : 'line', major ? 145 : 110, major ? 1 : 0.65);
 });
-/** Alternating light bars and segmented red arcs make the outer ring's rotation legible. */
-export function outerRotor():Node[]{return [arc(201,0,360,'teal',180,0.8),arc(195,0,360,'teal',120,0.7),...ticks(200,72),
-  ...[17,107,197,287].flatMap(a=>[arc(193,a,a+14,'pale',220,3.2),arc(193,a+16,a+22,'cyan',220,5)]),
-  ...[50,140,230,320].map(a=>arc(198,a,a+3,'cyan',190,3)),
-];}
-/** Broken red primary ring contrasts with quieter graphite segments from the reference. */
-export function innerRotor():Node[]{return [arc(181,0,360,'teal',125,0.8),arc(170,0,360,'teal',110,0.7),
-  ...[27,117,207,297].flatMap(a=>glowArc(181,a,a+30,216,216,5.5)),
-  ...[0,90,180,270].map(a=>arc(176,a+3,a+24,'teal',190,5)),
-  ...[50,170,290].map(a=>arc(172,a,a+22,'pale',160,0.8)),
-];}
-/** The complete scene shares the same geometry and expression AST as SVG previews. */
-export function scene(speed:Speed='SLOW',feel:MotionStyle='SMOOTH'):Node[]{
-  const rate=speeds[speed]||1, clock=op('*',daySeconds,rate);
-  const motionPhase=(period:number)=>op('*',op('%',clock,period),2*Math.PI/period);
-  const ahead=op('+',daySecond,1);
-  const angleAt=(period:number,direction:number,time:NumberValue)=>op('*',op('%',op('*',time,rate),period),direction*360/period);
-  const rotor=(name:string,children:Node[],period:number,direction:number):Group=>group(name,children,{
-    angle:angleAt(period,direction,daySeconds),
-    ...(feel==='SMOOTH'?{angleTransition:{value:angleAt(period,direction,ahead),fps:smoothFps,direction:direction>0?'CLOCKWISE' as const:'COUNTER_CLOCKWISE' as const}}:{}),
-  });
-  const a=outerRotor();
-  // Both inner red bands share one slow carrier. Breathing changes only the inset band's opacity.
-  const pulse:Node[]=[24,117,204,297].flatMap(a=>glowArc(163,a,a+39,216,216,5.5));
-  const b:Node[]=[...innerRotor(),toggle('breathing',[group('red_pulse',pulse,{alpha:op('+',205,op('*',35,op('sin',motionPhase(motion.pulse)))),...(feel==='SMOOTH'?{alphaTransition:{value:op('+',205,op('*',35,op('sin',op('*',op('%',op('*',ahead,rate),motion.pulse),2*Math.PI/motion.pulse)))),fps:smoothFps}}:{})})],pulse)];
-  const outerAngle=op('+',op('*',op('%',clock,motion.outer),360/motion.outer),op('*',7,op('sin',motionPhase(motion.outerModulation))));
-  const innerAngle=op('+',op('*',op('%',clock,motion.inner),-360/motion.inner),op('*',5,op('sin',motionPhase(motion.innerModulation))));
-  const depth:Node[]=[toggle('ring_a',[feel==='SMOOTH'?rotor('outer_rotor',a,motion.outer,1):group('outer_rotor',a,{angle:outerAngle})],a),toggle('ring_b',[feel==='SMOOTH'?rotor('inner_rotor',b,motion.inner,-1):group('inner_rotor',b,{angle:innerAngle})],b)];
-  const reticle:Node[]=[[64,160,1,1],[368,160,-1,1],[64,272,1,-1],[368,272,-1,-1]].flatMap(([x,y,sx,sy])=>[
-    line(x,y,x+sx*11,y,'pale',140),line(x,y,x,y+sy*11,'pale',140),{kind:'rect',x:x-1,y:y-1,width:2,height:2,role:'pale',alpha:220} as Shape,
-  ]);
-  const nodes:Node[]=[
-    {kind:'image',resource:'redline_mesh',alpha:110,role:'teal'},
-    toggle('tilt',[group('depth',depth,{x:op('*',{source:'tiltX'},2/3),y:op('*',{source:'tiltY'},2/3),gyro:true})],depth),
-    arc(162,0,360,'teal',85,0.7),arc(145,0,360,'teal',75,0.7),
-    ...Array.from({length:48},(_,i)=>arc(207,i*7.5+0.5,i*7.5+4.6,i%6===0?'amber':'teal',i%6===0?100:120,3.2)),
-    ...[[-1,0],[1,0]].flatMap(([direction])=>{const x=216+direction*62;return [line(x,59,x,117,'cyan',120,0.6),{kind:'rect',x:x-1,y:96,width:2,height:4,role:'cyan',alpha:200} as Shape];}),
-    toggle('scan',[rotor('radar_sweep',[arc(151,0,25,'cyan',24,7),arc(151,23,25,'cyan',150,1.3)],motion.radar,1)]),
-    ...[0,90,180,270].flatMap(a=>{const p=polar(195,a),q=polar(207,a),r=polar(191,a);return [line(...p,...q,'pale',240,2.3),line(...r,...p,'cyan',200,1.2)];}),
-    ...[0,90,180,270].map(a=>{const [x,y]=polar(201,a);return {kind:'image',resource:'redline_glow',x:x-6,y:y-6,width:12,height:12,role:'cyan',alpha:90} as Node;}),
-    toggle('seconds',[group('seconds_beacon',[arc(203,0,1.4,'pale',255,2),arc(203,0,1.4,'cyan',25,7)],{angle:op('*',second,6),...(feel==='SMOOTH'?{angleTransition:{value:op('*',op('%',ahead,60),6),fps:smoothFps,direction:'CLOCKWISE' as const}}:{})})]),
-    {kind:'circle',x:216,y:216,r:142,role:'navy',alpha:245},...reticle,
-    {kind:'clock',ambient:false},
-    {kind:'label',content:'full_date',...layout.date,role:'pale',align:'CENTER'},
-    {kind:'label',content:'percent',...layout.battery,role:'pale',align:'CENTER',warning:true},
+
+/* --------------------------------------------------------------------- rings */
+
+/** Outer rotor: light bars and red segments make its rotation legible. */
+export function outerRotor(): Node[] {
+  return [
+    arc(201, 0, 360, 'line', 180, 0.8), arc(195, 0, 360, 'line', 120, 0.7), ...ticks(200, 72),
+    ...[17, 107, 197, 287].flatMap(a => [arc(193, a, a + 14, 'ink', 220, 3.2), arc(193, a + 16, a + 22, 'accent', 220, 5)]),
+    ...[50, 140, 230, 320].map(a => arc(198, a, a + 3, 'accent', 190, 3)),
   ];
-  // Resolve every switch before serialization in STILL: no hidden animation or gyro remains active.
-  const still=(items:Node[]):Node[]=>items.flatMap(n=>n.kind==='switch'?still(n.disabled):n.kind==='group'?[{...n,children:still(n.children)}]:[n]);
-  return speed==='STILL'?still(nodes):nodes;
+}
+
+/** Inner rotor: broken red primary band with quieter graphite segments. */
+export function innerRotor(): Node[] {
+  return [
+    arc(181, 0, 360, 'line', 125, 0.8), arc(170, 0, 360, 'line', 110, 0.7),
+    ...[27, 117, 207, 297].flatMap(a => glowArc(181, a, a + 30, 5.5)),
+    ...[0, 90, 180, 270].map(a => arc(176, a + 3, a + 24, 'line', 190, 5)),
+    ...[50, 170, 290].map(a => arc(172, a, a + 22, 'ink', 160, 0.8)),
+  ];
+}
+
+/** Corner brackets framing the complication slot, so an empty slot still reads as a target.
+ *  Neutral ink like the reticle, so this cached layer is shared by all palettes. */
+function complicationFrame(): Node[] {
+  const { x, y, width, height } = layout.complication;
+  const corners: [number, number, number, number][] = [[x, y, 1, 1], [x + width, y, -1, 1], [x, y + height, 1, -1], [x + width, y + height, -1, -1]];
+  return corners.flatMap(([cx, cy, sx, sy]) => [line(cx, cy, cx + sx * 9, cy, 'ink', 140), line(cx, cy, cx, cy + sy * 9, 'ink', 140)]);
+}
+
+/* --------------------------------------------------------------------- scene */
+
+/** The decorative scene for one speed and style. Readouts are separate fixed layers. */
+export function scene(speed: Speed = 'SLOW', style: MotionStyle = 'SMOOTH'): Node[] {
+  const rate = speeds[speed] || 1;
+  const clock = op('*', daySeconds, rate);
+  // Phase in radians of a repeating period; the modulo bounds sine arguments.
+  const phase = (period: number) => op('*', op('%', clock, period), 2 * Math.PI / period);
+  // The whole second one tick ahead: Smooth's interpolation target.
+  const ahead = op('+', daySecond, 1);
+  const angleAt = (period: number, direction: number, time: NumberValue) =>
+    op('*', op('%', op('*', time, rate), period), direction * 360 / period);
+
+  /** A steadily rotating ring; Smooth adds the one-second move to the next target. */
+  const rotor = (name: string, children: Node[], period: number, direction: 1 | -1): Group => group(name, children, {
+    angle: angleAt(period, direction, daySeconds),
+    ...(style === 'SMOOTH' ? { angleTransition: { value: angleAt(period, direction, ahead), fps: smoothFps, direction: direction > 0 ? 'CLOCKWISE' : 'COUNTER_CLOCKWISE' } } : {}),
+  });
+
+  const outer = outerRotor();
+  // Both inner red bands share one slow carrier. Breathing changes only the inset band's opacity.
+  const insetBand: Node[] = [24, 117, 204, 297].flatMap(a => glowArc(163, a, a + 39, 5.5));
+  const breathing = (time: NumberValue) => op('+', 205, op('*', 35, op('sin', op('*', op('%', op('*', time, rate), motion.pulse), 2 * Math.PI / motion.pulse))));
+  const pulse = group('red_pulse', insetBand, {
+    alpha: breathing(daySeconds),
+    ...(style === 'SMOOTH' ? { alphaTransition: { value: breathing(ahead), fps: smoothFps } } : {}),
+  });
+  const inner: Node[] = [...innerRotor(), toggle('breathing', [pulse], insetBand)];
+
+  // Dynamic: steady rotation plus a slow sine wobble.
+  const outerDynamic = op('+', op('*', op('%', clock, motion.outer), 360 / motion.outer), op('*', 7, op('sin', phase(motion.outerModulation))));
+  const innerDynamic = op('+', op('*', op('%', clock, motion.inner), -360 / motion.inner), op('*', 5, op('sin', phase(motion.innerModulation))));
+  const rings: Node[] = [
+    toggle('ring_a', [style === 'SMOOTH' ? rotor('outer_rotor', outer, motion.outer, 1) : group('outer_rotor', outer, { angle: outerDynamic })], outer),
+    toggle('ring_b', [style === 'SMOOTH' ? rotor('inner_rotor', inner, motion.inner, -1) : group('inner_rotor', inner, { angle: innerDynamic })], inner),
+  ];
+
+  // Reticle corners around the clock.
+  const reticle: Node[] = [[64, 160, 1, 1], [368, 160, -1, 1], [64, 272, 1, -1], [368, 272, -1, -1]].flatMap(([x, y, sx, sy]) => [
+    line(x, y, x + sx * 11, y, 'ink', 140), line(x, y, x, y + sy * 11, 'ink', 140),
+    { kind: 'rect', x: x - 1, y: y - 1, width: 2, height: 2, role: 'ink', alpha: 220 } as Shape,
+  ]);
+
+  const secondsBeacon = group('seconds_beacon', [arc(203, 0, 1.4, 'ink', 255, 2), arc(203, 0, 1.4, 'accent', 25, 7)], {
+    angle: op('*', second, 6),
+    ...(style === 'SMOOTH' ? { angleTransition: { value: op('*', op('%', ahead, 60), 6), fps: smoothFps, direction: 'CLOCKWISE' as const } } : {}),
+  });
+
+  const nodes: Node[] = [
+    { kind: 'image', resource: 'redline_mesh', alpha: 110, role: 'line' },
+    // Tilt shifts both rotors by at most 2 units; readouts never move.
+    toggle('tilt', [group('depth', rings, { x: op('*', tiltX, 2 / 3), y: op('*', tiltY, 2 / 3), gyro: true })], rings),
+    arc(162, 0, 360, 'line', 85, 0.7), arc(145, 0, 360, 'line', 75, 0.7),
+    ...Array.from({ length: 48 }, (_, i) => arc(207, i * 7.5 + 0.5, i * 7.5 + 4.6, i % 6 === 0 ? 'accentDeep' : 'line', i % 6 === 0 ? 100 : 120, 3.2)),
+    // Two hairlines flank the battery readout.
+    ...[-1, 1].flatMap(direction => {
+      const x = 216 + direction * 62;
+      return [line(x, 59, x, 117, 'accent', 120, 0.6), { kind: 'rect', x: x - 1, y: 96, width: 2, height: 4, role: 'accent', alpha: 200 } as Shape];
+    }),
+    toggle('scan', [rotor('radar_sweep', [arc(151, 0, 25, 'accent', 24, 7), arc(151, 23, 25, 'accent', 150, 1.3)], motion.radar, 1)]),
+    ...[0, 90, 180, 270].flatMap(a => {
+      const p = polar(195, a), q = polar(207, a), r = polar(191, a);
+      return [line(...p, ...q, 'ink', 240, 2.3), line(...r, ...p, 'accent', 200, 1.2)];
+    }),
+    ...[0, 90, 180, 270].map(a => {
+      const [x, y] = polar(201, a);
+      return { kind: 'image', resource: 'redline_glow', x: x - 6, y: y - 6, width: 12, height: 12, role: 'accent', alpha: 90 } as Node;
+    }),
+    toggle('seconds', [secondsBeacon]),
+    // Dark disc behind the readouts keeps text contrast over the mesh.
+    { kind: 'circle', x: 216, y: 216, r: 142, role: 'ground', alpha: 245 },
+    ...reticle,
+    ...complicationFrame(),
+  ];
+  return speed === 'STILL' ? stillNodes(nodes) : nodes;
 }

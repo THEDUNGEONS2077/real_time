@@ -5,7 +5,7 @@ Resource-only Wear OS watch faces for the user's Galaxy Watch7 40 mm. Read ARCHI
 - Every future face must follow FACE_STANDARD.md: REDLINE architecture and HUD design principles, distinct visual style, functional Galaxy Wearable/on-watch editing, fixed readable time, resumable motion and shared optimization/measurement gates.
 - Each face is independent. Do not port the family's wallpapers into this project.
 - Keep WFF APKs free of executable code, permissions, analytics and network access.
-- Comments explain purpose and layer. Document exported declarations and non-obvious logic. JSON, binary resources and the unmodified Gradle wrapper use their native formats without added comments.
+- Comments explain purpose and layer: a file header, a doc comment on every export and block comments on non-obvious logic (the user's standing request). Write readable, formatted code rather than dense one-liners. JSON, binary resources and the unmodified Gradle wrapper use their native formats without added comments.
 - Edit the shared TypeScript design, then run `npm run compose`. Generated Android resources are committed; reproduction is checked byte for byte.
 - Keep all colour roles in the palette. White and low-battery warning are fixed because WFF permits five colours per option.
 - Disabled effects select static subtrees, rather than retaining fast expressions behind alpha zero.
@@ -41,4 +41,4 @@ bash scripts/setup-perfetto.sh
 bash scripts/release-wear.sh --verify-only
 ```
 
-For REDLINE and all future faces, use the shared editor catalogue with real captioned option icons, accessible packaged labels and Condition-based selection. Never nest native scene configuration selectors. Add an explicit selected-tree acceptance profile before releasing a new face. Clock-driven motion must be tested after leaving/re-entering the face. Local validation cannot substitute for Galaxy Wearable Save/persistence and watch acceptance.
+For REDLINE and all future faces, use the shared editor catalogue (`tools/compose/src/editor`) with real captioned option icons, accessible packaged labels and Condition-based selection. HALO's generator under `tools/compose/halo` is frozen and must stay byte-identical. Fonts under `tools/compose/fonts` are pinned by SHA-256 in `src/fonts/outline.ts`; keep their OFL licences beside them. Never nest native scene configuration selectors. Add an explicit selected-tree acceptance profile before releasing a new face. Clock-driven motion must be tested after leaving/re-entering the face. Local validation cannot substitute for Galaxy Wearable Save/persistence and watch acceptance.

@@ -1,5 +1,5 @@
 /** Measurement data layer: explicit provenance and unavailable values, never invented telemetry. */
-import { effects } from '../compose/src/model.ts';
+import { effects } from '../compose/halo/model.ts';
 
 /** Human-recorded conditions which the WFF package cannot log itself. */
 export interface RunMetadata {

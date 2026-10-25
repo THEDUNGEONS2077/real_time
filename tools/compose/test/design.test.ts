@@ -3,14 +3,14 @@ import { describe, expect, it } from 'vitest';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
-import { effects, expression, frame, value } from '../src/model.ts';
-import type { Frame, Node, Shape } from '../src/model.ts';
-import { digits, timeRows } from '../src/dotmatrix.ts';
-import { polar } from '../src/geometry.ts';
-import { labelContent, previewSvg } from '../src/preview.ts';
-import { clockXml, nodeXml, watchfaceXml } from '../src/wff.ts';
+import { effects, expression, frame, value } from '../halo/model.ts';
+import type { Frame, Node, Shape } from '../halo/model.ts';
+import { digits, timeRows } from '../halo/dotmatrix.ts';
+import { polar } from '../halo/geometry.ts';
+import { labelContent, previewSvg } from '../halo/preview.ts';
+import { clockXml, nodeXml, watchfaceXml } from '../halo/wff.ts';
 import { build, resources, root } from '../src/build.ts';
-import { layout, palettes, scene } from '../faces/halo/design.ts';
+import { layout, palettes, scene } from '../halo/design.ts';
 
 describe('time and live readouts',()=>{
   it('defines ten distinct 5x7 digits',()=>{
@@ -106,7 +106,7 @@ it('regenerates the entire committed resource tree byte for byte',async()=>{
   const temp=await mkdtemp(resolve(tmpdir(),'real-time-resources-'));
   try{
     await build(temp);
-    const expected=await resources();
+    const expected=await resources('halo');
     for(const [name,buffer] of expected){expect(await readFile(resolve(temp,name))).toEqual(buffer);expect(await readFile(resolve(root,'faces/halo/src/main/res',name))).toEqual(buffer);}
     await build(resolve(root,'faces/halo/src/main/res'),true);
   }finally{await rm(temp,{recursive:true,force:true});}
