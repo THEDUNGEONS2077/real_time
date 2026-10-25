@@ -46,7 +46,7 @@ Commit a reviewed summary under `measurements/reviewed/` and add a row below. In
 
 | Change | Device/build | Evidence | Result | Confidence | Future-face guidance |
 |---|---|---|---|---|---|
-| No device findings yet | — | — | — | — | Measure before claiming a benefit |
+| No controlled measurements yet | — | — | — | — | Measure before claiming a benefit |
 
 After an accepted change, update DESIGN.md and CHANGELOG.md with the resulting behaviour and link its reviewed evidence. Do not transfer a measured numeric saving to a different face without another measurement.
 
@@ -71,3 +71,9 @@ The new design removes three instruments and uses 14 cached scene parts, compare
 Smooth requests 60 fps, one-second linear transitions between clock-refreshed targets; it never uses repeat=-1. At 0.5×, ideal outer/inner speeds are 10°/s and 15°/s: a 60 fps delivery would mean about 0.58/0.79 pixel tangential steps at their track radii. Those are calculations, not observed frames. The first second after activation may settle to phase. Native frame limits, wake/re-entry, visible smoothness and energy must be checked on the watch. The fallback Dynamic mode remains clock-expression based.
 
 Hold speed at Slow when comparing Smooth and Dynamic, repeat three traces each and select the actual renderer/layer before interpreting timing. Faster requested cadence may increase work even though there are fewer parts. Keep the known-working editor architecture; do not infer a battery improvement or force an unrelated battery cutoff.
+
+## Qualitative motion acceptance (2026-10-25)
+
+The user reports REDLINE 0.3.0 looks very smooth. This supports retaining its clock-refreshed interpolation and cached rendering as the visual baseline for subsequent changes. It does not establish delivered 60 fps, CPU/jank statistics or a battery saving. Version 0.3.1 changes typography only; the motion calculations, target cadence and active scene part count are preserved. The date is half-size while time grows to the bracket frame, so do not infer an energy change from appearance alone.
+
+The 0.3.1 typography build passes the official evaluator at 22,288,000 active bytes and 125,960 ambient bytes. Larger glyph source masks slightly increase memory; the scene remains 14 parts and ambient preview coverage is about 4.47%, within the existing guards. This is not a new frame-rate or battery measurement.

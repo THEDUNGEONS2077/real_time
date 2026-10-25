@@ -149,7 +149,7 @@ def verify(resources, apk=None, aapt2=None):
         require([n for n in groups if n and n.startswith('palette_')] == ['palette_' + palette], 'Colour selection failed.')
         require(len([n for n in active if n.tag == 'TimeText']) == 1, 'Interactive clock missing/duplicated.')
         time = next(n for n in active if n.tag == 'TimeText')
-        require(time.get('width') == '272' and time.get('height') == '76' and time.find('BitmapFont').get('size') == '76', 'Clock must fit the inner opening with the flatter glyph metrics.')
+        require(time.get('width') == '280' and time.get('height') == '94' and time.find('BitmapFont').get('size') == '94', 'Clock must fill the corner-bracket frame.')
         for effect, names in EFFECTS.items():
             for name in names:
                 moving = [n for n in active if n.tag == 'Group' and n.get('name') == name and any(c.tag == 'Gyro' or c.tag == 'Transform' and re.search('MILLISECOND|SECONDS_IN_DAY', c.get('value', '')) for c in n)]
@@ -159,8 +159,8 @@ def verify(resources, apk=None, aapt2=None):
         require(not any(n.get('resource', '').startswith('editor_') for n in active), 'Editor artwork leaks into the face.')
         labels = [n for n in active if n.tag == 'PartText']
         require(len(labels) == 2, 'Only date and battery should accompany the clock.')
-        require(sorted(n.find('Text/Font').get('size') for n in labels) == ['20', '42'], 'Date must be 3.5x the old size; battery is a plain percentage.')
-        require(any(n.get('y') == '130' and n.get('height') == '56' for n in labels), 'Enlarged date must sit above time with room for its glyphs.')
+        require(sorted(n.find('Text/Font').get('size') for n in labels) == ['20', '21'], 'Date must be half its previous size; battery is a plain percentage.')
+        require(any(n.get('x') == '76' and n.get('width') == '280' and n.get('y') == '144' and n.get('height') == '28' and n.find('Text').get('align') == 'CENTER' for n in labels), 'Half-size date must remain centred above time.')
         require(any(n.get('y') == '278' for n in labels), 'Battery must be below time.')
         if style == 'SMOOTH':
             require(not any('MILLISECOND' in n.get('value', '') for n in active), 'Smooth must use clock-refreshed interpolation, not millisecond expressions.')

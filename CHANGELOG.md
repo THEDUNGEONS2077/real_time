@@ -1,5 +1,16 @@
 # Changelog
 
+## REDLINE 0.3.1 (build 6)
+
+- Expand time to 65×94 digit cells and a 280×94 clock box. Full-width glyph ink reaches within about two pixels of the existing corner-bracket frame; the original angular glyph design is retained.
+- Reduce the date from size 42 to 21 (50%) and centre its 28-unit box above time, preserving its previous vertical centre.
+- Official memory evaluation passes at 22,288,000 active bytes and 125,960 ambient bytes.
+- Preserve the clock-refreshed motion, effect choices, palette, battery layout and renderer part count. The user reports 0.3.0 looks very smooth; delivered FPS and battery results remain unmeasured.
+
+## Diagnostics 0.5.1 (build 9)
+
+- Add exact REDLINE 0.3.1 source provenance. Existing helpers can install the face; this optional update keeps experiment reports accurate.
+
 ## REDLINE 0.3.0 (build 5)
 
 - Remove the DUNGEONS label, all three instrument dials, steps, battery icon/arc, instrument rotors and Timer complication. Retain only the live date, time and a centred battery percentage.

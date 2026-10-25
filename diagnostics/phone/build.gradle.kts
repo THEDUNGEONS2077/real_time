@@ -10,6 +10,7 @@ val redlinePatchTag = providers.exec { commandLine("git", "rev-parse", "--verify
 val redlineControlsTag = providers.exec { commandLine("git", "rev-parse", "--verify", "--quiet", "refs/tags/redline-v0.2.0^{commit}"); isIgnoreExitValue = true }.standardOutput.asText.get().trim()
 val redlineEditorTag = providers.exec { commandLine("git", "rev-parse", "--verify", "--quiet", "refs/tags/redline-v0.2.1^{commit}"); isIgnoreExitValue = true }.standardOutput.asText.get().trim()
 val redlineFocusTag = providers.exec { commandLine("git", "rev-parse", "--verify", "--quiet", "refs/tags/redline-v0.3.0^{commit}"); isIgnoreExitValue = true }.standardOutput.asText.get().trim()
+val redlineTypographyTag = providers.exec { commandLine("git", "rev-parse", "--verify", "--quiet", "refs/tags/redline-v0.3.1^{commit}"); isIgnoreExitValue = true }.standardOutput.asText.get().trim()
 val prepareProcessor by tasks.registering(Copy::class) {
     // Android permits execution from the installed native-library directory, not writable app data.
     from(processor)
@@ -31,8 +32,8 @@ android {
         applicationId = "com.thedungeons2077.realtime.diagnostics"
         minSdk = 33
         targetSdk = 36
-        versionCode = 8
-        versionName = "0.5.0"
+        versionCode = 9
+        versionName = "0.5.1"
         buildConfigField("String", "SOURCE_COMMIT", "\"${providers.exec { commandLine("git", "rev-parse", "HEAD") }.standardOutput.asText.get().trim()}\"")
         buildConfigField("String", "FACE_CERT_SHA256", "\"${rootProject.file("signing-certificate.sha256").readText().trim()}\"")
         buildConfigField("String", "REDLINE_SOURCE_COMMIT", "\"${if (redlineTag.matches(Regex("[0-9a-f]{40}"))) redlineTag else providers.exec { commandLine("git", "rev-parse", "HEAD") }.standardOutput.asText.get().trim()}\"")
@@ -40,6 +41,7 @@ android {
         buildConfigField("String", "REDLINE_CONTROLS_SOURCE_COMMIT", "\"${if (redlineControlsTag.matches(Regex("[0-9a-f]{40}"))) redlineControlsTag else providers.exec { commandLine("git", "rev-parse", "HEAD") }.standardOutput.asText.get().trim()}\"")
         buildConfigField("String", "REDLINE_EDITOR_SOURCE_COMMIT", "\"${if (redlineEditorTag.matches(Regex("[0-9a-f]{40}"))) redlineEditorTag else providers.exec { commandLine("git", "rev-parse", "HEAD") }.standardOutput.asText.get().trim()}\"")
         buildConfigField("String", "REDLINE_FOCUS_SOURCE_COMMIT", "\"${if (redlineFocusTag.matches(Regex("[0-9a-f]{40}"))) redlineFocusTag else providers.exec { commandLine("git", "rev-parse", "HEAD") }.standardOutput.asText.get().trim()}\"")
+        buildConfigField("String", "REDLINE_TYPOGRAPHY_SOURCE_COMMIT", "\"${if (redlineTypographyTag.matches(Regex("[0-9a-f]{40}"))) redlineTypographyTag else providers.exec { commandLine("git", "rev-parse", "HEAD") }.standardOutput.asText.get().trim()}\"")
         ndk { abiFilters += "arm64-v8a" }
     }
     buildFeatures { buildConfig = true }

@@ -85,3 +85,7 @@ Dynamic retains millisecond-derived motion as a fallback. Editor IDs for retaine
 The same revised design has 206 source parts and 14 cached scene parts (at most 15 selected WFF parts including the background). Six layers per palette refer to 31 unique resources; the neutral backing layer is shared across all palettes. Official memory evaluation records 22,230,640 active bytes and 97,280 ambient bytes, within the same limits; no delivered FPS or energy benefit is inferred.
 
 Helper 0.5.0 now derives presets and report effect names from FaceCatalog. REDLINE 0.3.0 has six controls; HALO and legacy REDLINE had seven. Old saved reports remain interpretable. A new capture of an old instrument build without its old declaration labels that field unavailable; use an earlier helper for complete historical experiments. The host analyzer requires six REDLINE controls for 0.3.0+, preserving seven for older exports.
+
+## REDLINE 0.3.1 typography
+
+The user reports 0.3.0 looks very smooth. This revision changes only typography: 65×94 digit cells (20×94 colon) in a centred 280×94 native TimeText box at (76,178). For full-width digits, visible solid ink spans approximately x=80…351 and y=183…266 inside the existing bracket edges x=79/353, y=183/267. Font viewport padding is retained for glow and glyph metrics; it is not the illuminated boundary. The date is size 21 (half of 42), centred horizontally in its existing 280-unit width with a 28-unit box at y=144. Motion ASTs and all interpolation targets are unchanged.

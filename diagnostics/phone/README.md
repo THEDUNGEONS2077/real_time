@@ -74,7 +74,7 @@ bash scripts/setup-phone-tools.sh
 bash scripts/release-diagnostics.sh --verify-only
 ```
 
-The release check builds/signs the helper, checks its certificate, exact permission list, lack of background components, processor checksum, embedded shared collector and native-library allow-list. It also tests streamed transfer, incompatible watches, package-manager failures, installed-version verification, actual packaged HALO and REDLINE resource tables/footprints and copyable failure messages. It writes `dist/diagnostics/real_time-diagnostics-v0.5.0.apk`, checksums and source commit. Publishing uses a separate `diagnostics-v0.5.0` prerelease and requires approval before pushing or publishing.
+The release check builds/signs the helper, checks its certificate, exact permission list, lack of background components, processor checksum, embedded shared collector and native-library allow-list. It also tests streamed transfer, incompatible watches, package-manager failures, installed-version verification, actual packaged HALO and REDLINE resource tables/footprints and copyable failure messages. It writes `dist/diagnostics/real_time-diagnostics-v0.5.1.apk`, checksums and source commit. Publishing uses a separate `diagnostics-v0.5.1` prerelease and requires approval before pushing or publishing.
 
 To check an existing downloaded release after verifying its checksum, run `./gradlew :diagnostics:phone:testDebugUnitTest -PhaloSelectionFixture=/absolute/path/to/real_time-halo-v0.1.0.apk --tests '*FaceApkTest'`. Without an override, the tests build and use both optimized debug APKs so they do not require a private release key.
 
@@ -89,3 +89,5 @@ Known REDLINE 0.1.0, 0.1.1, 0.2.0 and 0.2.1 provenance is pinned to their separa
 REDLINE 0.2.1 is a candidate for reported blank/ineffective options and motion stopping on face re-entry. Helper 0.4.1 records its exact source provenance; previous helpers can install it. The native editors change the face; TEST SETUP only labels diagnostics. Verify Galaxy Wearable Save/persistence and both editors using FACE_STANDARD.md before marking the repair accepted. No new network permission or background task is introduced.
 
 Helper 0.5.0 adds REDLINE 0.3.0 provenance and face-specific effect presets. Current REDLINE has six effects; its instrument rotors/steps/Timer are removed. HALO retains seven controls. New REDLINE speed declarations default to Slow; these labels still do not change the watch face. Historical REDLINE reports preserve the seven names, with missing declarations marked unavailable; use the earlier helper for complete historical instrument experiments. The user confirms 0.2.1 customization works; new layout/interpolation acceptance remains pending.
+
+Helper 0.5.1 adds REDLINE 0.3.1 provenance for the typography patch. Existing helpers still install it; no new permission, network destination or background component is introduced. The user reports 0.3.0 motion looks very smooth.

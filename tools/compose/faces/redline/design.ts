@@ -31,7 +31,7 @@ export const smoothFps=60;
 /** Editor labels describe this face's actual effects, while stable IDs support shared experiments. */
 export const effectLabels:Record<typeof redlineEffects[number],string>={seconds:'SECONDS BEACON',ring_a:'OUTER ROTOR',ring_b:'INNER COUNTER-ROTOR',breathing:'SUBTLE ACCENT PULSE',scan:'RADAR SWEEP',tilt:'WRIST DEPTH'};
 /** Includes stroke/glow extent and simultaneous two-unit x/y tilt. Readouts remain stationary. */
-export const layout={size:432,centre:216,margin:6,maxTilt:2,outerRadius:201,innerRadius:145,time:{x:80,y:187,width:272,height:76},date:{x:76,y:130,width:280,height:56,size:42},battery:{x:176,y:278,width:80,height:30,size:20}} as const;
+export const layout={size:432,centre:216,margin:6,maxTilt:2,outerRadius:201,innerRadius:145,time:{x:76,y:178,width:280,height:94},date:{x:76,y:144,width:280,height:28,size:21},battery:{x:176,y:278,width:80,height:30,size:20}} as const;
 /** Clock-driven motion resumes after switching faces; it never depends on a one-shot animation lifecycle. */
 export const motion={outer:18,inner:12,outerModulation:6,innerModulation:4,pulse:2.4,radar:12} as const;
 const line=(x:number,y:number,x2:number,y2:number,role:Role='teal',alpha=130,stroke=0.7):Shape=>({kind:'line',x,y,x2,y2,role,alpha,stroke});

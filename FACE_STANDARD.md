@@ -4,7 +4,7 @@ REDLINE establishes the shared architecture and design language for every new fa
 
 ## Visual and interaction principles
 
-- Make the time the clearest fixed element. Respect the watch's 12/24-hour setting. Size and place every other instrument around it; never allow motion, steps, date or a complication to obscure it. REDLINE 0.3.0 uses flatter 76-unit-high glyphs and 268 units of rendered width inside its inner opening, following a further user revision.
+- Make the time the clearest fixed element. Respect the watch's 12/24-hour setting. Size and place every other instrument around it; never allow motion, steps, date or a complication to obscure it. REDLINE 0.3.1 fills its fixed corner brackets using 94-unit-high glyph cells; visible ink, rather than transparent glyph padding, determines the optical fit.
 - Use a dark background, hierarchical accent colours, fine mechanical detail and intentional negative space. New styles may reinterpret this HUD language rather than copy REDLINE's exact rings, red palette or instrument positions.
 - Use counter-motion and bounded depth to communicate mechanical structure. Keep time, live readouts and touch targets stationary. Seconds keep real time at every decorative speed.
 - Keep glow narrow and subtle. Bake blur at build time; do not add runtime bloom, full-screen filters or image sequences as decoration.

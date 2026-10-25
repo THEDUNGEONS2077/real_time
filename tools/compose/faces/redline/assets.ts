@@ -1,7 +1,7 @@
 /** Original vector-authored masks: baked once at build time, never blurred on the watch. */
 const document=(width:number,height:number,body:string)=>`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${body}</svg>`;
 /** Segments and metrics match REDLINE's BitmapFont and preview clock. */
-export const glyph={width:62,height:76,colonWidth:20};
+export const glyph={width:65,height:94,colonWidth:20};
 const patterns=['abcdef','bc','abdeg','abcdg','bcfg','acdfg','acdefg','abc','abcdefg','abcdfg'];
 const shapes={a:'7,3 23,3 26,6 23,9 7,9 4,6',g:'7,24 23,24 26,27 23,30 7,30 4,27',d:'7,45 23,45 26,48 23,51 7,51 4,48',f:'3,8 6,11 6,23 3,26 0,23 0,11',b:'27,8 30,11 30,23 27,26 24,23 24,11',e:'3,29 6,32 6,44 3,47 0,44 0,32',c:'27,29 30,32 30,44 27,47 24,44 24,32'};
 /** Hard-edged angular digits with a small pre-rendered white halo in interactive mode only. */

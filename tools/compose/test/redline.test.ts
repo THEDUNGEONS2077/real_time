@@ -1,4 +1,5 @@
 /** REDLINE contracts: faster bounded rotation, fixed readouts, reference glow and reusable resource generation. */
+import sharp from 'sharp';
 import { expect, it } from 'vitest';
 import { resolve } from 'node:path';
 import { effects, expression, frame, value } from '../src/model.ts';
@@ -8,7 +9,7 @@ import { build, root } from '../src/build.ts';
 import { timeRows } from '../src/dotmatrix.ts';
 import { nodeXml } from '../src/wff.ts';
 import { layout, motion, palettes, redlineEffects, smoothFps, scene } from '../faces/redline/design.ts';
-import { clockXml, compileWatchface, labelText, previewSvg, style, watchfaceXml } from '../faces/redline/render.ts';
+import { clockSvg, clockXml, compileWatchface, labelText, previewSvg, style, watchfaceXml } from '../faces/redline/render.ts';
 import { digitSvg, glyph } from '../faces/redline/assets.ts';
 
 const flat=(nodes:Node[],f:Frame):Node[]=>nodes.flatMap(n=>n.kind==='switch'?flat(f.effects[n.effect]?n.enabled:n.disabled,f):n.kind==='group'?[n,...flat(n.children,f)]:[n]);
@@ -58,7 +59,7 @@ it('gives every switch a changing transform while leaving time outside rotating 
 });
 it.each(['00:00','10:45','12:00','23:59'])('preserves a readable horizontal %s',time=>{
   const t=new Date(`2026-10-24T${time}:00Z`);expect(timeRows(t,true).join(':')).toBe(time);
-  expect(previewSvg(frame({time:t}))).toContain('width="62" height="76"');
+  expect(previewSvg(frame({time:t}))).toContain('width="65" height="94"');
 });
 it('uses original distinct angular glyphs with padding and native hour formatting',()=>{
   expect(new Set([...'0123456789'].map(c=>digitSvg(c))).size).toBe(10);
@@ -68,7 +69,7 @@ it('uses original distinct angular glyphs with padding and native hour formattin
 });
 it('updates the enlarged full date at rollover and retains only battery beneath time',()=>{
   expect(labelText('full_date',frame({time:new Date('2026-10-25T00:00Z')}))).toBe('SUN 25 OCT');
-  expect(layout.date.size).toBe(12*3.5);expect(layout.date.y+layout.date.height).toBeLessThan(layout.time.y);
+  expect(layout.date.size).toBe(42*.5);expect(layout.date.y+layout.date.height).toBeLessThan(layout.time.y);
   expect(layout.battery.y).toBeGreaterThan(layout.time.y+layout.time.height);
 });
 it('keeps red restrained and uses a distinct low-battery warning',()=>{
@@ -144,7 +145,13 @@ it('interpolates slow rotors in subpixel steps without wrap reversal, including 
     }
   }
 });
-it('fits every time-box corner inside the inner circular opening',()=>{
-  const t=layout.time;
-  for(const x of [t.x,t.x+t.width])for(const y of [t.y,t.y+t.height])expect(Math.hypot(x-216,y-216)).toBeLessThan(layout.innerRadius);
+it('fills the existing corner brackets with the visible time ink',async()=>{
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="432" height="432">${clockSvg(frame({time:new Date('2026-10-25T08:08:00Z')}))}</svg>`;
+  const {data,info}=await sharp(Buffer.from(svg)).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+  let left=432,right=0,top=432,bottom=0;
+  for(let y=0;y<432;y++)for(let x=0;x<432;x++)if(data[(y*432+x)*info.channels+3]>=160){left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}
+  expect(left).toBeGreaterThanOrEqual(79);expect(left).toBeLessThanOrEqual(81);
+  expect(right).toBeGreaterThanOrEqual(351);expect(right).toBeLessThanOrEqual(353);
+  expect(top).toBeGreaterThanOrEqual(183);expect(top).toBeLessThanOrEqual(185);
+  expect(bottom).toBeGreaterThanOrEqual(265);expect(bottom).toBeLessThanOrEqual(267);
 });
