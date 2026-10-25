@@ -59,6 +59,11 @@ grep -q "package: name='com.thedungeons2077.realtime.$FACE'" ${VERIFY}/package.t
 grep -q "minSdkVersion:'36'" ${VERIFY}/package.txt || fail 'Unexpected minimum SDK.'
 grep -q "targetSdkVersion:'36'" ${VERIFY}/package.txt || fail 'Unexpected target SDK.'
 
+# Future faces inherit REDLINE's editor contract, including real packaged icons/labels and selected-tree checks.
+if [[ "$FACE" != halo ]]; then
+  python3 -I tools/check/verify_editor.py --resources "faces/$FACE/src/main/res" --apk "$APK" --aapt2 "$BT/aapt2" --report "$VERIFY/editor.json"
+fi
+
 # Validate both runtime memory budgets against the signed APK.
 java -jar "$MEMORY" --watch-face "$APK" --schema-version 4 --ambient-limit-mb 10 --active-limit-mb 100 --estimate-optimization 2>&1 | tee ${VERIFY}/memory.txt
 java -jar "$MEMORY" --watch-face "$APK" --schema-version 4 --report > ${VERIFY}/memory.json

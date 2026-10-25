@@ -8,7 +8,7 @@ import { build, root } from '../src/build.ts';
 import { timeRows } from '../src/dotmatrix.ts';
 import { nodeXml } from '../src/wff.ts';
 import { layout, motion, palettes, scene } from '../faces/redline/design.ts';
-import { clockXml, labelText, previewSvg, style, watchfaceXml } from '../faces/redline/render.ts';
+import { clockXml, compileWatchface, labelText, previewSvg, style, watchfaceXml } from '../faces/redline/render.ts';
 import { digitSvg, glyph } from '../faces/redline/assets.ts';
 
 const flat=(nodes:Node[],f:Frame):Node[]=>nodes.flatMap(n=>n.kind==='switch'?flat(f.effects[n.effect]?n.enabled:n.disabled,f):n.kind==='group'?[n,...flat(n.children,f)]:[n]);
@@ -58,7 +58,7 @@ it('gives every switch a changing transform while leaving time outside rotating 
 });
 it.each(['00:00','10:45','12:00','23:59'])('preserves a readable horizontal %s',time=>{
   const t=new Date(`2026-10-24T${time}:00Z`);expect(timeRows(t,true).join(':')).toBe(time);
-  expect(previewSvg(frame({time:t}))).toContain('width="34" height="54"');
+  expect(previewSvg(frame({time:t}))).toContain('width="68" height="108"');
 });
 it('uses original distinct angular glyphs with padding and native hour formatting',()=>{
   expect(new Set([...'0123456789'].map(c=>digitSvg(c))).size).toBe(10);
@@ -78,8 +78,9 @@ it('keeps red restrained and uses a distinct low-battery warning',()=>{
 });
 it('uses literal fixed colours without a runtime palette or white-fallback dependency',()=>{
   const xml=watchfaceXml();
-  expect(xml).not.toContain('CONFIGURATION.palette');expect(xml).not.toContain('ColorConfiguration');
-  for(const colour of ['#030405','#ff202b','#edf0f1','#343a3e','#9c121b'])expect(xml).toContain(colour);
+  expect(xml).not.toMatch(/CONFIGURATION\.palette\.\d/);expect(xml).not.toContain('ColorConfiguration');
+  const artwork=compileWatchface().caches.flatMap(c=>[...c.layers.values()].map(l=>l.svg)).join('');
+  for(const colour of ['#030405','#ff202b','#edf0f1','#343a3e','#9c121b'])expect((xml+artwork).includes(colour),colour).toBe(true);
   expect(xml).toContain('backgroundColor="#000000"');
 });
 it('keeps ambient time-only and does not include frame sequences or runtime blur',()=>{
@@ -87,7 +88,7 @@ it('keeps ambient time-only and does not include frame sequences or runtime blur
   expect(ambient).not.toMatch(/Transform|Gyro|MILLISECOND|redline_mesh|STEP_COUNT/);
   expect(xml).not.toMatch(/SequenceImages|AnimatedImage|GaussianBlur|Launch/);
   expect(xml).toContain('SET TIMER');expect(xml).toContain('[COMPLICATION.TEXT]');
-  for(const e of effects)expect(xml).toContain(`id="${e}" displayName="effect_${e}" defaultValue="TRUE"`);
+  for(const e of effects)expect(xml).toContain(`id="${e}" displayName="${e}"`);
 });
 it('reproduces all committed REDLINE resources deterministically',async()=>{
   await build(resolve(root,'faces/redline/src/main/res'),true,'redline');
@@ -100,7 +101,7 @@ it('exposes six literal-colour presets without runtime theme lookup',()=>{
     expect(output).toContain(p.cyan);
     expect(previewSvg(frame({redlinePalette:id}))).toContain(p.cyan);
   }
-  expect(output).not.toContain('[CONFIGURATION.palette');
+  expect(output).not.toMatch(/CONFIGURATION\.palette\.\d/);
 });
 it('scales each decorative rotor and pulse, keeps seconds accurate, and makes STILL source-free',()=>{
   const f=frame({time:new Date('2026-10-24T00:00:01Z')});
@@ -110,8 +111,8 @@ it('scales each decorative rotor and pulse, keeps seconds accurate, and makes ST
     if(main?.kind==='group'){
       if(feel==='SMOOTH'){
         expect(value(main.angle!,f)).toBeCloseTo(20*rate);
-        expect(main.rotation).toEqual({degrees:360,duration:18/rate,fps:30});
-      }else expect(main.rotation).toBeUndefined();
+        expect(expression(main.angle!)).toContain('MILLISECOND');
+      }
     }
     const seconds=nodes.find(n=>n.kind==='group'&&n.name==='seconds_beacon');
     if(seconds?.kind==='group')expect(value(seconds.angle!,f)).toBe(6);
@@ -121,9 +122,10 @@ it('scales each decorative rotor and pulse, keeps seconds accurate, and makes ST
   expect(still).not.toMatch(/MILLISECOND|SECONDS_IN_DAY|Gyro|Animation|seconds_beacon|radar_sweep/);
   expect(still).toContain('[STEP_COUNT]');expect(still).toContain('[BATTERY_PERCENT]');
 });
-it('uses native looping interpolation only for smooth decorative rotors',()=>{
-  const smooth=scene('FAST','SMOOTH').map(n=>nodeXml(n,style)).join('');
-  expect(smooth).toContain('duration="9" repeat="-1" fps="30"');
-  expect(smooth).toContain('value="-360"');
-  expect(scene('STANDARD','DYNAMIC').map(n=>nodeXml(n,style)).join('')).not.toContain('<Animation');
+it('uses live clock-driven rotation after face switching, with no one-shot animation loops',()=>{
+  for(const feel of ['SMOOTH','DYNAMIC'] as const){
+    const output=scene('STANDARD',feel).map(n=>nodeXml(n,style)).join('');
+    expect(output).not.toContain('<Animation');
+    expect(output).toContain('[SECONDS_IN_DAY]');expect(output).toContain('[MILLISECOND]');
+  }
 });

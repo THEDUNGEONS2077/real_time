@@ -59,3 +59,15 @@ The release script validates the signed APK, not just the source: package identi
 Generated artwork and source are committed; keys, captures, analysis output, downloaded validators and build products are ignored. Reviewed measurements and optimization decisions may be committed only after checking their contents.
 
 Face verification reports are separated under `out/verification/<face>`. HALO retains its original `v*` release tag scheme; subsequent faces use `<face>-v*`, allowing independent versions and monotonic version codes. The shared helper uses its separate `diagnostics-v*` release scheme.
+
+## REDLINE 0.2.1 repair and shared face contract
+
+The user reports 0.2.0 has blank, ineffective options on both phone and watch, and motion stops after switching away and back. It supplied no list-option artwork and nested native scene selectors, which Android's personalization guide forbids despite XSD accepting the structure. `editor.ts` now emits flat catalogue definitions, captioned 96-pixel icons, accessible labels and Conditions for scene selection. All effects use explicit TRUE/FALSE list choices so companion apps need no implicit Boolean icon artwork. The IDs/defaults remain stable; old Boolean selections may restore their default once when their schema changes. Palette colours remain literal.
+
+`bake.ts` replaces sufficiently large static vector/image runs with cropped lossless coloured masks, preserving painter order and live group transforms. Forty-two deduplicated layers cover six palettes; each active palette uses seven. Source geometry and numeric transforms remain shared with SVG. The same revised full-motion scene has 325 source parts and 26 cached scene parts; the complete selected WFF has at most 32 parts counting every Timer-provider branch conservatively. This is a structural metric, not measured FPS. XML falls from 4,496,431 to 446,118 bytes. Watch memory and device acceptance are reported separately.
+
+Repeating native Animation elements are removed. Smooth is steady clock-driven rotation; Dynamic retains clock-driven speed modulation. Every moving group reads live clock sources, eliminating dependence on a constant-target animation restarting after activation. No 30 fps delivery claim is made.
+
+Time glyphs are doubled to 68×108 units, using a 300×114 TimeText box and the same original glyph assets at size 108. Battery moves above time, Timer/steps below. Ambient also uses the larger dim time. The selected-tree checker covers all 6,144 configurations, independent live Timer editing and ambient/static branches. Signed-APK verification resolves renamed resource paths through AAPT2 and checks labels, option icons, masks and glyphs against their generated contents (decoded pixels for AAPT2-reencoded PNGs). Device Save/persistence, provider behaviour and motion re-entry remain mandatory acceptance tests.
+
+Every new face follows [FACE_STANDARD.md](FACE_STANDARD.md); extend its explicit test profile instead of copying REDLINE's coordinates or claiming its measured performance.

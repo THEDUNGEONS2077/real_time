@@ -1,3 +1,7 @@
+# real_time design
+
+[FACE_STANDARD.md](FACE_STANDARD.md) defines REDLINE's architecture and design principles for every future face, including working customization in Galaxy Wearable and on the watch, readable fixed time, resumable motion and measurement-led efficiency. Each new face supplies its own visual style and layout.
+
 # HALO design
 
 REDLINE's separate reference, rotation profile, subtle glow and hardware/resource calibration are documented in [faces/redline/README.md](faces/redline/README.md). Shared renderer extensions preserve HALO's generated resources byte for byte.

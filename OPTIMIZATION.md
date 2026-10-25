@@ -49,3 +49,15 @@ Commit a reviewed summary under `measurements/reviewed/` and add a row below. In
 | No device findings yet | — | — | — | — | Measure before claiming a benefit |
 
 After an accepted change, update DESIGN.md and CHANGELOG.md with the resulting behaviour and link its reviewed evidence. Do not transfer a measured numeric saving to a different face without another measurement.
+
+## REDLINE 0.2.1 engineering pass (2026-10-25)
+
+The user reports 0.2.0 has unusable blank options on both editors and motion stops after switching faces. Its resource checks did not establish functional acceptance. Missing editor icons and unsupported nesting are corrected in the candidate; native repeating loops are replaced by live clock expressions. The exact on-device behaviour of this repair still requires testing.
+
+Cached cropped artwork reduces the same revised source scene from 325 separate parts to 26; the complete selected WFF has at most 32 parts under the checker, conservatively including every Timer-provider branch. Generated XML decreases from 4,496,431 bytes to 446,118 (about 90%). These are reproducible structural metrics. Caching uses decoded image memory and slightly different subpixel raster antialiasing; equivalence tests cover six palettes at representative rotation/tilt states. No CPU, FPS, jank or battery improvement is inferred from these counts.
+
+The 100% larger clock and repositioned instruments are a separate requested visual change, not a controlled energy comparison. Compare the new full-motion build against Still and individual effects first; record brightness, visibility and the larger lit area before interpreting battery results. No battery saving is claimed. Smooth now means steady clock-driven rotation, with no native FPS request. Re-entry and timeout/wake must pass before accepting the rendering lifecycle.
+
+All future faces follow FACE_STANDARD.md and use the same measurement workflow, explicit editor contract and packaged resource verification.
+
+Official evaluation of the 0.2.1 candidate records 25,917,536 maximum active bytes (about 24.7 MiB) and 38,016 ambient bytes, within 100 MiB/10 MiB limits. This is a larger evaluated image-memory footprint, traded for fewer selected drawing parts; real renderer CPU/jank and whole-watch battery remain unavailable. Ambient preview coverage is about 4.82% with the doubled clock, below the 10% preview guardrail.

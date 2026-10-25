@@ -3,9 +3,13 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import sharp from 'sharp';
 import { root } from '../compose/src/build.ts';
+import { editorSettings } from '../compose/faces/redline/editor.ts';
+import { optionSvg } from '../compose/src/editor.ts';
+import { compileWatchface } from '../compose/faces/redline/render.ts';
+import { nodeSvg } from '../compose/src/preview.ts';
 import { effects, frame } from '../compose/src/model.ts';
 import type { Frame } from '../compose/src/model.ts';
-import { palettes, speeds } from '../compose/faces/redline/design.ts';
+import { palettes, speeds, scene } from '../compose/faces/redline/design.ts';
 import { previewSvg } from '../compose/faces/redline/render.ts';
 /** Generate the complete local review gallery without an HTTP server. */
 export async function redlinePreviews():Promise<void>{
@@ -28,6 +32,14 @@ export async function redlinePreviews():Promise<void>{
     }
   }
   await sharp({create:{width:1296,height:864,channels:3,background:'#08090b'}}).composite(Object.keys(palettes).map((palette,i)=>({input:resolve(out,`${palette==='REFERENCE'?'reference':palette.toLowerCase()}.png`),left:i%3*432,top:Math.floor(i/3)*432}))).png().toFile(resolve(out,'palettes.png'));
+  const options=editorSettings.flatMap(s=>s.options),tiles=await Promise.all(options.map(async(o,i)=>({input:await sharp(Buffer.from(optionSvg(o))).png().toBuffer(),left:i%7*96,top:Math.floor(i/7)*96})));
+  await sharp({create:{width:672,height:384,channels:3,background:'#08090b'}}).composite(tiles).png().toFile(resolve(out,'editor-options.png'));
+  // Inspect the actual optimized image layers too; SVG renderers may need PNG rather than WebP data URIs.
+  const compiled=compileWatchface(),cache=compiled.caches[0],images={...cache.style.imageData};
+  for(const [path,data] of await cache.resources())images[path.split('/')[1].replace('.webp','')]='data:image/png;base64,'+(await sharp(data).png().toBuffer()).toString('base64');
+  const timerPreview=`<image x="103" y="311" width="24" height="28" href="${images.redline_timer}"/><text x="115" y="358" text-anchor="middle" font-family="monospace" font-size="8" fill="#edf0f1">SET TIMER</text>`;
+  const optimizedSvg=`<svg xmlns="http://www.w3.org/2000/svg" width="432" height="432"><rect width="432" height="432" fill="#030405"/>${cache.scene(scene()).map(n=>nodeSvg(n,frame(base),'',{...cache.style,imageData:images})).join('')}${timerPreview}</svg>`;
+  await sharp(Buffer.from(optimizedSvg)).png().toFile(resolve(out,'optimized.png'));
   const frames:string[]=[];
   for(let i=0;i<360;i++){const name=`motion-${String(i).padStart(3,'0')}.svg`;await writeFile(resolve(out,name),previewSvg(frame({...base,time:new Date(base.time.getTime()+i*1000/30)})));frames.push(name);}
   const reference='/mnt/c/Users/57298327/Desktop/GENS/Dungeons Cyberpunk HUD Watch Face.png';
@@ -39,6 +51,6 @@ export async function redlinePreviews():Promise<void>{
     comparison='<figure><img src="reference-aligned.png" width="432" height="432"/><figcaption>Aligned user reference</figcaption></figure>';
     await writeFile(resolve(out,'reference-comparison.json'),JSON.stringify({reference,crop,adaptation:'Concentric red rings, three dials and central white time; reauthored vectors and masks. Original reference is not packaged.',limits:'SVG approximates WFF. Glow, fonts and device motion require watch acceptance.'},null,2)+'\n');
   }catch(error){if((error as NodeJS.ErrnoException).code!=='ENOENT')throw error;}
-  await writeFile(resolve(out,'index.html'),`<!doctype html><html lang="en"><meta charset="utf-8"><title>REDLINE review</title><style>body{background:#08090b;color:#edf0f1;font:14px monospace;margin:28px}main,.compare{display:flex;flex-wrap:wrap;gap:24px}figure{margin:0}figcaption{padding:12px}button{background:#111;color:#eee;border:1px solid #ff202b;padding:10px}a{color:#ff6470}</style><h1>REAL_TIME / REDLINE</h1><p>Reference-derived design previews. Faster rotors, fixed readouts, subtle baked/alpha glow. Device performance remains unmeasured.</p><div class="compare">${comparison}<figure><img id="motion" src="${frames[0]}" width="432" height="432"><figcaption>12-second sample at 30 preview fps; resets at loop end. <button id="pause">Pause</button></figcaption></figure></div><main>${cards.join('')}</main><script>const frames=${JSON.stringify(frames)};let i=0,play=true;document.getElementById('pause').onclick=()=>{play=!play;document.getElementById('pause').textContent=play?'Pause':'Play'};setInterval(()=>{if(play)document.getElementById('motion').src=frames[++i%frames.length]},1000/30)</script></html>`);
+  await writeFile(resolve(out,'index.html'),`<!doctype html><html lang="en"><meta charset="utf-8"><title>REDLINE review</title><style>body{background:#08090b;color:#edf0f1;font:14px monospace;margin:28px}main,.compare{display:flex;flex-wrap:wrap;gap:24px}figure{margin:0}figcaption{padding:12px}button{background:#111;color:#eee;border:1px solid #ff202b;padding:10px}a{color:#ff6470}</style><h1>REAL_TIME / REDLINE</h1><p>Reference-derived design previews. Faster rotors, fixed readouts, subtle baked/alpha glow. Device performance remains unmeasured.</p><div class="compare">${comparison}<figure><img id="motion" src="${frames[0]}" width="432" height="432"><figcaption>12-second sample at 30 preview fps; resets at loop end. <button id="pause">Pause</button></figcaption></figure></div><p><a href="editor-options.png">All editor option icons</a> · <a href="optimized.png">Optimized image-layer rendering</a></p><main>${cards.join('')}</main><script>const frames=${JSON.stringify(frames)};let i=0,play=true;document.getElementById('pause').onclick=()=>{play=!play;document.getElementById('pause').textContent=play?'Pause':'Play'};setInterval(()=>{if(play)document.getElementById('motion').src=frames[++i%frames.length]},1000/30)</script></html>`);
   console.log(`REDLINE previews: ${out}/index.html`);
 }

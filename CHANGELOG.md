@@ -1,5 +1,18 @@
 # Changelog
 
+## REDLINE 0.2.1 (build 4)
+
+- Repair candidate for blank/ineffective customization: supply captioned icons and accessible labels for all 26 options; replace nested native scene selectors with configuration-driven Conditions. Use explicit ON/OFF list tiles for effects. Both platform editors still need device acceptance.
+- Replace native repeating animation loops after the user reports motion stops on face re-entry. Smooth now uses steady live-clock rotation; Dynamic retains modulation. No fixed FPS claim is made.
+- Double time glyphs to 68×108 units with a 300×114 native clock box. Move battery above time and Timer/steps below it; retain a larger static dim ambient clock.
+- Cache static/rotating artwork into cropped lossless layers: the same revised full-motion scene falls from 325 separate parts to 26; selected WFF has at most 32 parts including all provider branches. XML decreases about 90%. These are structural metrics, not measured speed or battery results.
+- Pass official memory evaluation at 25,917,536 active bytes and 38,016 ambient bytes; caching increases image-memory estimates while reducing drawing parts.
+- Add 6,144-combination selected-tree validation, real packaged icon/label/image checks, visible-icon tests and vector/cache visual comparisons. Define FACE_STANDARD.md as the architecture, design, editor and optimization contract for every new face.
+
+## Diagnostics 0.4.1 (build 7)
+
+- Add explicit REDLINE 0.2.1 source provenance. Existing installation and test workflows are preserved; no permission, background component or automatic transfer is added.
+
 ## REDLINE 0.2.0 (build 3)
 
 - Added six editor palettes: Reference Red, Amber, Cyan, Green, Violet and Ice. Selected branches embed literal colours, preserving the 0.1.1 workaround; no runtime colour lookup is introduced.

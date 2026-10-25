@@ -1,7 +1,8 @@
 # real_time: project instructions
 
-Resource-only Wear OS watch faces for the user's Galaxy Watch7 40 mm. Read ARCHITECTURE.md, DESIGN.md and OPTIMIZATION.md before changing a face.
+Resource-only Wear OS watch faces for the user's Galaxy Watch7 40 mm. Read ARCHITECTURE.md, DESIGN.md, FACE_STANDARD.md and OPTIMIZATION.md before changing a face.
 
+- Every future face must follow FACE_STANDARD.md: REDLINE architecture and HUD design principles, distinct visual style, functional Galaxy Wearable/on-watch editing, fixed readable time, resumable motion and shared optimization/measurement gates.
 - Each face is independent. Do not port the family's wallpapers into this project.
 - Keep WFF APKs free of executable code, permissions, analytics and network access.
 - Comments explain purpose and layer. Document exported declarations and non-obvious logic. JSON, binary resources and the unmodified Gradle wrapper use their native formats without added comments.
@@ -39,3 +40,5 @@ bash scripts/setup-validators.sh
 bash scripts/setup-perfetto.sh
 bash scripts/release-wear.sh --verify-only
 ```
+
+For REDLINE and all future faces, use the shared editor catalogue with real captioned option icons, accessible packaged labels and Condition-based selection. Never nest native scene configuration selectors. Add an explicit selected-tree acceptance profile before releasing a new face. Clock-driven motion must be tested after leaving/re-entering the face. Local validation cannot substitute for Galaxy Wearable Save/persistence and watch acceptance.

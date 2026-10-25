@@ -1,9 +1,11 @@
 /** Asset pipeline: deterministic images, WFF, editor labels and picker preview. */
-import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { frame } from './model.ts';
+import { optionSvg } from './editor.ts';
+import { editorSettings } from '../faces/redline/editor.ts';
 import { digitSvg } from './dotmatrix.ts';
 import { previewSvg } from './preview.ts';
 import { stringsXml, watchfaceXml } from './wff.ts';
@@ -49,7 +51,10 @@ export async function resources(face:FaceName='halo'):Promise<Map<string,Buffer>
 /** Small static masks and original segmented glyphs accompany REDLINE's vector scene. */
 async function redlineResources():Promise<Map<string,Buffer>> {
   const result=new Map<string,Buffer>();
-  result.set('raw/watchface.xml',Buffer.from(redline.watchfaceXml()));
+  const compiled=redline.compileWatchface();
+  result.set('raw/watchface.xml',Buffer.from(compiled.xml));
+  for(const cache of compiled.caches)for(const [name,data] of await cache.resources())result.set(name,data);
+  for(const setting of editorSettings)for(const option of setting.options)result.set(`drawable-nodpi/${option.icon}.png`,await sharp(Buffer.from(optionSvg(option))).png({compressionLevel:9}).toBuffer());
   result.set('values/strings.xml',Buffer.from(redline.stringsXml()));
   result.set('xml/watch_face_info.xml',Buffer.from('<?xml version="1.0" encoding="utf-8"?>\n<!-- Generated picker metadata. -->\n<WatchFaceInfo><Preview value="@drawable/preview"/><Editable value="true"/><MultipleInstancesAllowed value="true"/></WatchFaceInfo>\n'));
   for(const [name,svg] of Object.entries({...icons,redline_mesh:meshSvg()}))result.set(`drawable-nodpi/${name}.webp`,await sharp(Buffer.from(svg)).webp({lossless:true,effort:6}).toBuffer());
@@ -68,10 +73,14 @@ export async function build(destination:string,check=false,face:FaceName='halo')
     }else{await mkdir(dirname(path),{recursive:true});await writeFile(path,data);}
   }
   // Stale generated assets must fail too: Android would otherwise package them silently.
-  if(check)for(const entry of await readdir(destination,{recursive:true,withFileTypes:true})){
+  for(const entry of await readdir(destination,{recursive:true,withFileTypes:true})){
     if(!entry.isFile())continue;
     const relative=resolve(entry.parentPath,entry.name).slice(resolve(destination).length+1);
-    if(!files.has(relative))throw new Error(`Unexpected resource: ${relative}`);
+    if(!files.has(relative)){
+      // Only this generator's content-addressed layers/editor tiles are auto-pruned on regeneration.
+      if(!check&&/^drawable-nodpi\/(?:cached_[a-z]+_[0-9a-f]{16}\.webp|editor_[a-z0-9_]+\.png)$/.test(relative))await rm(resolve(destination,relative));
+      else if(check)throw new Error(`Unexpected resource: ${relative}`);
+    }
   }
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){

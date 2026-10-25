@@ -69,8 +69,6 @@ export interface Group {
   kind: 'group'; name: string; children: Node[]; angle?: NumberValue; scale?: NumberValue;
   x?: NumberValue; y?: NumberValue; gyro?: boolean; alpha?: NumberValue;
   pivot?: { x:number; y:number };
-  /** Native linear rotor interpolation; the shared angle is its SVG phase approximation. */
-  rotation?: { degrees:number; duration:number; fps:number };
 }
 /** Conditional branches remove disabled high-frequency data sources from the active tree. */
 export interface Switch { kind: 'switch'; effect: Effect; enabled: Node[]; disabled: Node[] }
@@ -79,7 +77,7 @@ export interface Label { kind: 'label'; content: 'date' | 'steps' | 'battery' | 
 /** A dot-matrix clock is rendered through the platform's time formatting. */
 export interface Clock { kind: 'clock'; ambient: boolean }
 /** Generated image layer. A monochrome background is tinted by the active palette. */
-export interface ImageNode { kind: 'image'; resource: string; alpha: number; role: Role; x?:number; y?:number; width?:number; height?:number }
+export interface ImageNode { kind: 'image'; resource: string; alpha: number; role: Role; x?:number; y?:number; width?:number; height?:number; tint?:boolean }
 /** Discriminated renderer input. */
 export type Node = Shape | Group | Switch | Label | Clock | ImageNode;
 /** Per-face styling keeps shared geometry/expression serialization independent of HALO's layout. */

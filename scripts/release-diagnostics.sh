@@ -61,11 +61,11 @@ TAG="diagnostics-v$VERSION"
 NOTES=$(mktemp)
 trap 'rm -f "$NOTES"' EXIT
 cat > "$NOTES" <<'EOF'
-Adds REDLINE 0.2.0 palette, motion-speed and rotation-style declarations to TEST SETUP and copied reports. Match these controls to the watch editor before collecting diagnostics: helper setup records your choices and does not remotely change the face. Older REDLINE versions can mark the new fields unavailable. Known 0.2.0 source provenance is included.
+Adds explicit source provenance for REDLINE 0.2.1, the candidate editor/rotation repair and larger-time build. Existing helper versions can install that face; this update improves the accuracy of copied reports. TEST SETUP records your choices and does not remotely change the watch face.
 
-Install/update this APK on the Android phone to preserve pairing. Existing helpers can already install REDLINE 0.2.0; this update improves experiment labels. Explicit APK selection, release signature/resource checks, verified watch installation, on-demand renderer diagnostics and battery/performance tools remain available. The user confirms REDLINE 0.1.1 renders correctly; smoother motion in 0.2.0 still needs watch testing.
+Install/update on the Android phone over the existing helper to retain pairing. Explicit APK selection, release-signature/resource checks, verified watch installation, on-demand renderer reports and battery/performance tools are preserved. REDLINE's Galaxy Wearable Save/persistence and motion re-entry still need device acceptance.
 
-No extra Android permission, background component, automatic upload/download or cloud endpoint is added. Requires an ARM64 phone on Android 13 or newer. Instructions: diagnostics/phone/README.md.
+No additional Android permission, background component, automatic transfer or cloud endpoint is added. Requires ARM64 Android 13 or newer. Instructions: diagnostics/phone/README.md.
 
 EOF
 gh release create "$TAG" "$OUT/$NAME" "$OUT/SHA256SUMS" "$OUT/build-commit.txt" --prerelease --target "$(git rev-parse HEAD)" --title "real_time diagnostics $VERSION (build $BUILD)" --notes-file "$NOTES"
