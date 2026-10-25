@@ -1,5 +1,18 @@
 # Changelog
 
+## REDLINE 0.3.2 (build 7)
+
+- Centre visible time on both axes at (216,216), fixing the right-biased fixed-width cell around 1. Use tightly cropped proportional advances, no inserted spaces/tracking, and minimal antialiasing clearance so digits and colon remain distinct.
+- Increase font size from 94 to 117.5 (25%), with whole-pixel masks approximating the same horizontal enlargement. Move the centred corner marks, date and battery clear of the new clock; retain the half-size date and live 12/24-hour preference.
+- Retain a compact centred 94-unit dim ambient fallback. Add dense/midnight ambient checks; dense 08:08 uses about 7.30% of the round display in the SVG check, within its 10% guard.
+- Thicken both inner red bands from 3.2 to 5.5 units without widening their subtle glow. Rotate them together counterclockwise once per 120 seconds at 0.5×; preserve independent breathing/rotation controls, smooth clock-refreshed interpolation, outer speed and real-time seconds.
+- Verify visible-ink centring across narrow/wide/mixed digits, all 3,072 configurations and packaged resources. New layout/ring behaviour requires watch acceptance; no delivered FPS or battery change is claimed.
+- Official memory is 22,379,376 active / 159,064 ambient bytes. Omit the pinned validator's optional optimization hints because their integer-only font parser rejects valid fractional sizes; retain official budget checks/reporting and explicitly reject missing PASS, FAIL or exceptions.
+
+## Diagnostics 0.5.2 (build 10)
+
+- Add exact REDLINE 0.3.2 source provenance. Existing helpers can install it; this optional update keeps measurement reports accurate.
+
 ## REDLINE 0.3.1 (build 6)
 
 - Expand time to 65×94 digit cells and a 280×94 clock box. Full-width glyph ink reaches within about two pixels of the existing corner-bracket frame; the original angular glyph design is retained.

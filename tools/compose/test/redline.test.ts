@@ -8,9 +8,9 @@ import { polar } from '../src/geometry.ts';
 import { build, root } from '../src/build.ts';
 import { timeRows } from '../src/dotmatrix.ts';
 import { nodeXml } from '../src/wff.ts';
-import { layout, motion, palettes, redlineEffects, smoothFps, scene } from '../faces/redline/design.ts';
+import { layout, motion, palettes, redlineEffects, smoothFps, speeds, timeScale, scene } from '../faces/redline/design.ts';
 import { clockSvg, clockXml, compileWatchface, labelText, previewSvg, style, watchfaceXml } from '../faces/redline/render.ts';
-import { digitSvg, glyph } from '../faces/redline/assets.ts';
+import { digitSvg, glyph, glyphWidth } from '../faces/redline/assets.ts';
 
 const flat=(nodes:Node[],f:Frame):Node[]=>nodes.flatMap(n=>n.kind==='switch'?flat(f.effects[n.effect]?n.enabled:n.disabled,f):n.kind==='group'?[n,...flat(n.children,f)]:[n]);
 /** Sample rendered primitive/image boundaries after all ancestor transforms, including glow strokes. */
@@ -34,14 +34,18 @@ it('keeps all glowing geometry and icons inside the round safe margin',()=>{
     expect(Math.max(...bounds(scene(),f))).toBeLessThanOrEqual(216-layout.margin);
   }
 });
-it('rotates substantially faster than HALO without reversing or unbounded sine arguments',()=>{
-  expect(motion.outer).toBeLessThan(120);expect(motion.inner).toBeLessThan(300);
-  for(let seconds=0;seconds<60;seconds+=.25){
+it('keeps the fast outer rotor and gives both inner bands a slow two-minute revolution at 0.5x',()=>{
+  expect(motion.outer).toBeLessThan(120);expect(motion.inner/speeds.SLOW).toBe(120);
+  for(const feel of ['SMOOTH','DYNAMIC'] as const)for(let seconds=0;seconds<120;seconds+=.25){
     const a=frame({time:new Date(Date.UTC(2026,9,24)+seconds*1000)}),b=frame({time:new Date(a.time.getTime()+10)});
-    for(const n of flat(scene(),a))if(n.kind==='group'&&['outer_rotor','inner_rotor'].includes(n.name)){
+    for(const n of flat(scene('SLOW',feel),a))if(n.kind==='group'&&['outer_rotor','inner_rotor'].includes(n.name)){
       const delta=((value(n.angle!,b)-value(n.angle!,a)+540)%360-180)/.01;
-      expect(delta*(n.name==='outer_rotor'?1:-1)).toBeGreaterThan(6);
-      expect(Math.abs(delta)).toBeLessThan(39);expect(expression(n.angle!)).toContain('%');
+      expect(delta*(n.name==='outer_rotor'?1:-1)).toBeGreaterThan(n.name==='outer_rotor'?6:2);
+      expect(Math.abs(delta)).toBeLessThan(n.name==='outer_rotor'?14:4);expect(expression(n.angle!)).toContain('%');
+      if(n.name==='inner_rotor'){
+        const bands=flat(n.children,a).filter(c=>c.kind==='arc'&&c.stroke===5.5);
+        expect(bands.map(c=>c.kind==='arc'?c.r:0).sort()).toEqual([163,163,163,163,181,181,181,181]);
+      }
     }
   }
 });
@@ -59,11 +63,15 @@ it('gives every switch a changing transform while leaving time outside rotating 
 });
 it.each(['00:00','10:45','12:00','23:59'])('preserves a readable horizontal %s',time=>{
   const t=new Date(`2026-10-24T${time}:00Z`);expect(timeRows(t,true).join(':')).toBe(time);
-  expect(previewSvg(frame({time:t}))).toContain('width="65" height="94"');
+  expect(previewSvg(frame({time:t}))).toContain('height="117.5"');
 });
-it('uses original distinct angular glyphs with padding and native hour formatting',()=>{
+it('uses proportional angular glyphs with a 25% larger font and native hour formatting',()=>{
   expect(new Set([...'0123456789'].map(c=>digitSvg(c))).size).toBe(10);
-  expect(4*glyph.width+glyph.colonWidth).toBeLessThanOrEqual(layout.time.width);
+  expect((4*glyph.width+glyph.colonWidth)*timeScale).toBeLessThanOrEqual(layout.time.width);
+  expect(glyph.height*timeScale).toBe(94*1.25);
+  expect(layout.time.x+layout.time.width/2).toBe(216);expect(layout.time.y+layout.time.height/2).toBe(216);
+  const xml=watchfaceXml();
+  for(const c of '0123456789:')expect(xml).toContain(`name="${c}" resource="segment_${c===':'?'colon':c}" width="${glyphWidth(c)}" height="118"`);
   expect(clockXml()).toContain('hourFormat="SYNC_TO_DEVICE"');expect(clockXml()).toContain('format="hh:mm"');
   expect(timeRows(new Date('2026-10-25T00:00Z'),false).join(':')).toBe('12:00');
 });
@@ -145,13 +153,28 @@ it('interpolates slow rotors in subpixel steps without wrap reversal, including 
     }
   }
 });
-it('fills the existing corner brackets with the visible time ink',async()=>{
-  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="432" height="432">${clockSvg(frame({time:new Date('2026-10-25T08:08:00Z')}))}</svg>`;
-  const {data,info}=await sharp(Buffer.from(svg)).ensureAlpha().raw().toBuffer({resolveWithObject:true});
-  let left=432,right=0,top=432,bottom=0;
-  for(let y=0;y<432;y++)for(let x=0;x<432;x++)if(data[(y*432+x)*info.channels+3]>=160){left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}
-  expect(left).toBeGreaterThanOrEqual(79);expect(left).toBeLessThanOrEqual(81);
-  expect(right).toBeGreaterThanOrEqual(351);expect(right).toBeLessThanOrEqual(353);
-  expect(top).toBeGreaterThanOrEqual(183);expect(top).toBeLessThanOrEqual(185);
-  expect(bottom).toBeGreaterThanOrEqual(265);expect(bottom).toBeLessThanOrEqual(267);
+it('centres visible ink on both axes, including narrow digits, without added character spacing',async()=>{
+  for(const ambient of [false,true])for(const hour24 of [true,false])for(const time of ['00:00','01:11','08:08','10:45','11:11','11:17','12:34','17:37','21:13','23:59']){
+    const clock=clockSvg(frame({time:new Date(`2026-10-25T${time}:00Z`),hour24,ambient}));
+    const images=[...clock.matchAll(/<image x="([^"]+)"[^>]* width="([^"]+)"/g)].map(m=>({x:Number(m[1]),width:Number(m[2])}));
+    expect(images).toHaveLength(5);
+    for(let i=1;i<images.length;i++)expect(images[i].x).toBeCloseTo(images[i-1].x+images[i-1].width,9);
+    const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="432" height="432">${clock}</svg>`;
+    const {data,info}=await sharp(Buffer.from(svg)).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+    let left=432,right=0,top=432,bottom=0;
+    // Include the dim fallback's antialiased tips rather than measuring only its brightest pixels.
+    for(let y=0;y<432;y++)for(let x=0;x<432;x++)if(data[(y*432+x)*info.channels+3]>=(ambient?16:160)){left=Math.min(left,x);right=Math.max(right,x);top=Math.min(top,y);bottom=Math.max(bottom,y);}
+    expect(Math.abs((left+right+1)/2-216),time).toBeLessThanOrEqual(.5);
+    expect(Math.abs((top+bottom+1)/2-216),time).toBeLessThanOrEqual(.5);
+    // Narrow pointed caps cross the alpha threshold one pixel later than horizontal segments.
+    const height=ambient?84:104;
+    expect(bottom-top+1).toBeGreaterThanOrEqual(height-2);expect(bottom-top+1).toBeLessThanOrEqual(height+2);
+    for(const x of [left,right+1])for(const y of [top,bottom+1])expect(Math.hypot(x-216,y-216)).toBeLessThanOrEqual(216-layout.margin);
+  }
+  for(const c of '0123456789:'){
+    const {data,info}=await sharp(Buffer.from(digitSvg(c,false))).ensureAlpha().raw().toBuffer({resolveWithObject:true});
+    const columns=Array.from({length:info.width},(_,x)=>Array.from({length:info.height},(_,y)=>data[(y*info.width+x)*info.channels+3]).some(a=>a>=8));
+    const inset=c===':'?2:1;
+    expect(columns.indexOf(true),c).toBe(inset);expect(columns.lastIndexOf(true),c).toBe(info.width-inset-1);
+  }
 });

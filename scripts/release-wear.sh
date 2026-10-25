@@ -64,8 +64,12 @@ if [[ "$FACE" != halo ]]; then
   python3 -I tools/check/verify_editor.py --resources "faces/$FACE/src/main/res" --apk "$APK" --aapt2 "$BT/aapt2" --report "$VERIFY/editor.json"
 fi
 
-# Validate both runtime memory budgets against the signed APK.
-java -jar "$MEMORY" --watch-face "$APK" --schema-version 4 --ambient-limit-mb 10 --active-limit-mb 100 --estimate-optimization 2>&1 | tee ${VERIFY}/memory.txt
+# Validate both runtime memory budgets against the signed APK. The pinned optional
+# optimization estimator parses font sizes as integers and throws on valid 117.5.
+# Omit only its hints; the official active/ambient budget checks and report remain.
+java -jar "$MEMORY" --watch-face "$APK" --schema-version 4 --ambient-limit-mb 10 --active-limit-mb 100 2>&1 | tee ${VERIFY}/memory.txt
+grep -q 'PASS' ${VERIFY}/memory.txt || fail 'Memory validator did not report PASS.'
+if grep -qE 'FAIL|Exception' ${VERIFY}/memory.txt; then fail 'Memory validator reported failure.'; fi
 java -jar "$MEMORY" --watch-face "$APK" --schema-version 4 --report > ${VERIFY}/memory.json
 
 # Local deliverables include commands and provenance; no raw watch diagnostics are published.

@@ -39,6 +39,7 @@ public final class FaceCatalog {
     }
     /** Preserve known release provenance; unknown face versions are explicitly unavailable. */
     public static String commit(String face, String version) {
+        if ("REDLINE".equals(face) && "0.3.2".equals(version)) return BuildConfig.REDLINE_CENTRED_SOURCE_COMMIT;
         if ("REDLINE".equals(face) && "0.3.1".equals(version)) return BuildConfig.REDLINE_TYPOGRAPHY_SOURCE_COMMIT;
         if ("REDLINE".equals(face) && "0.3.0".equals(version)) return BuildConfig.REDLINE_FOCUS_SOURCE_COMMIT;
         if ("REDLINE".equals(face) && "0.2.1".equals(version)) return BuildConfig.REDLINE_EDITOR_SOURCE_COMMIT;

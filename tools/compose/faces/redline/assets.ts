@@ -1,13 +1,20 @@
 /** Original vector-authored masks: baked once at build time, never blurred on the watch. */
 const document=(width:number,height:number,body:string)=>`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${body}</svg>`;
-/** Segments and metrics match REDLINE's BitmapFont and preview clock. */
-export const glyph={width:65,height:94,colonWidth:20};
+/** Tight ink-width advances avoid the right-biased padding around narrow digits. */
+export const glyph={width:74,height:118,oneWidth:16,narrowWidth:64,colonWidth:12};
+/** WFF and SVG use the same proportional advances, with no added character spacing. */
+export const glyphWidth=(character:string):number=>character===':'?glyph.colonWidth:character==='1'?glyph.oneWidth:'37'.includes(character)?glyph.narrowWidth:glyph.width;
 const patterns=['abcdef','bc','abdeg','abcdg','bcfg','acdfg','acdefg','abc','abcdefg','abcdfg'];
 const shapes={a:'7,3 23,3 26,6 23,9 7,9 4,6',g:'7,24 23,24 26,27 23,30 7,30 4,27',d:'7,45 23,45 26,48 23,51 7,51 4,48',f:'3,8 6,11 6,23 3,26 0,23 0,11',b:'27,8 30,11 30,23 27,26 24,23 24,11',e:'3,29 6,32 6,44 3,47 0,44 0,32',c:'27,29 30,32 30,44 27,47 24,44 24,32'};
 /** Hard-edged angular digits with a small pre-rendered white halo in interactive mode only. */
 export function digitSvg(character:string,glow=true):string {
-  const body=character===':'?'<rect x="4" y="16" width="4" height="5"/><rect x="4" y="33" width="4" height="5"/>':[...patterns[Number(character)]].map(s=>`<polygon points="${shapes[s as keyof typeof shapes]}"/>`).join('');
-  return document(character===':'?glyph.colonWidth:glyph.width,glyph.height,`<defs><filter id="g" x="-20%" y="-15%" width="140%" height="130%"><feGaussianBlur stdDeviation="0.7"/></filter></defs><g fill="white" transform="scale(${(character===':'?glyph.colonWidth:glyph.width)/(character===':'?12:34)},${glyph.height/54}) translate(${character===':'?0:2},0)">${glow?`<g opacity="0.2" filter="url(#g)">${body}</g>`:''}${body}</g>`);
+  // Extend 1's two stems to the common cap/baseline so even 11:11 is vertically centred.
+  const one='<polygon points="27,3 30,6 30,23 27,26 24,23 24,6"/><polygon points="27,28 30,31 30,48 27,51 24,48 24,31"/>';
+  const body=character===':'?'<rect x="4" y="16" width="4" height="5"/><rect x="4" y="33" width="4" height="5"/>':character==='1'?one:[...patterns[Number(character)]].map(s=>`<polygon points="${shapes[s as keyof typeof shapes]}"/>`).join('');
+  const narrow='37'.includes(character),width=glyphWidth(character),inkWidth=character===':'?4:character==='1'?6:narrow?26:30,left=character===':'||narrow?4:character==='1'?24:0;
+  // A one-pixel antialiasing edge (two for punctuation) keeps adjacent stems/dots legible.
+  const inset=character===':'?2:1;
+  return document(width,glyph.height,`<defs><filter id="g" x="-20%" y="-15%" width="140%" height="130%"><feGaussianBlur stdDeviation="0.7"/></filter></defs><g fill="white" transform="translate(${inset},0) scale(${(width-2*inset)/inkWidth},${glyph.height/54}) translate(${-left},0)">${glow?`<g opacity="0.2" filter="url(#g)">${body}</g>`:''}${body}</g>`);
 }
 /** White alpha masks are tinted by the face palette. No source-reference pixels are redistributed. */
 export const icons={

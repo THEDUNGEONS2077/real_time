@@ -18,8 +18,10 @@ export async function redlinePreviews():Promise<void>{
   const states:[string,Partial<Frame>][]=[['reference',{}],...Object.keys(palettes).filter(k=>k!=='REFERENCE').map(k=>[k.toLowerCase(),{redlinePalette:k}] as [string,Partial<Frame>]),...Object.keys(speeds).map(k=>[`speed-${k.toLowerCase()}`,{motionSpeed:k as Frame['motionSpeed']}] as [string,Partial<Frame>]),['dynamic',{motionStyle:'DYNAMIC'}],['ambient',{ambient:true}],['low-battery',{battery:15}],['empty-battery',{battery:0}],
     ['still',{effects:Object.fromEntries(effects.map(e=>[e,false])) as Frame['effects']}],['tilt-positive',{tiltX:3,tiltY:3}],['tilt-negative',{tiltX:-3,tiltY:-3}],
     ['midnight',{time:new Date('2026-10-25T00:00:00Z'),steps:0}],['12-hour-noon',{time:new Date('2026-10-24T12:00:00Z'),hour24:false}],
+    ['narrow-digits',{time:new Date('2026-10-25T11:11:00Z')}],['wide-digits',{time:new Date('2026-10-25T08:08:00Z')}],['mixed-digits',{time:new Date('2026-10-25T17:37:00Z')}],
+    ['ambient-wide',{ambient:true,time:new Date('2026-10-25T08:08:00Z')}],['ambient-midnight',{ambient:true,time:new Date('2026-10-25T00:00:00Z')}],
     ['motion-extreme',{time:new Date('2026-10-24T10:45:07.500Z')}]];
-  const cards:string[]=[];
+  const cards:string[]=[],ambientSamples:{name:string;litFraction:number}[]=[];
   for(const [name,override] of states){
     const svg=previewSvg(frame({...base,...override}));await writeFile(resolve(out,`${name}.svg`),svg);
     const png=await sharp(Buffer.from(svg)).png().toBuffer();await writeFile(resolve(out,`${name}.png`),png);
@@ -27,10 +29,11 @@ export async function redlinePreviews():Promise<void>{
     if(override.ambient){
       const {data,info}=await sharp(png).removeAlpha().raw().toBuffer({resolveWithObject:true});let lit=0,total=0;
       for(let y=0;y<432;y++)for(let x=0;x<432;x++)if(Math.hypot(x+.5-216,y+.5-216)<=216){const p=(y*432+x)*info.channels;total++;if(data[p]+data[p+1]+data[p+2]>0)lit++;}
-      const report={litFraction:lit/total,threshold:0.10};await writeFile(resolve(out,'ambient.json'),JSON.stringify(report,null,2)+'\n');
-      if(report.litFraction>=report.threshold)throw new Error('REDLINE ambient coverage exceeds 10%.');
+      ambientSamples.push({name,litFraction:lit/total});
+      if(lit/total>=.10)throw new Error(`REDLINE ambient coverage exceeds 10%: ${name}.`);
     }
   }
+  await writeFile(resolve(out,'ambient.json'),JSON.stringify({litFraction:Math.max(...ambientSamples.map(s=>s.litFraction)),threshold:.10,samples:ambientSamples},null,2)+'\n');
   await sharp({create:{width:1296,height:864,channels:3,background:'#08090b'}}).composite(Object.keys(palettes).map((palette,i)=>({input:resolve(out,`${palette==='REFERENCE'?'reference':palette.toLowerCase()}.png`),left:i%3*432,top:Math.floor(i/3)*432}))).png().toFile(resolve(out,'palettes.png'));
   const options=editorSettings.flatMap(s=>s.options),tiles=await Promise.all(options.map(async(o,i)=>({input:await sharp(Buffer.from(optionSvg(o))).png().toBuffer(),left:i%7*96,top:Math.floor(i/7)*96})));
   await sharp({create:{width:672,height:384,channels:3,background:'#08090b'}}).composite(tiles).png().toFile(resolve(out,'editor-options.png'));

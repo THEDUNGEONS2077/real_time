@@ -6,7 +6,7 @@ import { editorSettings } from './editor.ts';
 import { timeRows } from '../../src/dotmatrix.ts';
 import { nodeXml, tag, xml } from '../../src/wff.ts';
 import { nodeSvg } from '../../src/preview.ts';
-import { digitSvg, glyph, icons, meshSvg } from './assets.ts';
+import { digitSvg, glyph, glyphWidth, icons, meshSvg } from './assets.ts';
 import { layout, palettes, speeds, timeScale, scene } from './design.ts';
 const canvas={x:0,y:0,width:432,height:432};
 // Every selected branch contains literal colours, preserving the confirmed 0.1.1 workaround.
@@ -20,16 +20,19 @@ export function labelText(content:string,f:Frame):string {
 const template=(format:string,expressions:string[])=>tag('Template',{},format+expressions.map(expression=>tag('Parameter',{expression})).join(''));
 /** Single native TimeText follows the watch's 12/24-hour setting, including midnight/noon. */
 export function clockXml(ambient=false):string {
-  return tag('DigitalClock',canvas,tag('TimeText',{...layout.time,format:'hh:mm',hourFormat:'SYNC_TO_DEVICE',align:'CENTER',alpha:ambient?65:255},
-    tag('BitmapFont',{family:ambient?'segments_ambient':'segments',size:glyph.height*timeScale,color:ambient?'#98a0a4':colour('pale')})));
+  const box=ambient?layout.ambientTime:layout.time,size=ambient?layout.ambientTime.height:glyph.height*timeScale;
+  return tag('DigitalClock',canvas,tag('TimeText',{...box,format:'hh:mm',hourFormat:'SYNC_TO_DEVICE',align:'CENTER',alpha:ambient?65:255},
+    tag('BitmapFont',{family:ambient?'segments_ambient':'segments',size,color:ambient?'#98a0a4':colour('pale')})));
 }
 /** Share original glyph polygons and metrics with the generated BitmapFont. */
 export function clockSvg(f:Frame):string {
-  const text=timeRows(f.time,f.hour24).join(':'),width=(4*glyph.width+glyph.colonWidth)*timeScale;
+  const scale=f.ambient?layout.ambientTime.height/glyph.height:timeScale,box=f.ambient?layout.ambientTime:layout.time;
+  const text=timeRows(f.time,f.hour24).join(':'),width=[...text].reduce((sum,c)=>sum+glyphWidth(c)*scale,0);
   let x=216-width/2;
+  const y=box.y+(box.height-glyph.height*scale)/2;
   return [...text].map(character=>{
-    const w=(character===':'?glyph.colonWidth:glyph.width)*timeScale,svg=digitSvg(character,!f.ambient).replaceAll('fill="white"',`fill="${f.ambient?'#98a0a4':palettes.REFERENCE.pale}"`);
-    const image=`<image x="${x}" y="${layout.time.y}" width="${w}" height="${glyph.height*timeScale}" opacity="${f.ambient?65/255:1}" href="data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}"/>`;x+=w;return image;
+    const w=glyphWidth(character)*scale,svg=digitSvg(character,!f.ambient).replaceAll('fill="white"',`fill="${f.ambient?'#98a0a4':palettes.REFERENCE.pale}"`);
+    const image=`<image x="${x}" y="${y}" width="${w}" height="${glyph.height*scale}" opacity="${f.ambient?65/255:1}" href="data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}"/>`;x+=w;return image;
   }).join('');
 }
 /** Resource masks are tinted identically to WFF SRC_IN tinting; all are white alpha images. */
@@ -44,7 +47,7 @@ export function imageData(palette: keyof typeof palettes='REFERENCE'):Record<str
 /** Build WFF 4 with no executable code, sequence animations or runtime blur. */
 export function compileWatchface():{xml:string;caches:LayerCache[]} {
   const caches:LayerCache[]=[];
-  const font=(ambient:boolean)=>tag('BitmapFont',{name:ambient?'segments_ambient':'segments'},[...'0123456789:'].map(character=>tag('Character',{name:character,resource:`segment_${ambient?'ambient_':''}${character===':'?'colon':character}`,width:character===':'?glyph.colonWidth:glyph.width,height:glyph.height})).join(''));
+  const font=(ambient:boolean)=>tag('BitmapFont',{name:ambient?'segments_ambient':'segments'},[...'0123456789:'].map(character=>tag('Character',{name:character,resource:`segment_${ambient?'ambient_':''}${character===':'?'colon':character}`,width:glyphWidth(character),height:glyph.height})).join(''));
   const config=configurationXml(editorSettings),[paletteSetting,speedSetting,styleSetting]=editorSettings;
   // Configurations are declared once. Scene Conditions are freely composable; native selectors are not.
   const branches=selectXml(paletteSetting,Object.fromEntries(Object.entries(palettes).map(([palette,p])=>{

@@ -61,9 +61,9 @@ TAG="diagnostics-v$VERSION"
 NOTES=$(mktemp)
 trap 'rm -f "$NOTES"' EXIT
 cat > "$NOTES" <<'EOF'
-Adds exact REDLINE 0.3.1 source provenance for the typography patch. Existing helper versions can install that face; this optional phone update keeps diagnostic reports accurate.
+Adds exact REDLINE 0.3.2 source provenance for the centred-clock and slow-inner-ring patch. Existing helper versions can install that face; this optional phone update keeps diagnostic reports accurate.
 
-The user reports REDLINE 0.3.0 motion looks very smooth. The face patch retains that motion while filling the clock's corner brackets and halving/centring the date. New typography still requires device review; no measured FPS or battery result is claimed.
+The face patch centres tight proportional time on both axes, increases its font size by 25%, and thickens/slows both inner red bands while retaining the clock-refreshed smoothing. The new layout and inner-ring behaviour require device review; no measured FPS or battery result is claimed.
 
 Install/update on the Android phone over the existing helper to retain pairing. APK verification, installation, local diagnostics, sole network permission and no automatic transfers/background service are preserved. Requires ARM64 Android 13 or newer.
 

@@ -92,6 +92,13 @@ def verify(resources, apk=None, aapt2=None):
     require(not any(n.tag == 'ComplicationSlot' for n in scene.iter()), 'Removed instrument/Timer UI must not remain active.')
     require(b'D U N G E O N S' not in xml and b'STEP_COUNT' not in xml and b'instrument_' not in xml, 'Removed readouts or branding remain in the face.')
     require(strings.get('face_name') == 'REDLINE', 'Add this new face\'s explicit acceptance profile before releasing it; do not inherit REDLINE coordinates.')
+    for family in ('segments', 'segments_ambient'):
+        font = root.find("BitmapFonts/BitmapFont[@name='" + family + "']")
+        require(font is not None and len(list(font)) == 11, 'All proportional clock glyphs must be present.')
+        for c in '0123456789:':
+            glyph = font.find("Character[@name='" + c + "']")
+            width = 12 if c == ':' else 16 if c == '1' else 64 if c in '37' else 74
+            require(glyph is not None and glyph.get('width') == str(width) and glyph.get('height') == '118', 'Clock glyph must use its tight proportional advance: ' + c)
     definitions = list(root.find('UserConfigurations'))
     require(len(definitions) == 9, 'REDLINE requires its three selectors and six explicit binary settings.')
     settings, referenced = {}, set()
@@ -149,7 +156,7 @@ def verify(resources, apk=None, aapt2=None):
         require([n for n in groups if n and n.startswith('palette_')] == ['palette_' + palette], 'Colour selection failed.')
         require(len([n for n in active if n.tag == 'TimeText']) == 1, 'Interactive clock missing/duplicated.')
         time = next(n for n in active if n.tag == 'TimeText')
-        require(time.get('width') == '280' and time.get('height') == '94' and time.find('BitmapFont').get('size') == '94', 'Clock must fill the corner-bracket frame.')
+        require(time.get('x') == '41' and time.get('y') == '157' and time.get('width') == '350' and time.get('height') == '118' and time.find('BitmapFont').get('size') == '117.5' and time.get('align') == 'CENTER', 'Clock must be centred on both axes with a 25% larger font.')
         for effect, names in EFFECTS.items():
             for name in names:
                 moving = [n for n in active if n.tag == 'Group' and n.get('name') == name and any(c.tag == 'Gyro' or c.tag == 'Transform' and re.search('MILLISECOND|SECONDS_IN_DAY', c.get('value', '')) for c in n)]
@@ -160,8 +167,8 @@ def verify(resources, apk=None, aapt2=None):
         labels = [n for n in active if n.tag == 'PartText']
         require(len(labels) == 2, 'Only date and battery should accompany the clock.')
         require(sorted(n.find('Text/Font').get('size') for n in labels) == ['20', '21'], 'Date must be half its previous size; battery is a plain percentage.')
-        require(any(n.get('x') == '76' and n.get('width') == '280' and n.get('y') == '144' and n.get('height') == '28' and n.find('Text').get('align') == 'CENTER' for n in labels), 'Half-size date must remain centred above time.')
-        require(any(n.get('y') == '278' for n in labels), 'Battery must be below time.')
+        require(any(n.get('x') == '76' and n.get('width') == '280' and n.get('y') == '120' and n.get('height') == '28' and n.find('Text').get('align') == 'CENTER' for n in labels), 'Half-size date must remain centred above time.')
+        require(any(n.get('y') == '282' for n in labels), 'Battery must be below time.')
         if style == 'SMOOTH':
             require(not any('MILLISECOND' in n.get('value', '') for n in active), 'Smooth must use clock-refreshed interpolation, not millisecond expressions.')
         else:
@@ -174,6 +181,8 @@ def verify(resources, apk=None, aapt2=None):
         state = dict.fromkeys(EFFECTS, 'TRUE') | dict(palette=palette, motion_speed=speed, motion_style=style, battery=15)
         ambient = selected(scene, state, True)
         require(len([n for n in ambient if n.tag == 'TimeText']) == 1, 'Ambient clock missing.')
+        time = next(n for n in ambient if n.tag == 'TimeText')
+        require(time.get('x') == '41' and time.get('width') == '350' and time.get('y') == '169' and time.get('height') == '94' and time.find('BitmapFont').get('size') == '94', 'Ambient must retain its compact centred dim time.')
         require(not any(n.tag in ('PartImage', 'PartDraw', 'Transform', 'Gyro') for n in ambient), 'Ambient must contain static time only.')
     return dict(configurations=combinations, editorOptions=sum(map(len, settings.values())), minRenderedParts=minimum_parts,
                 maxRenderedParts=maximum_parts, packaged=bool(apk), runtimeAcceptance='pending Galaxy Wearable and Watch7 test')
