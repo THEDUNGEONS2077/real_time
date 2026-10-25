@@ -72,15 +72,11 @@ grep -q 'PASS' ${VERIFY}/memory.txt || fail 'Memory validator did not report PAS
 if grep -qE 'FAIL|Exception' ${VERIFY}/memory.txt; then fail 'Memory validator reported failure.'; fi
 java -jar "$MEMORY" --watch-face "$APK" --schema-version 4 --report > ${VERIFY}/memory.json
 
-# Local deliverables include commands and provenance; no raw watch diagnostics are published.
+# Local deliverables: the signed APK, its source commit and checksums.
 OUT="dist/real_time-$FACE-v$VERSION.apk"
 cp "$APK" "$OUT"
-cp tools/measure/capture.sh "dist/real-time-capture.sh"
-TEMPLATE=tools/measure/run.example.json
-[[ ! -f "tools/measure/$FACE.run.example.json" ]] || TEMPLATE="tools/measure/$FACE.run.example.json"
-cp "$TEMPLATE" "dist/run.example.json"
 git rev-parse HEAD > dist/build-commit.txt
-(cd dist && sha256sum "real_time-$FACE-v$VERSION.apk" real-time-capture.sh run.example.json build-commit.txt > SHA256SUMS)
+(cd dist && sha256sum "real_time-$FACE-v$VERSION.apk" build-commit.txt > SHA256SUMS)
 echo "Verified local build: $OUT (build $BUILD)"
 $PUBLISH || exit 0
 
@@ -99,4 +95,4 @@ NOTES=$(mktemp)
 trap 'rm -f "$NOTES"' EXIT
 awk -v h="$HEADING" '$0==h{f=1;next} /^## /{if(f)exit} f' CHANGELOG.md > "$NOTES"
 [[ -s "$NOTES" ]] || fail 'Changelog section missing.'
-gh release create "$TAG" "$OUT" dist/SHA256SUMS dist/real-time-capture.sh dist/run.example.json dist/build-commit.txt --prerelease --target "$(git rev-parse HEAD)" --title "real_time $FACE $TAG (build $BUILD)" --notes-file "$NOTES"
+gh release create "$TAG" "$OUT" dist/SHA256SUMS dist/build-commit.txt --prerelease --target "$(git rev-parse HEAD)" --title "real_time $FACE $TAG (build $BUILD)" --notes-file "$NOTES"

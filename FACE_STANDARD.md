@@ -41,7 +41,7 @@ Use a 432-unit canvas for the Watch7 40 mm. Include stroke, baked glow, rotated 
 
 Local verification must cover glyphs/time formatting, rollover, steps, battery warnings, motion bounds, all settings and static ambient behaviour. Inspect the **packaged** resource table: AAPT2 may rename ZIP paths. Verify every editor label/icon, image and glyph survives packaging and matches the generated source. Run WFF, memory, signature, no-code and no-permission checks.
 
-`tools/check/verify_editor.py` holds REDLINE's acceptance profile. It resolves Conditions for 1,022 editor states: every option, every font × glow × size, every speed × style × effect combination, and a fixed-seed random sample. It also checks every BitmapFont character against its PNG size, and the complication slot. Full products no longer scale once fonts are added, so cover each axis fully and their interactions by sampling. A new face adds its own profile and tests rather than inheriting REDLINE's coordinates.
+`tools/check/verify_editor.py` holds one acceptance profile per face (REDLINE, CIPHER). For REDLINE it resolves Conditions for 1,279 editor states: every option, every font × glow × size, every speed × style × effect combination, and a fixed-seed random sample. It also checks every BitmapFont character against its PNG size, and the complication slot. Full products no longer scale once fonts are added, so cover each axis fully and their interactions by sampling. A new face adds its own profile and tests rather than inheriting REDLINE's coordinates.
 
 Device acceptance is a separate gate. A build cannot be called fully functional merely because these local checks pass. On the user's actual Galaxy Wearable/Watch7 combination:
 

@@ -5,6 +5,7 @@ Moving sci-fi HUD watch faces for the Samsung Galaxy Watch7 40 mm (Wear OS 6). E
 | Face | Status | Docs |
 |---|---|---|
 | **REDLINE** 1.1 | Black/red concentric HUD. 8 clock fonts, glow and size, 6 palettes, 4 speeds, 3 rotation styles, 6 effects, Timer complication | [faces/redline/README.md](faces/redline/README.md) |
+| **CIPHER** 0.1.0 | Green phosphor terminal HUD: rotating rings of matrix glyphs, comet sweep, matrix rain. Built light: one image per moving piece | [faces/cipher/README.md](faces/cipher/README.md) |
 | **HALO** 0.1.0 | Cyan/amber dot-matrix HUD (frozen) | [DESIGN.md](DESIGN.md) |
 
 The [phone installer](diagnostics/phone/README.md) sends a face APK from the phone to the watch. New faces follow [FACE_STANDARD.md](FACE_STANDARD.md). See [ARCHITECTURE.md](ARCHITECTURE.md) for how the generator works and [OPTIMIZATION.md](OPTIMIZATION.md) for what has been measured.
@@ -19,7 +20,7 @@ npm run compose          # regenerate both faces' resources from tools/compose
 npm run check            # types, tests, byte-for-byte reproduction, preview galleries
 ```
 
-Open `out/previews/redline/index.html` (or `out/previews/index.html` for HALO) directly in a browser; no server is needed.
+Open `out/previews/redline/index.html` or `out/previews/cipher/index.html` (or `out/previews/index.html` for HALO) directly in a browser; no server is needed.
 
 ## Signed builds
 
@@ -27,6 +28,7 @@ Open `out/previews/redline/index.html` (or `out/previews/index.html` for HALO) d
 node scripts/setup-signing.mjs        # once; back up keys/real_time-release.jks + keystore.properties privately
 bash scripts/setup-validators.sh      # Google's pinned WFF validator and memory evaluator
 bash scripts/release-wear.sh --face redline --verify-only
+bash scripts/release-wear.sh --face cipher --verify-only
 bash scripts/release-diagnostics.sh --verify-only
 ```
 

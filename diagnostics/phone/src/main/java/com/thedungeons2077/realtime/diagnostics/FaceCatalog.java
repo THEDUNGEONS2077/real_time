@@ -9,13 +9,15 @@ public final class FaceCatalog {
     public static String name(String packageName) {
         if ("com.thedungeons2077.realtime.halo".equals(packageName)) return "HALO";
         if ("com.thedungeons2077.realtime.redline".equals(packageName)) return "REDLINE";
-        throw new IllegalArgumentException("Choose a HALO or REDLINE watch-face APK. The installer APK itself belongs on the phone.");
+        if ("com.thedungeons2077.realtime.cipher".equals(packageName)) return "CIPHER";
+        throw new IllegalArgumentException("Choose a real_time watch-face APK (HALO, REDLINE or CIPHER). The installer APK itself belongs on the phone.");
     }
 
     /** Exact package name for a face, or null. Trusted catalogue data, never user-entered text. */
     public static String packageName(String face) {
         if ("HALO".equals(face)) return "com.thedungeons2077.realtime.halo";
         if ("REDLINE".equals(face)) return "com.thedungeons2077.realtime.redline";
+        if ("CIPHER".equals(face)) return "com.thedungeons2077.realtime.cipher";
         return null;
     }
 }

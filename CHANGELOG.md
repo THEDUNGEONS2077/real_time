@@ -1,5 +1,23 @@
 # Changelog
 
+## CIPHER 0.1.0 (build 1)
+
+- **New face:** a green phosphor terminal HUD inspired by cyberdeck_terminal's matrix rain.
+  - Two rings of matrix glyphs (about a third mirrored) turn in opposite directions to a segmented arc ring between them.
+  - A comet sweeps the outer track, and eight rain columns fall behind.
+- **Built light:** every moving piece is one baked mask moved by the live clock. Motion starts instantly on wake, there is no tilt sensor, and a selected tree is 19–29 parts. Memory is 12.5 MB active (REDLINE: 30.0 MB) and the APK is 480 KB.
+- **Settings:**
+  - six cyberdeck_terminal palettes (PHOSPHOR default);
+  - VT323, Share Tech Mono, DOT and SEGMENT clock fonts;
+  - clock size and glow (HIGH default);
+  - four speeds;
+  - five switchable effects.
+- **Timer slot:** the same bottom complication as REDLINE.
+
+## Installer 0.7.1 (build 13)
+
+- Accepts CIPHER APKs.
+
 ## REDLINE 1.1.0 (build 9)
 
 - **No pause on wake.** SMOOTH now drives the rings from the live clock every frame, so they move the instant the face appears after unlocking or swiping. Before, they waited up to a second for the next clock tick. Your saved SMOOTH setting switches automatically.

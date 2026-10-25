@@ -1,16 +1,16 @@
-"""Check REDLINE's editor wiring, fonts, readouts and complication slot, without a watch.
+"""Check a face's editor wiring, fonts, readouts and complication slot, without a watch.
 
 The checker reads the generated watchface.xml, resolves its Conditions for a set
 of editor choices, and asserts what the watch would draw. With --apk it also
 compares the packaged resources (located through AAPT2's resource table, because
 AAPT2 renames ZIP paths) against the generated sources.
 
-Editor combinations multiply quickly (palette x font x glow x size x speed x style
-x six effects is over 170,000), so states are chosen to cover every interaction
-that matters:
+Each face has a profile below (its effects, defaults and layout). Editor combinations
+multiply quickly (REDLINE's palette x font x glow x size x speed x style x six effects
+is over 170,000), so states are chosen to cover every interaction that matters:
   - every option of every setting, with all else at defaults;
   - every clock combination (font x glow x size);
-  - every motion combination (speed x style x effect bits);
+  - every motion combination (speed x style, where offered, x effect bits);
   - a fixed-seed random sample across all settings.
 """
 import argparse
@@ -26,17 +26,29 @@ import subprocess
 import xml.etree.ElementTree as ET
 import zipfile
 
-# Moving groups each effect controls. They must be active exactly when the effect is ON and motion is not STILL.
-EFFECT_GROUPS = {'seconds': ['seconds_beacon'], 'ring_a': ['outer_rotor'], 'ring_b': ['inner_rotor', 'inset_rotor'],
-                 'breathing': ['red_pulse'], 'scan': ['radar_sweep'], 'tilt': ['depth']}
-# Clock size multipliers, matching tools/compose/faces/redline/fonts.ts.
+# Per-face profiles, selected by the face_name string.
+#   effects:        moving groups each effect controls; active exactly when the effect is ON and motion is not STILL
+#   defaults:       settings whose default is part of the face's contract
+#   system_fonts:   clock fonts whose date/battery use the system font instead of a baked readout face
+#   inner_radius:   everything readable sits inside this opening
+#   max_parts:      guardrail on drawn parts in any selected state
+PROFILES = {
+    'REDLINE': dict(
+        effects={'seconds': ['seconds_beacon'], 'ring_a': ['outer_rotor'], 'ring_b': ['inner_rotor', 'inset_rotor'],
+                 'breathing': ['red_pulse'], 'scan': ['radar_sweep'], 'tilt': ['depth']},
+        defaults={'motion_speed': 'SLOW', 'clock_font': 'REDLINE', 'clock_size': 'MEDIUM'},
+        system_fonts={'REDLINE'}, inner_radius=145, max_parts=80),
+    'CIPHER': dict(
+        effects={'rain': ['rain_0', 'rain_7'], 'code_rings': ['outer_code', 'inner_code'], 'arc_ring': ['arc_ring'],
+                 'sweep': ['comet_sweep'], 'seconds': ['seconds_mark']},
+        defaults={'motion_speed': 'SLOW', 'clock_font': 'VT323', 'clock_size': 'MEDIUM', 'glow': 'HIGH', 'palette': 'PHOSPHOR'},
+        system_fonts=set(), inner_radius=142, max_parts=40),
+}
+PROFILE = PROFILES['REDLINE']
+# Clock size multipliers, matching tools/compose/src/fonts/catalog.ts.
 CLOCK_CELL = 118
 SIZES = {'SMALL': 0.85, 'MEDIUM': 117.5 / 118, 'LARGE': 1.1}
 AMBIENT_SCALE = 94 / 118
-# Fonts whose date/battery use the system font instead of a baked readout face.
-SYSTEM_READOUT_FONTS = {'REDLINE'}
-# Everything readable must sit inside the inner ring opening.
-INNER_RADIUS = 145
 COMPLICATION_TYPES = {'EMPTY', 'SHORT_TEXT', 'RANGED_VALUE', 'MONOCHROMATIC_IMAGE', 'SMALL_IMAGE'}
 LIVE_SOURCE = re.compile(r'MILLISECOND|SECONDS_IN_DAY|ACCELEROMETER')
 
@@ -126,25 +138,25 @@ def check_state(active, state):
     readouts = [n for n in active if n.tag == 'PartText' and n.get('y') in ('80', '118')]
     require(sorted(int(t.get('y')) for t in readouts) == [80, 118], 'Battery and date readouts must both show once.')
     for t in readouts:
-        if state['clock_font'] in SYSTEM_READOUT_FONTS:
-            require(t.find('Text/Font') is not None, 'REDLINE readouts use the system font.')
+        if state['clock_font'] in PROFILE['system_fonts']:
+            require(t.find('Text/Font') is not None, 'This font\'s readouts use the system font.')
         else:
             require(t.find('Text/BitmapFont').get('family') == 'readout_' + state['clock_font'].lower(), 'Readout font must follow the clock font.')
         x, w = int(t.get('x')), int(t.get('width'))
         require(x * 2 + w == 432 and t.find('Text').get('align') == 'CENTER', 'Readouts must be centred.')
 
     # Effects: each moving group is present exactly when its effect is on and motion is not STILL.
-    for effect, names in EFFECT_GROUPS.items():
+    for effect, names in PROFILE['effects'].items():
         for name in names:
             moving = [n for n in active if n.tag == 'Group' and n.get('name') == name and any(
                 c.tag == 'Gyro' or c.tag == 'Transform' and LIVE_SOURCE.search(c.get('value', '')) for c in n)]
             require(len(moving) == int(state['motion_speed'] != 'STILL' and state[effect] == 'TRUE'), 'Effect selection failed: ' + name)
     decorative = [n for n in active if n.tag in ('Transform', 'Gyro') and n.get('target') != 'width']
-    if state['motion_speed'] == 'STILL' or all(state[e] == 'FALSE' for e in EFFECT_GROUPS):
+    if state['motion_speed'] == 'STILL' or all(state[e] == 'FALSE' for e in PROFILE['effects']):
         require(not any(n.tag == 'Gyro' or LIVE_SOURCE.search(n.get('value', '')) for n in decorative), 'Still/disabled motion keeps live sources.')
     # GLIDE interpolates toward whole-second targets; SMOOTH and DYNAMIC read the live clock and never animate,
     # so their motion starts the moment the face is shown.
-    if state['motion_style'] == 'GLIDE':
+    if state.get('motion_style') == 'GLIDE':
         require(not any('MILLISECOND' in n.get('value', '') for n in active), 'Glide must use clock-refreshed targets, not milliseconds.')
     else:
         require(not any(n.tag == 'Animation' for n in active), 'Smooth and Dynamic must not animate.')
@@ -178,7 +190,7 @@ def check_slot(scene):
     require(policy is not None and policy.get('defaultSystemProvider') == 'EMPTY', 'No provider component may be guessed.')
     x, y, w, h = (int(slot.get(k)) for k in ('x', 'y', 'width', 'height'))
     for cx, cy in ((x, y), (x + w, y), (x, y + h), (x + w, y + h)):
-        require(math.hypot(cx - 216, cy - 216) <= INNER_RADIUS, 'Complication slot must sit inside the inner ring.')
+        require(math.hypot(cx - 216, cy - 216) <= PROFILE['inner_radius'], 'Complication slot must sit inside the inner ring.')
     return slot
 
 
@@ -188,7 +200,9 @@ def verify(resources, apk=None, aapt2=None):
     require(b'<!DOCTYPE' not in xml, 'DOCTYPE is not allowed.')
     root = ET.fromstring(xml)
     strings = {s.get('name'): s.text for s in ET.parse(resources / 'values/strings.xml').getroot()}
-    require(strings.get('face_name') == 'REDLINE', 'This profile is REDLINE\'s; a new face needs its own profile.')
+    global PROFILE
+    require(strings.get('face_name') in PROFILES, 'No checker profile for this face; add one to PROFILES.')
+    PROFILE = PROFILES[strings['face_name']]
     scene = root.find('Scene')
     require(scene is not None, 'Scene missing.')
     require(not list(scene.iter('ListConfiguration')) and not list(scene.iter('BooleanConfiguration')),
@@ -221,9 +235,11 @@ def verify(resources, apk=None, aapt2=None):
             data = (resources / 'drawable-nodpi' / (icon + '.png')).read_bytes()
             width, height = png_size(data)
             require(0 < width <= 400 and 0 < height <= 400 and len(data) <= 16384, 'Oversized editor icon: ' + icon)
-    require(set(settings) == {'palette', 'clock_font', 'clock_size', 'glow', 'motion_speed', 'motion_style', *EFFECT_GROUPS}, 'Unexpected setting IDs.')
-    require(defaults['motion_speed'] == 'SLOW' and defaults['clock_font'] == 'REDLINE' and defaults['clock_size'] == 'MEDIUM', 'Defaults must reproduce 0.3.2.')
-    for effect in EFFECT_GROUPS:
+    styles = {'motion_style'} if 'motion_style' in settings else set()
+    require(set(settings) == {'palette', 'clock_font', 'clock_size', 'glow', 'motion_speed', *styles, *PROFILE['effects']}, 'Unexpected setting IDs.')
+    for sid, value in PROFILE['defaults'].items():
+        require(defaults[sid] == value, 'Default changed: {} should be {}'.format(sid, value))
+    for effect in PROFILE['effects']:
         require(settings[effect] == ['TRUE', 'FALSE'], 'Binary values changed: ' + effect)
 
     font_count = check_fonts(root, resources)
@@ -234,13 +250,14 @@ def verify(resources, apk=None, aapt2=None):
     base = dict(defaults, battery=80)
     states = [dict(base, **{sid: option}) for sid, options in settings.items() for option in options]
     states += [dict(base, clock_font=f, glow=g, clock_size=s) for f, g, s in itertools.product(settings['clock_font'], settings['glow'], settings['clock_size'])]
-    effect_ids = list(EFFECT_GROUPS)
-    states += [dict(base, motion_speed=sp, motion_style=st, **dict(zip(effect_ids, bits)))
-               for sp, st, bits in itertools.product(settings['motion_speed'], settings['motion_style'], itertools.product(['TRUE', 'FALSE'], repeat=len(effect_ids)))]
+    effect_ids = list(PROFILE['effects'])
+    style_options = settings.get('motion_style', [None])
+    states += [dict(base, motion_speed=sp, **({'motion_style': st} if st else {}), **dict(zip(effect_ids, bits)))
+               for sp, st, bits in itertools.product(settings['motion_speed'], style_options, itertools.product(['TRUE', 'FALSE'], repeat=len(effect_ids)))]
     rng = random.Random(2077)
     states += [dict({sid: rng.choice(options) for sid, options in settings.items()}, battery=rng.choice([5, 15, 16, 80])) for _ in range(400)]
     parts = [check_state(selected(scene, state), state) for state in states]
-    require(max(parts) <= 80, 'Rendered-part count exceeds the REDLINE guardrail.')
+    require(max(parts) <= PROFILE['max_parts'], 'Rendered-part count exceeds the face\'s guardrail.')
 
     # Ambient: the selected font's crisp dim clock and nothing else.
     for font_id in settings['clock_font']:

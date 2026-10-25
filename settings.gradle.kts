@@ -17,4 +17,5 @@ dependencyResolutionManagement {
 rootProject.name = "real_time"
 include(":faces:halo")
 include(":faces:redline")
+include(":faces:cipher")
 include(":diagnostics:phone")

@@ -8,7 +8,7 @@
 import type { Frame } from '../../src/core/frame.ts';
 import { clockText } from '../../src/core/frame.ts';
 import type { GlyphFace, Glow } from '../../src/fonts/glyphs.ts';
-import { glyphOf, glyphSvg, textWidth } from '../../src/fonts/glyphs.ts';
+import { glyphRun } from '../../src/fonts/svg.ts';
 import { slotSvg } from '../../src/wff/complication.ts';
 import { escapeXml } from '../../src/wff/xml.ts';
 import { nodeSvg } from '../../src/svg/nodes.ts';
@@ -24,18 +24,6 @@ import { ambientAlpha, ambientInk, ink, slot, warning } from './render.ts';
 
 /** Editor choices for a frame, with every unset setting at its default. */
 export const choices = (f: Frame): Record<string, string> => ({ ...defaults(editorSettings), ...f.config });
-
-/** Draw a string of glyph masks, centred on cx, with its cells' top at y. */
-function glyphRun(face: GlyphFace, text: string, cx: number, y: number, scale: number, colour: string, glow: Glow, alpha = 1, blurScale = 1): string {
-  let x = cx - (textWidth(face, text) * scale) / 2;
-  return [...text].map(c => {
-    const g = glyphOf(face, c);
-    const svg = glyphSvg(g, glow, blurScale).replace('fill="white"', `fill="${colour}"`);
-    const image = `<image x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${(g.width * scale).toFixed(2)}" height="${(g.height * scale).toFixed(2)}" opacity="${alpha}" href="data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}"/>`;
-    x += g.width * scale;
-    return image;
-  }).join('');
-}
 
 /** The clock, interactive or ambient. */
 function clockSvg(f: Frame, config: Record<string, string>): string {

@@ -1,7 +1,7 @@
 /**
  * Build layer: write each face's generated Android resources, or check them byte for byte.
  *
- *   node tools/compose/src/build.ts                 # regenerate HALO and REDLINE
+ *   node tools/compose/src/build.ts                 # regenerate every face
  *   node tools/compose/src/build.ts --check         # fail if anything differs or is stale
  *   node tools/compose/src/build.ts --face redline --out DIR
  */
@@ -10,23 +10,26 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { haloResources } from '../halo/resources.ts';
 import { redlineResources } from '../faces/redline/resources.ts';
+import { cipherResources } from '../faces/cipher/resources.ts';
 
 /** Faces with their own resource-only module under faces/. */
-export type FaceName = 'halo' | 'redline';
+export type FaceName = 'halo' | 'redline' | 'cipher';
+/** Every face, in build order. */
+export const faces: FaceName[] = ['halo', 'redline', 'cipher'];
 
 /** Repository root, independent of the caller's working directory. */
 export const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 
 /** The complete generated resource set of a face. Nothing is written. */
 export function resources(face: FaceName): Promise<Map<string, Buffer>> {
-  return face === 'halo' ? haloResources() : redlineResources();
+  return face === 'halo' ? haloResources() : face === 'redline' ? redlineResources() : cipherResources();
 }
 
 /**
  * Files this generator owns and may delete when they are no longer produced:
  * content-addressed layers, editor tiles and glyph masks.
  */
-const generatedName = /^drawable-nodpi\/(?:cached_[a-z]+_[0-9a-f]{16}\.webp|editor_[a-z0-9_]+\.png|(?:clock|readout)_[a-z0-9_]+\.png|segment_[a-z_0-9]+\.png)$/;
+const generatedName = /^drawable-nodpi\/(?:cached_[a-z]+_[0-9a-f]{16}\.webp|editor_[a-z0-9_]+\.png|(?:clock|readout)_[a-z0-9_]+\.png|segment_[a-z_0-9]+\.png|cipher_[a-z0-9_]+\.webp)$/;
 
 /** Write (or with `check`, verify) a face's resources into a res/ directory. */
 export async function build(destination: string, check = false, face: FaceName = 'halo'): Promise<void> {
@@ -55,10 +58,10 @@ export async function build(destination: string, check = false, face: FaceName =
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
   const out = args.indexOf('--out'), faceFlag = args.indexOf('--face');
-  const selected = faceFlag >= 0 ? [args[faceFlag + 1]] : out >= 0 ? ['halo'] : ['halo', 'redline'];
+  const selected = faceFlag >= 0 ? [args[faceFlag + 1]] : out >= 0 ? ['halo'] : faces;
   for (const face of selected) {
-    if (face !== 'halo' && face !== 'redline') throw new Error(`Unknown face: ${face}`);
-    await build(out >= 0 ? resolve(args[out + 1]) : resolve(root, `faces/${face}/src/main/res`), args.includes('--check'), face);
+    if (!faces.includes(face as FaceName)) throw new Error(`Unknown face: ${face}`);
+    await build(out >= 0 ? resolve(args[out + 1]) : resolve(root, `faces/${face}/src/main/res`), args.includes('--check'), face as FaceName);
   }
   console.log(args.includes('--check') ? 'Generated resources match byte for byte.' : `${selected.join(', ')} resources generated.`);
 }
