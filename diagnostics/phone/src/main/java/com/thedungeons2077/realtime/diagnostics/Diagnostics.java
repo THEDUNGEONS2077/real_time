@@ -149,6 +149,66 @@ public final class Diagnostics {
         return finish(report, run);
     }
 
+    /**
+     * The one-tap smoothness test: sample the watch-face surface's frame history for 20 seconds.
+     * Only fixed read-only commands run; the layer name comes from the watch and is single-quoted.
+     */
+    public String smoothness(LocalEndpoint endpoint, JSONObject setup) throws Exception {
+        if (batteryPending()) throw new IllegalStateException("Finish or discard the pending battery test before running performance tests.");
+        String id = runId(); File run = new File(storage, id); run.mkdirs();
+        JSONObject metadata = new JSONObject(setup.toString());
+        StringBuilder raw = new StringBuilder();
+        java.util.SortedSet<Long> presents = new java.util.TreeSet<>();
+        String layer = null; long refresh = 0; Double cpu = null;
+        try {
+            connect(endpoint); collectInfo(metadata);
+            String timeout = command("settings get system screen_off_timeout").trim();
+            if (Measurements.number(timeout) == null || Double.parseDouble(timeout) < 25000)
+                throw new IllegalStateException("Set the watch screen timeout to 30 seconds or longer, then run the test again. The helper will not change it.");
+            progress.accept("Waking the watch and finding the watch-face surface…");
+            command("input keyevent 224");
+            Thread.sleep(1500);
+            // Try ranked candidates until one is actually receiving frames.
+            for (String candidate : SmoothnessTest.candidates(command("dumpsys SurfaceFlinger --list"), FaceCatalog.packageName(metadata.optString("face")))) {
+                String sample = command("dumpsys SurfaceFlinger --latency " + WatchConnection.quote(candidate));
+                java.util.SortedSet<Long> probe = new java.util.TreeSet<>();
+                if (SmoothnessTest.addPresentTimes(sample, probe) >= 10) { layer = candidate; refresh = SmoothnessTest.refreshPeriod(sample); break; }
+            }
+            if (layer == null) throw new IllegalStateException("No moving watch-face surface was found. Keep the face on screen with motion enabled, then try again.");
+            metadata.put("surface", layer);
+            // Renderer CPU: user + system ticks of the wallpaper (watch-face runtime) process across the window.
+            String renderer = SmoothnessTest.rendererPackage(command("dumpsys wallpaper"));
+            String pid = renderer == null ? "" : command("pidof " + renderer).trim().split("\\s+")[0];
+            long ticksBefore = pid.matches("\\d+") ? SmoothnessTest.cpuTicks(command("cat /proc/" + pid + "/stat")) : -1;
+            long started = System.nanoTime();
+            for (int i = 0; i < SmoothnessTest.SECONDS; i++) {
+                progress.accept("Recording smoothness: " + (SmoothnessTest.SECONDS - i) + " s left. Keep the face visible; leave the phone alone.");
+                String sample = command("dumpsys SurfaceFlinger --latency " + WatchConnection.quote(layer));
+                SmoothnessTest.addPresentTimes(sample, presents);
+                raw.append(sample).append("\n--\n");
+                Thread.sleep(SmoothnessTest.SAMPLE_MILLIS);
+            }
+            if (ticksBefore >= 0) {
+                double elapsed = (System.nanoTime() - started) / 1e9;
+                long ticksAfter = SmoothnessTest.cpuTicks(command("cat /proc/" + pid + "/stat"));
+                String clock = command("getconf CLK_TCK").trim();
+                long hz = clock.matches("\\d+") ? Long.parseLong(clock) : 100;
+                cpu = 100.0 * (ticksAfter - ticksBefore) / hz / elapsed;
+                metadata.put("renderer", renderer);
+            }
+        } finally {
+            disconnect();
+            writeText(new File(run, "latency.txt"), raw.toString());
+            save(metadata, new File(run, "run.json"));
+        }
+        SmoothnessTest.Result result = SmoothnessTest.analyze(presents, refresh);
+        String report = header("SMOOTHNESS", id, metadata) + SmoothnessTest.card(result, cpu)
+                + "Surface: " + Measurements.clean(layer) + "\n\n"
+                + "Repeat three times per setup and keep brightness, timeout and wrist movement the same.\n"
+                + "Delivered fps is what the display showed; it is not battery use.\n";
+        return finish(report, run);
+    }
+
     /** Save the start endpoint, then disconnect; nothing polls the watch during normal wear. */
     public void startBattery(LocalEndpoint endpoint, JSONObject setup) throws Exception {
         if (batteryPending()) throw new IllegalStateException("A battery test is already pending.");
@@ -277,7 +337,7 @@ public final class Diagnostics {
         StringBuilder report = new StringBuilder("REAL_TIME DIAGNOSTICS / 1\n");
         report.append("Helper: ").append(BuildConfig.VERSION_NAME).append(" / ").append(BuildConfig.SOURCE_COMMIT).append('\n');
         report.append("Test: ").append(kind).append(" / ").append(id).append('\n');
-        for (String key : new String[]{"watchModel", "firmware", "face", "faceVersion", "faceCommit", "palette", "motionSpeed", "motionStyle", "preset", "aod"})
+        for (String key : new String[]{"watchModel", "firmware", "face", "faceVersion", "faceCommit", "palette", "clockFont", "clockSize", "glow", "motionSpeed", "motionStyle", "preset", "aod"})
             report.append(key).append(": ").append(Measurements.clean(metadata.optString(key, "unavailable"))).append('\n');
         report.append("Setup is user-declared; verify it matches the watch editor.\n");
         JSONObject effects = metadata.optJSONObject("effects");

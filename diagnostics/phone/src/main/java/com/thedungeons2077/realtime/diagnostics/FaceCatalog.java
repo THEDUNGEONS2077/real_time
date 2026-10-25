@@ -22,6 +22,18 @@ public final class FaceCatalog {
         if ("HALO".equals(face)) return new String[]{"REFERENCE", "PHOSPHOR", "ICE"};
         return new String[]{"STOCK"};
     }
+    /** REDLINE 1.0 clock fonts, in editor order. Other faces have no font choice. */
+    public static String[] fonts(String face) {
+        return "REDLINE".equals(face) ? new String[]{"REDLINE", "SEGMENT", "RAJDHANI", "OXANIUM", "CHAKRA", "TECHMONO", "VT323", "DOT"} : new String[0];
+    }
+    /** REDLINE 1.0 clock sizes; Medium is the 0.3.x size. */
+    public static String[] clockSizes(String face) {
+        return "REDLINE".equals(face) ? new String[]{"MEDIUM", "SMALL", "LARGE"} : new String[0];
+    }
+    /** REDLINE 1.0 clock glow levels; Low is the default. */
+    public static String[] glows(String face) {
+        return "REDLINE".equals(face) ? new String[]{"LOW", "OFF", "HIGH"} : new String[0];
+    }
     /** Match the current face editor; HALO keeps its original instrument/node controls. */
     public static String[] effects(String face) {
         return "REDLINE".equals(face) ? new String[]{"seconds", "ring_a", "ring_b", "breathing", "scan", "tilt"} : Measurements.EFFECTS.clone();
@@ -39,6 +51,7 @@ public final class FaceCatalog {
     }
     /** Preserve known release provenance; unknown face versions are explicitly unavailable. */
     public static String commit(String face, String version) {
+        if ("REDLINE".equals(face) && "1.0.0".equals(version)) return BuildConfig.REDLINE_V1_SOURCE_COMMIT;
         if ("REDLINE".equals(face) && "0.3.2".equals(version)) return BuildConfig.REDLINE_CENTRED_SOURCE_COMMIT;
         if ("REDLINE".equals(face) && "0.3.1".equals(version)) return BuildConfig.REDLINE_TYPOGRAPHY_SOURCE_COMMIT;
         if ("REDLINE".equals(face) && "0.3.0".equals(version)) return BuildConfig.REDLINE_FOCUS_SOURCE_COMMIT;

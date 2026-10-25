@@ -33,4 +33,12 @@ public final class FaceCatalogTest {
         assertTrue(FaceCatalog.commit("REDLINE", "0.2.0").matches("[0-9a-f]{40}"));
         assertTrue(FaceCatalog.commit("REDLINE", "0.1.1").matches("[0-9a-f]{40}"));
     }
+    @Test public void redlineOneDeclaresItsFontSizeAndGlowChoices() {
+        assertEquals(8, FaceCatalog.fonts("REDLINE").length);
+        assertEquals("REDLINE", FaceCatalog.fonts("REDLINE")[0]);
+        assertArrayEquals(new String[]{"MEDIUM", "SMALL", "LARGE"}, FaceCatalog.clockSizes("REDLINE"));
+        assertArrayEquals(new String[]{"LOW", "OFF", "HIGH"}, FaceCatalog.glows("REDLINE"));
+        assertEquals(0, FaceCatalog.fonts("HALO").length);
+        assertTrue(FaceCatalog.commit("REDLINE", "1.0.0").matches("[0-9a-f]{40}"));
+    }
 }

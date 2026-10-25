@@ -1,4 +1,4 @@
-/** Phone UI: explicit pairing, test actions and a report the user can review before copying. */
+/** Phone UI: four numbered steps (connect, install, test, report) and a report the user reviews before copying. */
 package com.thedungeons2077.realtime.diagnostics;
 
 import android.app.Activity;
@@ -19,6 +19,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -36,14 +37,22 @@ public final class MainActivity extends Activity {
     private final List<View> controls = new ArrayList<>();
     private LinearLayout page;
     private TextView status, report, selection;
+    private ProgressBar progressBar;
+    private Button cancel, connectTitle, installTitle, testTitle;
+    /** Each field's caption, so a field and its label hide together. */
+    private final java.util.Map<View, TextView> labels = new java.util.HashMap<>();
     private volatile FaceApk selectedApk;
     private EditText host, pairPort, connectionPort, code, renderer, layer, otherFace;
-    private Spinner face, palette, preset, motionSpeed, motionStyle;
+    private Spinner face, palette, preset, font, clockSize, glow, motionSpeed, motionStyle;
     private CheckBox aod;
     private Diagnostics diagnostics;
     private boolean busy;
 
-    /** Restore only local form settings; pairing codes are never saved. */
+    /**
+     * Four numbered steps, top to bottom: CONNECT → INSTALL → TEST → REPORT.
+     * The smoothness test is the one primary action; the older tests live under MORE TESTS.
+     * Pairing codes are never saved; host and port are remembered for one-tap reconnects.
+     */
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         diagnostics = new Diagnostics(this, message -> runOnUiThread(() -> { if (!isDestroyed()) status.setText(message); }));
@@ -57,35 +66,56 @@ public final class MainActivity extends Activity {
             view.setPadding(bars.left, bars.top, bars.right, bars.bottom); return insets;
         });
         setContentView(scroll);
-        text("<real_time>\nDIAGNOSTICS", 24, CYAN);
-        text("INSTALL · TEST · REVIEW · COPY\nNo analytics or automatic uploads. Results stay on this phone until you copy them.", 13, PALE);
-        status = text(diagnostics.batteryPending() ? "Battery test pending. Reconnect to finish it." : "Ready. Pair once, then install or test.", 14, AMBER);
-
-        LinearLayout connection = section("WATCH CONNECTION", true);
         var preferences = getPreferences(MODE_PRIVATE);
+        boolean paired = preferences.getBoolean("paired", false);
+
+        text("<real_time>\nWATCH HELPER", 24, CYAN);
+        text("Results stay on this phone until you copy them. No analytics, no uploads.", 12, PALE);
+        // Status line, progress bar and cancel button: always visible above the steps.
+        status = text(diagnostics.batteryPending() ? "Battery test pending. Reconnect and finish it under MORE TESTS." : paired ? "Ready. Tap CONNECT, then run a test." : "Start with step 1: pair once with the watch.", 14, AMBER);
+        progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        progressBar.setIndeterminate(true); progressBar.setVisibility(View.GONE); page.addView(progressBar);
+        cancel = new Button(this); cancel.setText("CANCEL"); cancel.setTypeface(Typeface.MONOSPACE); cancel.setTextColor(AMBER); cancel.setVisibility(View.GONE);
+        cancel.setOnClickListener(view -> { diagnostics.disconnect(); status.setText("Cancelling…"); });
+        page.addView(cancel);
+
+        // 1 · CONNECT — the address and port from the watch's Wireless debugging screen.
+        connectTitle = new Button(this);
+        LinearLayout connection = section(connectTitle, "1 · CONNECT", true);
         host = field(connection, "WATCH WI-FI ADDRESS", "192.168.1.20", InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
         host.setText(preferences.getString("host", ""));
-        pairPort = field(connection, "PAIRING PORT", "From Pair new device", InputType.TYPE_CLASS_NUMBER);
-        code = field(connection, "PAIRING CODE", "Six digits", InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
-        code.setSaveEnabled(false);
-        connectionPort = field(connection, "CONNECTION PORT", "From the main Wireless debugging screen", InputType.TYPE_CLASS_NUMBER);
+        connectionPort = field(connection, "CONNECTION PORT", "Shown under Wireless debugging", InputType.TYPE_CLASS_NUMBER);
         connectionPort.setText(preferences.getString("port", ""));
-        text(connection, "Phone and watch need the same Wi-Fi network. Pairing and connection ports differ. The connection port can change when debugging is re-enabled.", 12, PALE);
-        button(connection, "PAIR WITH WATCH", () -> {
+        button(connection, "CONNECT", () -> {
+            LocalEndpoint endpoint = currentEndpoint();
+            run("Connection", () -> {
+                diagnostics.checkConnection(endpoint);
+                runOnUiThread(() -> mark(connectTitle, "1 · CONNECT"));
+                return "Connected. Install a face (step 2) or run the smoothness test (step 3).";
+            });
+        });
+        text(connection, "Watch: Settings › Developer options › Wireless debugging. The port changes when debugging is turned back on.", 12, PALE);
+        // First-time pairing folds away once it has worked.
+        LinearLayout pairing = section(connection, paired ? "PAIR AGAIN (ONLY IF CONNECT FAILS)" : "PAIR (FIRST TIME ONLY)", !paired);
+        pairPort = field(pairing, "PAIRING PORT", "From Pair new device", InputType.TYPE_CLASS_NUMBER);
+        code = field(pairing, "PAIRING CODE", "Six digits", InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_VARIATION_PASSWORD);
+        code.setSaveEnabled(false);
+        button(pairing, "PAIR WITH WATCH", () -> {
             LocalEndpoint endpoint = new LocalEndpoint(host.getText().toString(), pairPort.getText().toString());
             String pairingCode = LocalEndpoint.pairingCode(code.getText().toString());
             getPreferences(MODE_PRIVATE).edit().putString("host", endpoint.host).apply();
             code.setText("");
-            run("Pairing", () -> { diagnostics.pair(endpoint, pairingCode); return "Paired. Enter the connection port and tap CHECK CONNECTION. This pairing also works for installation and tests."; });
+            run("Pairing", () -> {
+                diagnostics.pair(endpoint, pairingCode);
+                getPreferences(MODE_PRIVATE).edit().putBoolean("paired", true).apply();
+                return "Paired. Enter the connection port above and tap CONNECT.";
+            });
         });
-        button(connection, "CHECK CONNECTION", () -> {
-            LocalEndpoint endpoint = currentEndpoint();
-            run("Connection", () -> { diagnostics.checkConnection(endpoint); return "Connection verified. Choose a face APK below, then tap INSTALL TO WATCH."; });
-        });
-        text(connection, "The Android network permission is used only to reach the private watch address you enter. No public addresses or hostnames are accepted.", 12, PALE);
+        text(pairing, "Phone and watch must share a Wi-Fi network. Only private addresses are accepted.", 12, PALE);
 
-        LinearLayout install = section("INSTALL WATCH FACE", true);
-        text(install, "Download the HALO or REDLINE watch-face APK onto this phone. Choose it here, review the face/version, then install using the same watch connection. The diagnostics phone APK belongs on the phone.", 12, PALE);
+        // 2 · INSTALL — a face APK downloaded to this phone.
+        installTitle = new Button(this);
+        LinearLayout install = section(installTitle, "2 · INSTALL A FACE", false);
         button(install, "CHOOSE FACE APK", () -> {
             Intent picker = new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE)
                     .putExtra(Intent.EXTRA_LOCAL_ONLY, true);
@@ -96,68 +126,88 @@ public final class MainActivity extends Activity {
             FaceApk apk = selectedApk;
             if (apk == null) throw new IllegalStateException("Choose a real_time watch-face APK first.");
             LocalEndpoint endpoint = currentEndpoint();
-            run("Installation", () -> { diagnostics.install(endpoint, apk); return FaceCatalog.name(apk.packageName) + " installed and version verified. On the watch, long-press the current face, add a face, then choose " + FaceCatalog.name(apk.packageName) + ". Turn wireless debugging off when finished."; });
+            run("Installation", () -> {
+                diagnostics.install(endpoint, apk);
+                runOnUiThread(() -> mark(installTitle, "2 · INSTALL A FACE"));
+                return FaceCatalog.name(apk.packageName) + " installed. On the watch, long-press the face, then add " + FaceCatalog.name(apk.packageName) + ".";
+            });
         });
-        text(install, "Compatible updates preserve existing face data. Installation is blocked during a battery test. Interrupted installs need a check of the watch face list before retrying.", 12, PALE);
+        text(install, "Updates keep your saved face settings. Installing is blocked during a battery test.", 12, PALE);
 
-        LinearLayout setup = section("TEST SETUP", true);
-        face = spinner(setup, "FACE", new String[]{"HALO", "REDLINE", "STOCK / OTHER"});
-        otherFace = field(setup, "OTHER FACE NAME", "Fill this in when testing a stock or other face", InputType.TYPE_CLASS_TEXT);
-        palette = spinner(setup, "PALETTE", new String[]{"REFERENCE", "PHOSPHOR", "ICE", "STOCK"});
-        motionSpeed = spinner(setup, "REDLINE MOTION SPEED (0.2.0+)", new String[]{"SLOW", "STANDARD", "FAST", "STILL", "UNAVAILABLE / OLDER VERSION"});
-        motionStyle = spinner(setup, "REDLINE ROTATION STYLE (0.2.0+)", new String[]{"SMOOTH", "DYNAMIC", "UNAVAILABLE / OLDER VERSION"});
-        preset = spinner(setup, "EFFECTS", FaceCatalog.effectPresets("HALO"));
+        // 3 · TEST — record what the watch editor is set to, then one tap.
+        testTitle = new Button(this);
+        LinearLayout tests = section(testTitle, "3 · TEST SMOOTHNESS", true);
+        text(tests, "Show the face on the watch, then tap RUN. Pick the same settings as the watch editor so the report is labelled correctly; this does not change the watch.", 12, PALE);
+        face = spinner(tests, "FACE", new String[]{"REDLINE", "HALO", "STOCK / OTHER"});
+        otherFace = field(tests, "OTHER FACE NAME", "Only for a stock or other face", InputType.TYPE_CLASS_TEXT);
+        palette = spinner(tests, "COLOURS", FaceCatalog.palettes("REDLINE"));
+        font = spinner(tests, "CLOCK FONT", FaceCatalog.fonts("REDLINE"));
+        clockSize = spinner(tests, "CLOCK SIZE", FaceCatalog.clockSizes("REDLINE"));
+        glow = spinner(tests, "CLOCK GLOW", FaceCatalog.glows("REDLINE"));
+        motionSpeed = spinner(tests, "MOTION SPEED", new String[]{"SLOW", "STANDARD", "FAST", "STILL"});
+        motionStyle = spinner(tests, "ROTATION STYLE", new String[]{"SMOOTH", "DYNAMIC"});
+        preset = spinner(tests, "EFFECTS", FaceCatalog.effectPresets("REDLINE"));
         face.setOnItemSelectedListener(new android.widget.AdapterView.OnItemSelectedListener() {
             @Override public void onItemSelected(android.widget.AdapterView<?> parent, View view, int position, long id) {
-                String selected = position < 2 ? (position == 0 ? "HALO" : "REDLINE") : "STOCK";
+                String selected = selectedFace();
                 setChoices(palette, FaceCatalog.palettes(selected));
                 setChoices(preset, FaceCatalog.effectPresets(selected));
+                // Only REDLINE has font and motion choices; hide what does not apply.
+                int redline = "REDLINE".equals(selected) ? View.VISIBLE : View.GONE;
+                for (Spinner s : new Spinner[]{font, clockSize, glow, motionSpeed, motionStyle}) { s.setVisibility(redline); labels.get(s).setVisibility(redline); }
+                int other = position == 2 ? View.VISIBLE : View.GONE;
+                otherFace.setVisibility(other); labels.get(otherFace).setVisibility(other);
             }
             @Override public void onNothingSelected(android.widget.AdapterView<?> parent) { }
         });
-        aod = new CheckBox(this); aod.setText(R.string.aod_enabled); aod.setTextColor(PALE); aod.setTypeface(Typeface.MONOSPACE); setup.addView(aod); controls.add(aod);
-        text(setup, "Match this setup in the watch-face editor before starting. These controls label the experiment; they do not change the watch face.", 12, PALE);
+        button(tests, "RUN SMOOTHNESS TEST (20 s)", () -> {
+            LocalEndpoint endpoint = currentEndpoint(); JSONObject settings = setup();
+            run("Smoothness", () -> {
+                diagnostics.smoothness(endpoint, settings);
+                runOnUiThread(() -> mark(testTitle, "3 · TEST SMOOTHNESS"));
+                return "Done. The result is in step 4: tap COPY REPORT and paste it into the chat.";
+            });
+        });
 
-        LinearLayout tests = section("TESTS", true);
-        text(tests, "If applying or previewing a face fails, reproduce it once, then collect renderer diagnostics promptly. This reads recent renderer warnings/errors without changing the watch face.", 12, PALE);
-        button(tests, "COLLECT RENDERER DIAGNOSTICS", () -> {
+        // MORE TESTS — the detailed trace, battery interval and renderer logs.
+        LinearLayout more = section(tests, "MORE TESTS", false);
+        aod = new CheckBox(this); aod.setText(R.string.aod_enabled); aod.setTextColor(PALE); aod.setTypeface(Typeface.MONOSPACE); more.addView(aod); controls.add(aod);
+        text(more, "Detailed trace: 30 s Perfetto recording with CPU by process. Needs a 1-minute screen timeout.", 12, PALE);
+        button(more, "RUN 30-SECOND TRACE", () -> {
             LocalEndpoint endpoint = currentEndpoint(); JSONObject settings = setup();
-            run("Renderer diagnostics", () -> { diagnostics.rendererDiagnostics(endpoint, settings); return "Renderer report ready. Review it, then tap COPY DIAGNOSTICS. Turn wireless debugging off when finished."; });
+            run(() -> { diagnostics.performance(endpoint, settings); return "Trace analysed. Copy the report in step 4."; });
         });
-        text(tests, "Performance: set the watch screen timeout to one minute and keep the face visible for the recording. Repeat each configuration three times.", 12, PALE);
-        button(tests, "RUN 30-SECOND PERFORMANCE TEST", () -> {
+        text(more, "Battery: start unplugged, turn debugging off and wear normally for about 24 hours. Reconnect and finish before charging.", 12, PALE);
+        button(more, "START BATTERY TEST", () -> {
             LocalEndpoint endpoint = currentEndpoint(); JSONObject settings = setup();
-            run(() -> { diagnostics.performance(endpoint, settings); return "Test complete. Review the report, then copy it. Turn wireless debugging off."; });
+            run(() -> { diagnostics.startBattery(endpoint, settings); return "Start saved. Turn wireless debugging off and wear normally. Finish here before charging."; });
         });
-        text(tests, "Battery: start unplugged, turn debugging off, and wear normally for about 24 hours. Before charging, reconnect and finish. No logger runs between the endpoints.", 12, PALE);
-        button(tests, "START BATTERY TEST", () -> {
-            LocalEndpoint endpoint = currentEndpoint(); JSONObject settings = setup();
-            run(() -> { diagnostics.startBattery(endpoint, settings); return "Start saved. Turn wireless debugging off and wear normally. Reconnect here and finish before charging."; });
-        });
-        button(tests, "FINISH BATTERY TEST", () -> {
+        button(more, "FINISH BATTERY TEST", () -> {
             LocalEndpoint endpoint = currentEndpoint();
-            run(() -> { diagnostics.finishBattery(endpoint); return "Battery report ready. Review it, then copy. Turn wireless debugging off."; });
+            run(() -> { diagnostics.finishBattery(endpoint); return "Battery report ready. Copy it in step 4."; });
         });
-        button(tests, "DISCARD PENDING BATTERY TEST", () -> new AlertDialog.Builder(this).setMessage("Discard the saved start? This does not change the watch.")
+        button(more, "DISCARD PENDING BATTERY TEST", () -> new AlertDialog.Builder(this).setMessage("Discard the saved start? This does not change the watch.")
                 .setNegativeButton("KEEP", null).setPositiveButton("DISCARD", (dialog, which) -> run(() -> { diagnostics.discardBattery(); return "Pending test discarded."; })).show());
-
-        LinearLayout advanced = section("OPTIONAL RENDERER SELECTION", false);
-        text(advanced, "The first report lists available processes and surfaces. Use exact names only after identifying the watch-face renderer; unknown attribution stays unavailable.", 12, PALE);
-        renderer = field(advanced, "RENDERER PROCESS", "Optional exact process name", InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-        layer = field(advanced, "FRAME LAYER", "Optional exact surface name", InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
-        button(advanced, "REANALYZE SAVED TEST", () -> {
+        text(more, "If a face shows blank or white, reproduce it once, then collect renderer logs.", 12, PALE);
+        button(more, "COLLECT RENDERER DIAGNOSTICS", () -> {
+            LocalEndpoint endpoint = currentEndpoint(); JSONObject settings = setup();
+            run("Renderer diagnostics", () -> { diagnostics.rendererDiagnostics(endpoint, settings); return "Renderer report ready. Copy it in step 4."; });
+        });
+        renderer = field(more, "TRACE: RENDERER PROCESS (OPTIONAL)", "Exact process name from a trace report", InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        layer = field(more, "TRACE: FRAME LAYER (OPTIONAL)", "Exact surface name from a trace report", InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        button(more, "REANALYSE LAST TRACE", () -> {
             String process = renderer.getText().toString(), surface = layer.getText().toString();
-            run(() -> { diagnostics.reanalyze(process, surface); return "Saved trace reanalyzed locally. No watch connection was needed."; });
+            run(() -> { diagnostics.reanalyze(process, surface); return "Last trace reanalysed on the phone."; });
         });
 
-        LinearLayout results = section("REPORT", true);
-        button(results, "COPY DIAGNOSTICS", this::copy);
-        text(results, "Only this readable summary is copied. Raw battery history, addresses and pairing keys are not included. Paste it into the chat when you are ready.", 12, PALE);
-        report = text(results, diagnostics.latestReport().isEmpty() ? "No completed report yet." : diagnostics.latestReport(), 12, PALE);
+        // 4 · REPORT — review, then copy.
+        LinearLayout results = section(new Button(this), "4 · REPORT", true);
+        button(results, "COPY REPORT", this::copy);
+        report = text(results, diagnostics.latestReport().isEmpty() ? "No report yet." : diagnostics.latestReport(), 12, PALE);
         report.setTextIsSelectable(true);
-        button(results, "DELETE LOCAL REPORTS", () -> new AlertDialog.Builder(this).setMessage("Delete saved reports and raw captures from this phone? Pairing is retained.")
+        text(results, "Only this summary is copied: no raw history, addresses or pairing keys.", 12, PALE);
+        button(results, "DELETE LOCAL REPORTS", () -> new AlertDialog.Builder(this).setMessage("Delete saved reports and raw captures from this phone? Pairing is kept.")
                 .setNegativeButton("KEEP", null).setPositiveButton("DELETE", (dialog, which) -> run(() -> { diagnostics.clearReports(); return "Local reports deleted."; })).show());
-        text("ONE WATCH PAIRING FOR INSTALLATION AND DIAGNOSTICS\nNo additional watch app is needed.", 12, CYAN);
         button(page, "THIRD-PARTY NOTICES", () -> {
             try (var input = getAssets().open("third-party.txt")) {
                 new AlertDialog.Builder(this).setTitle("Third-party components").setMessage(new String(input.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8))
@@ -165,6 +215,15 @@ public final class MainActivity extends Activity {
             }
         });
     }
+
+    /** The face chosen in step 3, as a catalogue name. */
+    private String selectedFace() {
+        int position = face.getSelectedItemPosition();
+        return position == 0 ? "REDLINE" : position == 1 ? "HALO" : "STOCK";
+    }
+
+    /** Show a completed step with a check mark. */
+    private void mark(Button title, String name) { title.setText(name + "  ✓"); }
 
     /** Stage a picker-granted document off the UI thread; no storage permission or persistent grant. */
     @Override protected void onActivityResult(int request, int result, Intent data) {
@@ -188,20 +247,23 @@ public final class MainActivity extends Activity {
         getPreferences(MODE_PRIVATE).edit().putString("host", endpoint.host).putString("port", String.valueOf(endpoint.port)).apply();
         return endpoint;
     }
+    /** The user's declaration of the watch editor settings, recorded in the report. */
     private JSONObject setup() throws Exception {
         JSONObject result = new JSONObject();
-        String selectedFace = face.getSelectedItemPosition() < 2 ? face.getSelectedItem().toString() : otherFace.getText().toString().trim();
-        if (selectedFace.isBlank()) throw new IllegalArgumentException("Record the name of the stock or other face being tested.");
-        result.put("face", selectedFace).put("palette", palette.getSelectedItem().toString()).put("preset", preset.getSelectedItem().toString()).put("aod", aod.isChecked());
-        if (face.getSelectedItemPosition() == 1) {
-            String speed = motionSpeed.getSelectedItem().toString(), style = motionStyle.getSelectedItem().toString();
-            if (!speed.startsWith("UNAVAILABLE")) result.put("motionSpeed", speed);
-            if (!style.startsWith("UNAVAILABLE")) result.put("motionStyle", style);
+        String selected = selectedFace();
+        String name = "STOCK".equals(selected) ? otherFace.getText().toString().trim() : selected;
+        if (name.isBlank()) throw new IllegalArgumentException("Type the name of the stock or other face being tested.");
+        result.put("face", name).put("palette", palette.getSelectedItem().toString()).put("preset", preset.getSelectedItem().toString()).put("aod", aod.isChecked());
+        if ("REDLINE".equals(selected)) {
+            result.put("clockFont", font.getSelectedItem().toString()).put("clockSize", clockSize.getSelectedItem().toString()).put("glow", glow.getSelectedItem().toString());
+            result.put("motionSpeed", motionSpeed.getSelectedItem().toString()).put("motionStyle", motionStyle.getSelectedItem().toString());
         }
         result.put("rendererProcess", renderer.getText().toString().trim()).put("rendererLayer", layer.getText().toString().trim());
+        // Preset 0 = all on, 1 = all off, 2+ = all on except one effect.
         JSONObject effects = new JSONObject();
-        String[] effectIds = FaceCatalog.effects(selectedFace);
-        for (int i = 0; i < effectIds.length; i++) effects.put(effectIds[i], face.getSelectedItemPosition() < 2 && preset.getSelectedItemPosition() != 1 && preset.getSelectedItemPosition() != i + 2);
+        String[] ids = FaceCatalog.effects(name);
+        int choice = preset.getSelectedItemPosition();
+        for (int i = 0; i < ids.length; i++) effects.put(ids[i], !"STOCK".equals(selected) && choice != 1 && choice != i + 2);
         return result.put("effects", effects);
     }
     private void copy() {
@@ -217,6 +279,8 @@ public final class MainActivity extends Activity {
     private void run(String action, Task task) {
         if (busy) return;
         busy = true; for (View view : controls) view.setEnabled(false);
+        // Progress and CANCEL stay usable while every other control is disabled.
+        progressBar.setVisibility(View.VISIBLE); cancel.setVisibility(View.VISIBLE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         worker.execute(() -> {
             String message;
@@ -231,24 +295,29 @@ public final class MainActivity extends Activity {
             runOnUiThread(() -> {
                 if (isDestroyed()) return;
                 busy = false; for (View view : controls) view.setEnabled(true);
+                progressBar.setVisibility(View.GONE); cancel.setVisibility(View.GONE);
                 getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
                 status.setText(finalMessage);
                 String current = diagnostics.latestReport(); report.setText(current.isEmpty() ? "No completed report yet." : current);
             });
         });
     }
-    private LinearLayout section(String name, boolean expanded) {
-        Button title = new Button(this); title.setText(name); title.setTextColor(CYAN); title.setTypeface(Typeface.MONOSPACE); page.addView(title);
-        LinearLayout content = new LinearLayout(this); content.setOrientation(LinearLayout.VERTICAL); content.setPadding(0, dp(8), 0, dp(16)); content.setVisibility(expanded ? View.VISIBLE : View.GONE); page.addView(content);
+    /** A numbered top-level step whose title toggles its content. */
+    private LinearLayout section(Button title, String name, boolean expanded) { return section(page, title, name, expanded, CYAN); }
+    /** A folded sub-section inside a step. */
+    private LinearLayout section(LinearLayout parent, String name, boolean expanded) { return section(parent, new Button(this), name, expanded, AMBER); }
+    private LinearLayout section(LinearLayout parent, Button title, String name, boolean expanded, int colour) {
+        title.setText(name); title.setTextColor(colour); title.setTypeface(Typeface.MONOSPACE); parent.addView(title);
+        LinearLayout content = new LinearLayout(this); content.setOrientation(LinearLayout.VERTICAL); content.setPadding(0, dp(8), 0, dp(16)); content.setVisibility(expanded ? View.VISIBLE : View.GONE); parent.addView(content);
         title.setOnClickListener(view -> content.setVisibility(content.getVisibility() == View.VISIBLE ? View.GONE : View.VISIBLE));
         return content;
     }
     private EditText field(LinearLayout parent, String label, String hint, int inputType) {
-        text(parent, label, 12, CYAN); EditText edit = new EditText(this); edit.setHint(hint); edit.setHintTextColor(Color.rgb(99, 134, 145)); edit.setTextColor(PALE);
+        TextView caption = text(parent, label, 12, CYAN); EditText edit = new EditText(this); labels.put(edit, caption); edit.setHint(hint); edit.setHintTextColor(Color.rgb(99, 134, 145)); edit.setTextColor(PALE);
         edit.setTypeface(Typeface.MONOSPACE); edit.setTextSize(15); edit.setInputType(inputType); edit.setSingleLine(true); edit.setMinHeight(dp(48)); parent.addView(edit); controls.add(edit); return edit;
     }
     private Spinner spinner(LinearLayout parent, String label, String[] items) {
-        text(parent, label, 12, CYAN); Spinner spinner = new Spinner(this);
+        TextView caption = text(parent, label, 12, CYAN); Spinner spinner = new Spinner(this); labels.put(spinner, caption);
         setChoices(spinner, items); spinner.setMinimumHeight(dp(48)); parent.addView(spinner); controls.add(spinner); return spinner;
     }
     private void setChoices(Spinner spinner, String[] items) {
