@@ -10,7 +10,8 @@ public final class FaceCatalog {
         if ("com.thedungeons2077.realtime.halo".equals(packageName)) return "HALO";
         if ("com.thedungeons2077.realtime.redline".equals(packageName)) return "REDLINE";
         if ("com.thedungeons2077.realtime.cipher".equals(packageName)) return "CIPHER";
-        throw new IllegalArgumentException("Choose a real_time watch-face APK (HALO, REDLINE or CIPHER). The installer APK itself belongs on the phone.");
+        if ("com.thedungeons2077.realtime.nexus".equals(packageName)) return "NEXUS";
+        throw new IllegalArgumentException("Choose a real_time watch-face APK (HALO, REDLINE, CIPHER or NEXUS). The installer APK itself belongs on the phone.");
     }
 
     /** Exact package name for a face, or null. Trusted catalogue data, never user-entered text. */
@@ -18,6 +19,7 @@ public final class FaceCatalog {
         if ("HALO".equals(face)) return "com.thedungeons2077.realtime.halo";
         if ("REDLINE".equals(face)) return "com.thedungeons2077.realtime.redline";
         if ("CIPHER".equals(face)) return "com.thedungeons2077.realtime.cipher";
+        if ("NEXUS".equals(face)) return "com.thedungeons2077.realtime.nexus";
         return null;
     }
 }

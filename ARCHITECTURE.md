@@ -14,10 +14,11 @@ tools/compose/
     build.ts            write or byte-check each face's res/ tree
   faces/redline/        design.ts · fonts.ts · editor.ts · render.ts (WFF) · preview.ts (SVG) · resources.ts · assets.ts
   faces/cipher/         design.ts · assets.ts / masks.ts (baked ring, rain and sweep masks) · editor.ts · render.ts · preview.ts · resources.ts
+  faces/nexus/          design.ts · masks.ts (instrument, circuit and bevel masks) · editor.ts · render.ts · preview.ts · resources.ts
   halo/                 HALO's frozen generator (byte-identical; no new features)
   fonts/                committed OFL fonts with their licences
 tools/check/            review gallery, release checker (verify_editor.py), packaged-pixel comparison
-tools/measure/          watch-shell collector and host analysis
+tools/measure/          historical watch-shell collector and host analysis (unused by the install-only phone app)
 diagnostics/phone/      the phone installer app (Java): pair, install
 faces/<face>/           resource-only Android modules; generated res/ is committed
 ```
@@ -61,7 +62,7 @@ Font files are verified against pinned SHA-256s before use.
 ## Checks
 
 - **`npm run check`:** typecheck, vitest, byte-for-byte resource reproduction and the preview gallery. The gallery enforces under 10% ambient lit pixels for every font.
-- **`tools/check/verify_editor.py`:** picks a profile by face name (REDLINE, CIPHER); a new face adds its own. For REDLINE it resolves Conditions for 1,279 editor states and asserts what the watch would draw. The states cover every option, every font × glow × size, every speed × style × effect combination, and a fixed-seed random sample. It also checks every BitmapFont character against its PNG size, and the Timer slot's types, bounds and empty default. With `--apk` it compares packaged resources through AAPT2's resource table, because AAPT2 renames ZIP paths.
+- **`tools/check/verify_editor.py`:** picks a profile by face name (REDLINE, CIPHER, NEXUS); a new face adds its own. For REDLINE it resolves Conditions for 1,279 editor states and asserts what the watch would draw. The states cover every option, every font × glow × size, every speed × style × effect combination, and a fixed-seed random sample. It also checks every BitmapFont character against its PNG size, and the Timer slot's types, bounds and empty default. With `--apk` it compares packaged resources through AAPT2's resource table, because AAPT2 renames ZIP paths.
 - **`scripts/release-wear.sh`:** adds Google's WFF validator, lint, signature, no-code and no-permission checks, and the official memory evaluator.
 
 ## Phone installer

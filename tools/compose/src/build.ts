@@ -11,25 +11,31 @@ import { fileURLToPath } from 'node:url';
 import { haloResources } from '../halo/resources.ts';
 import { redlineResources } from '../faces/redline/resources.ts';
 import { cipherResources } from '../faces/cipher/resources.ts';
+import { nexusResources } from '../faces/nexus/resources.ts';
 
 /** Faces with their own resource-only module under faces/. */
-export type FaceName = 'halo' | 'redline' | 'cipher';
+export type FaceName = 'halo' | 'redline' | 'cipher' | 'nexus';
 /** Every face, in build order. */
-export const faces: FaceName[] = ['halo', 'redline', 'cipher'];
+export const faces: FaceName[] = ['halo', 'redline', 'cipher', 'nexus'];
 
 /** Repository root, independent of the caller's working directory. */
 export const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 
 /** The complete generated resource set of a face. Nothing is written. */
 export function resources(face: FaceName): Promise<Map<string, Buffer>> {
-  return face === 'halo' ? haloResources() : face === 'redline' ? redlineResources() : cipherResources();
+  switch (face) {
+    case 'halo': return haloResources();
+    case 'redline': return redlineResources();
+    case 'cipher': return cipherResources();
+    case 'nexus': return nexusResources();
+  }
 }
 
 /**
  * Files this generator owns and may delete when they are no longer produced:
  * content-addressed layers, editor tiles and glyph masks.
  */
-const generatedName = /^drawable-nodpi\/(?:cached_[a-z]+_[0-9a-f]{16}\.webp|editor_[a-z0-9_]+\.png|(?:clock|readout)_[a-z0-9_]+\.png|segment_[a-z_0-9]+\.png|cipher_[a-z0-9_]+\.webp)$/;
+const generatedName = /^drawable-nodpi\/(?:cached_[a-z]+_[0-9a-f]{16}\.webp|editor_[a-z0-9_]+\.png|(?:clock|readout)_[a-z0-9_]+\.png|segment_[a-z_0-9]+\.png|(?:cipher|nexus)_[a-z0-9_]+\.webp)$/;
 
 /** Write (or with `check`, verify) a face's resources into a res/ directory. */
 export async function build(destination: string, check = false, face: FaceName = 'halo'): Promise<void> {

@@ -10,6 +10,7 @@ import { palettes } from '../compose/halo/design.ts';
 import { previewSvg } from '../compose/halo/preview.ts';
 import { redlinePreviews } from './redline.ts';
 import { cipherPreviews } from './cipher.ts';
+import { nexusPreviews } from './nexus.ts';
 
 const out=resolve(root,'out/previews');
 await mkdir(out,{recursive:true});
@@ -74,3 +75,5 @@ try{
 console.log(`Previews and ambient checks: ${out}/index.html (${Object.keys(palettes).length} palettes).`);
 await redlinePreviews();
 await cipherPreviews();
+
+await nexusPreviews();

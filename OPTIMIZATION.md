@@ -23,6 +23,7 @@ No controlled trace, frame-rate or battery measurement has been collected yet.
 - **Disabled motion is removed, not hidden.** STILL and OFF effects select static subtrees.
 - **Fixed readouts.** Clock, readouts and the complication sit outside every moving group.
 - **Glow is baked.** It comes from narrow alpha strokes and pre-rendered glyph glow; nothing blurs at runtime.
+- **NEXUS 0.1.0 candidate (2026-10-28).** Eleven palette-tinted artwork masks, including one 6×14 signal image reused twice, give 20–24 selected drawing parts. Six fonts/three glow levels fit in the official 15.11 MiB active / 0.92 MiB ambient estimate. Mechanical/code/sweep rates are independent; all periods divide midnight at every speed, and signal wraps fade to zero. The visual tradeoff is sparse code/circuit detail and stationary facets instead of a simulated wallpaper. No delivered-FPS or battery improvement is claimed; watch confidence is pending. See [local evidence](faces/nexus/VERIFICATION.md).
 - **Resource figures for REDLINE:**
 
   | Version | Active memory | Ambient memory |

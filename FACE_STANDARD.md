@@ -27,7 +27,7 @@ REDLINE establishes the shared architecture and design language for every new fa
 
 ## Rendering and resource architecture
 
-Each face is a separate resource-only WFF 4/API 36 module with a `.dev` debug package. No executable code, permissions, networking or analytics belong in the face. Installation and diagnostics live in the separate local phone helper.
+Each face is a separate resource-only WFF 4/API 36 module with a `.dev` debug package. No executable code, permissions, networking or analytics belong in the face. Installation lives in the separate local phone installer; diagnostics are no longer part of its UI.
 
 The TypeScript scene, geometry, glyph metrics, palette and motion calculations remain authoritative for WFF and SVG. Commit generated Android resources. Test regeneration byte for byte and reject stale files. Preserve unchanged existing faces' resources when extending shared tools.
 
@@ -41,7 +41,7 @@ Use a 432-unit canvas for the Watch7 40 mm. Include stroke, baked glow, rotated 
 
 Local verification must cover glyphs/time formatting, rollover, steps, battery warnings, motion bounds, all settings and static ambient behaviour. Inspect the **packaged** resource table: AAPT2 may rename ZIP paths. Verify every editor label/icon, image and glyph survives packaging and matches the generated source. Run WFF, memory, signature, no-code and no-permission checks.
 
-`tools/check/verify_editor.py` holds one acceptance profile per face (REDLINE, CIPHER). For REDLINE it resolves Conditions for 1,279 editor states: every option, every font × glow × size, every speed × style × effect combination, and a fixed-seed random sample. It also checks every BitmapFont character against its PNG size, and the complication slot. Full products no longer scale once fonts are added, so cover each axis fully and their interactions by sampling. A new face adds its own profile and tests rather than inheriting REDLINE's coordinates.
+`tools/check/verify_editor.py` holds one acceptance profile per face (REDLINE, CIPHER, NEXUS). For REDLINE it resolves Conditions for 1,279 editor states: every option, every font × glow × size, every speed × style × effect combination, and a fixed-seed random sample. It also checks every BitmapFont character against its PNG size, and the complication slot. Full products no longer scale once fonts are added, so cover each axis fully and their interactions by sampling. A new face adds its own profile and tests rather than inheriting REDLINE's coordinates.
 
 Device acceptance is a separate gate. A build cannot be called fully functional merely because these local checks pass. On the user's actual Galaxy Wearable/Watch7 combination:
 
@@ -50,7 +50,7 @@ Device acceptance is a separate gate. A build cannot be called fully functional 
 3. Repeat in the on-watch editor. Verify phone-to-watch and watch-to-phone changes agree after re-opening their editors.
 4. Switch to HALO/another face and back repeatedly. Motion must resume. Test Still, restore motion, allow timeout/wake, and reopen the editor. Recheck after a watch restart.
 5. If a face includes a shortcut, select Timer once in the complication editor if available; verify displayed provider content and launch target on the watch. Record an unavailable provider as unresolved, never substitute Alarm silently.
-6. Verify the live fields the face exposes, time readability and the minimal ambient fallback. REDLINE now omits steps and Timer by user request.
+6. Verify the live fields the face exposes, time readability and the minimal ambient fallback. REDLINE omits steps; its editable Timer slot returned in 1.0.0.
 
 Record exact face and installer versions, watch firmware, choices and results. For a failure, record the exact reproduction. Do not clear app data, remove pairing or reset the watch as a routine workaround.
 

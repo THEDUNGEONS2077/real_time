@@ -16,8 +16,8 @@ android {
         applicationId = "com.thedungeons2077.realtime.diagnostics"
         minSdk = 33
         targetSdk = 36
-        versionCode = 13
-        versionName = "0.7.1"
+        versionCode = 14
+        versionName = "0.7.2"
         buildConfigField("String", "SOURCE_COMMIT", "\"${providers.exec { commandLine("git", "rev-parse", "HEAD") }.standardOutput.asText.get().trim()}\"")
         buildConfigField("String", "FACE_CERT_SHA256", "\"${rootProject.file("signing-certificate.sha256").readText().trim()}\"")
         // Conscrypt ships native code; only ARM64 phones are supported.
@@ -43,12 +43,16 @@ tasks.named("preBuild") { dependsOn(prepareNotices) }
 tasks.withType<Test>().configureEach {
     dependsOn(":faces:halo:assembleDebug")
     dependsOn(":faces:redline:assembleDebug")
+    dependsOn(":faces:nexus:assembleDebug")
     val fixture = providers.gradleProperty("haloSelectionFixture").orElse(rootProject.file("faces/halo/build/outputs/apk/debug/halo-debug.apk").absolutePath)
     inputs.file(fixture)
     systemProperty("halo.selection.fixture", fixture.get())
     val redlineFixture = rootProject.file("faces/redline/build/outputs/apk/debug/redline-debug.apk")
     inputs.file(redlineFixture)
     systemProperty("redline.selection.fixture", redlineFixture.absolutePath)
+    val nexusFixture = rootProject.file("faces/nexus/build/outputs/apk/debug/nexus-debug.apk")
+    inputs.file(nexusFixture)
+    systemProperty("nexus.selection.fixture", nexusFixture.absolutePath)
     systemProperty("halo.selection.aapt2", File(android.sdkDirectory, "build-tools/36.0.0/aapt2").absolutePath)
 }
 dependencies {

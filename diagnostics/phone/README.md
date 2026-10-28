@@ -2,6 +2,8 @@
 
 A small Android app for the **phone** (ARM64, Android 13+). It sends real_time watch-face APKs to the watch. Install it by opening its APK on the phone. Updating over the old "real_time diagnostics" app keeps your pairing.
 
+Installer **0.7.2** adds NEXUS to the accepted face catalogue. Update the installer on the phone before choosing a NEXUS APK; older versions reject that unknown package.
+
 ## First time: pair
 
 1. **Turn on debugging.** On the watch, go to Settings → About watch → Software information and tap Software version until developer mode is on. Then go to Developer options → Wireless debugging. Phone and watch must be on the same Wi-Fi.

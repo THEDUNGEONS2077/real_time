@@ -1,5 +1,18 @@
 # Changelog
 
+## NEXUS 0.1.0 (build 1)
+
+- New two-tone command deck combining HALO's instruments, REDLINE's mechanical HUD, CIPHER's terminal orbit and Cyberdeck's circuitry/bevelled surfaces.
+- Large fixed centred clock, date above, battery below and an editable Timer/shortcut tile. Minimal time-only ambient fallback.
+- Eight dual-colour palettes, six fonts, three sizes, three clock-glow levels, four speeds and six independent effects with real captioned option tiles.
+- Live-clock motion without animation loops or tilt: a mechanical ring, counter-rotating code, bezel sweep, two tiny circuit signals, breathing facet light and real seconds. Default Slow; all effects enabled. Static branches remove disabled motion dependencies.
+- Eleven shared baked artwork masks and shared pinned glyphs; no executable code or permissions in the face. Existing face resources remain unchanged. See `faces/nexus/VERIFICATION.md` for local results; device acceptance is pending.
+
+## Installer 0.7.2 (build 14)
+
+- Accept NEXUS APKs while retaining the existing signature, resource-only, permission and explicit-install checks.
+- Add a regression test using NEXUS's actual AAPT2-packaged APK. Existing pairing and install-only workflow are preserved.
+
 ## CIPHER 0.1.0 (build 1)
 
 - **New face:** a green phosphor terminal HUD inspired by cyberdeck_terminal's matrix rain.

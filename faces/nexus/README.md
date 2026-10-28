@@ -1,0 +1,76 @@
+# NEXUS
+
+An original command-deck face for the Galaxy Watch7 40 mm, Wear OS 6. NEXUS combines the family's visual ideas around a large, stationary clock rather than reproducing a desktop wallpaper.
+
+Version **0.1.0, build 1** is a local candidate. Package: `com.thedungeons2077.realtime.nexus`; release tag when approved: `nexus-v0.1.0`. Publication and watch acceptance are pending.
+
+![NEXUS, Fusion palette](src/main/res/drawable-nodpi/preview.png)
+
+## Design lineage
+
+| Source | NEXUS interpretation |
+|---|---|
+| HALO | Cyan/amber default, separated instrument arcs, fine bezel divisions and precise corner marks |
+| REDLINE | Large centred time, asymmetric mechanical rotation, dark HUD, stationary readouts and working editor architecture |
+| CIPHER | One sparse counter-rotating terminal-code orbit, bitmap fonts and one image per moving piece |
+| Cyberdeck DATAFLOW / NEURALNET | Etched circuit buses, two travelling signals, small connected nodes |
+| Cyberdeck PRISM / VELOCITY | Smoked bevels, two-tone edge light and angular console geometry |
+| Cyberdeck HORIZON / SUNSET | A quiet lower perspective fan and short stacked horizon marks |
+| Cyberdeck MEGACITY | Layered structural depth and restrained illuminated edges, without a miniature skyline behind the time |
+
+The source review used `real_time` at `68c6449` and `cyberdeck_terminal` at `00e94f7` (0.23.1). Every artwork mask was authored for the watch in `tools/compose/faces/nexus/masks.ts`. No wallpaper shader, background simulation or desktop asset was ported into the APK.
+
+The clock stays centred at (216,216), with tight glyph advances and no inserted tracking. The date is above it, the battery percentage below it, and one editable Timer/shortcut tile at the bottom. No branding, fake telemetry or decorative status claims occupy the face. SEGMENT intentionally retains fixed LCD cells and faint unlit segments, as on the other faces.
+
+## Controls
+
+| Setting | Choices; default in bold |
+|---|---|
+| Colours | **FUSION**, PHOSPHOR, AMBER, ICE, NEON, BLOOD, SYNTH, OUTRUN |
+| Font | **OXANIUM**, RAJDHANI, TECHMONO, VT323, DOT, SEGMENT |
+| Size | SMALL, **MEDIUM**, LARGE |
+| Clock glow | OFF, **LOW**, HIGH |
+| Motion speed | STILL, **SLOW 0.5×**, STANDARD 1×, FAST 2× |
+| Effects | Mechanical ring, code orbit, circuit signals, bezel sweep, glass light, seconds mark; **all on** |
+
+Both editors get captioned PNG tiles and accessibility labels. Palette tiles show both hues. IDs are stable; the scene selects options with Conditions and literal colours. The readout font follows the clock. Battery turns to the palette's warning colour at 15% or below. Time follows the watch's 12/24-hour setting.
+
+Select Timer once in the complication editor. Until configured, the tile says SET TIMER. Afterwards it shows the selected provider's actual text, image or progress and uses that provider's tap action. Timer availability and tap behaviour need watch acceptance; Alarm is never substituted.
+
+## Motion and cost
+
+At default Slow, the mechanical ring turns clockwise every 48 s, the code orbit counter-clockwise every 192 s, and the outer sweep every 36 s. Two 6×14-pixel circuit signals complete a pass every 16 s. The bevel light breathes every 32 s. Seconds always completes a real minute, regardless of decorative speed.
+
+Motion reads the live clock, without a repeating Animation, sensor input or one-second startup target. Periods divide the day at every speed, avoiding a phase jump at midnight. Signal opacity reaches zero at both ends before wrapping. Rings freeze at their reference pose when disabled; sweep, signals and seconds disappear. STILL selects the same static branches, with no decorative clock dependencies.
+
+Eleven shared white-alpha WebP masks contain the artwork and baked edge softness. Palettes tint those masks; they do not multiply the image collection. The two moving signal instances share one tiny mask. Clock glow is baked into glyphs. There is no runtime blur, procedural texture generation, per-character ring animation or full-screen image sequence. This bounds rendering work; it does **not** establish actual frame rate or battery savings.
+
+Ambient is the selected font's crisp, dim static time on black, with all decoration/readouts/shortcut hidden. Normal use assumes AOD off.
+
+## Build and review
+
+```bash
+node tools/compose/src/build.ts --face nexus
+node tools/check/nexus.ts
+bash scripts/release-wear.sh --face nexus --verify-only
+bash scripts/release-diagnostics.sh --verify-only
+```
+
+Open `out/previews/nexus/index.html` directly. It includes every palette/font/size/glow, effect-off states, several motion poses, low battery, midnight, 12-hour time, Timer states and ambient per font. The short animated sample shows geometry, not measured watch delivery; its replay boundary is not a watch animation wrap.
+
+Local verification results are in [VERIFICATION.md](VERIFICATION.md). Existing HALO, REDLINE and CIPHER resources stay unchanged.
+
+## Phone installation and acceptance
+
+Install **real_time installer 0.7.2 or later** on the phone first: older versions intentionally reject unknown NEXUS packages. Updating the installer keeps existing pairing. Choose `real_time-nexus-v0.1.0.apk`, check the NEXUS/version label and tap INSTALL TO WATCH. Add NEXUS from the watch's face picker. See [phone instructions](../../diagnostics/phone/README.md); the PC never connects to the watch.
+
+Device acceptance remains pending for all items below:
+
+- First application and both editor previews render correctly; time/date/battery remain readable on the 40 mm screen.
+- Every colour, font, size, glow, speed and effect works in Galaxy Wearable and on the watch; Save persists, Cancel preserves the previous selection, and both editors agree.
+- Motion resumes after switching faces, wake/unlock, editor Save/Cancel and restart; compare Slow and Standard, especially the slow code orbit.
+- Date rolls over, 12/24-hour preference is respected and low-battery warning is correct.
+- Timer selection displays the chosen provider accurately and tapping opens the right app.
+- Ambient shows only dim time; review normal AOD-off use and report perceived smoothness and battery experience.
+
+Record device/firmware, settings and observations in [OPTIMIZATION.md](../../OPTIMIZATION.md). A local validator pass is not device acceptance.

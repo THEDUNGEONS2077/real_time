@@ -32,6 +32,8 @@ import zipfile
 #   system_fonts:   clock fonts whose date/battery use the system font instead of a baked readout face
 #   inner_radius:   everything readable sits inside this opening
 #   max_parts:      guardrail on drawn parts in any selected state
+#   clock_scale:    optional face-specific fit within its clock aperture
+#   readout_rows:   optional date/battery top coordinates, independent of slot-relative text
 PROFILES = {
     'REDLINE': dict(
         effects={'seconds': ['seconds_beacon'], 'ring_a': ['outer_rotor'], 'ring_b': ['inner_rotor', 'inset_rotor'],
@@ -43,6 +45,12 @@ PROFILES = {
                  'sweep': ['comet_sweep'], 'seconds': ['seconds_mark']},
         defaults={'motion_speed': 'SLOW', 'clock_font': 'VT323', 'clock_size': 'MEDIUM', 'glow': 'HIGH', 'palette': 'PHOSPHOR'},
         system_fonts=set(), inner_radius=142, max_parts=40),
+    'NEXUS': dict(
+        effects={'outer_rotor': ['outer_rotor'], 'code_orbit': ['code_orbit'],
+                 'data_flow': ['packet_0', 'packet_1'], 'sweep': ['bezel_sweep'],
+                 'glass_glow': ['glass_glow'], 'seconds': ['seconds_mark']},
+        defaults={'motion_speed': 'SLOW', 'clock_font': 'OXANIUM', 'clock_size': 'MEDIUM', 'glow': 'LOW', 'palette': 'FUSION'},
+        system_fonts=set(), inner_radius=174, max_parts=30, clock_scale=0.90, readout_rows=(112, 282)),
 }
 PROFILE = PROFILES['REDLINE']
 # Clock size multipliers, matching tools/compose/src/fonts/catalog.ts.
@@ -128,15 +136,16 @@ def check_state(active, state):
     font = clock.find('BitmapFont')
     family = 'clock_{}_{}'.format(state['clock_font'].lower(), state['glow'].lower())
     require(font.get('family') == family, 'Clock font/glow selection failed: ' + family)
-    require(math.isclose(float(font.get('size')), CLOCK_CELL * SIZES[state['clock_size']], abs_tol=0.01), 'Clock size selection failed.')
+    require(math.isclose(float(font.get('size')), CLOCK_CELL * SIZES[state['clock_size']] * PROFILE.get('clock_scale', 1), abs_tol=0.01), 'Clock size selection failed.')
     box = [int(clock.get(k)) for k in ('x', 'y', 'width', 'height')]
     require(box[0] * 2 + box[2] == 432 and box[1] * 2 + box[3] == 432, 'Clock box must be centred on (216,216).')
     require(clock.get('align') == 'CENTER' and clock.get('hourFormat') == 'SYNC_TO_DEVICE', 'Clock must centre and follow the 12/24-hour setting.')
 
-    # Battery above date, in the same font family as the clock (or the system font for REDLINE).
+    # Face-specific fixed rows, in the same font family as the clock (or REDLINE's system font).
     # Slot text uses slot-relative y values, so the readouts are the PartTexts at the readout rows.
-    readouts = [n for n in active if n.tag == 'PartText' and n.get('y') in ('80', '118')]
-    require(sorted(int(t.get('y')) for t in readouts) == [80, 118], 'Battery and date readouts must both show once.')
+    rows = PROFILE.get('readout_rows', (80, 118))
+    readouts = [n for n in active if n.tag == 'PartText' and n.get('y') in tuple(str(y) for y in rows)]
+    require(sorted(int(t.get('y')) for t in readouts) == sorted(rows), 'Battery and date readouts must both show once.')
     for t in readouts:
         if state['clock_font'] in PROFILE['system_fonts']:
             require(t.find('Text/Font') is not None, 'This font\'s readouts use the system font.')

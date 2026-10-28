@@ -38,8 +38,11 @@ public final class FaceApkTest {
     @Test public void actualPackagedRedlineResolvesItsWatchfaceResource() throws Exception {
         inspectPackaged(new File(System.getProperty("redline.selection.fixture")));
     }
+    @Test public void actualPackagedNexusResolvesItsWatchfaceResource() throws Exception {
+        inspectPackaged(new File(System.getProperty("nexus.selection.fixture")));
+    }
     private void inspectPackaged(File apk) throws Exception {
-        assertTrue("A packaged HALO fixture is required", apk.isFile());
+        assertTrue("A packaged face fixture is required", apk.isFile());
         // AAPT2 is a trusted SDK tool reading our built APK, never code from a diagnostic export.
         File output = File.createTempFile("halo-resource-table-", ".txt");
         Process process = new ProcessBuilder(System.getProperty("halo.selection.aapt2"), "dump", "resources", apk.getAbsolutePath())
