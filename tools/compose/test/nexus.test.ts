@@ -40,7 +40,7 @@ describe('NEXUS motion', () => {
     }
   });
 
-  it('keeps ring phase continuous at midnight and has no restartable animation loops', () => {
+  it('keeps ring phase continuous at midnight and has no restartable animation loops', async () => {
     for (const speed of ['SLOW', 'STANDARD', 'FAST'] as const) {
       for (const n of groups(scene(speed))) {
         if (n.angle === undefined) continue;
@@ -48,7 +48,7 @@ describe('NEXUS motion', () => {
         expect(Math.abs(delta), `${speed}/${n.name}`).toBeLessThan(0.41);
       }
     }
-    expect(compileWatchface()).not.toContain('<Animation');
+    expect(await compileWatchface()).not.toContain('<Animation');
   });
 
   it('keeps packets on their circuit runs and hides both ends of the wrap', () => {

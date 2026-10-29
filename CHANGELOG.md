@@ -1,5 +1,13 @@
 # Changelog
 
+## NEXUS 0.1.1 (build 2)
+
+- Optimize the accepted design with every effect still enabled by default. Layout, colours, fonts, settings IDs, real seconds and decorative motion rates are unchanged.
+- Crop transparent borders, composite the four static console layers at build time and apply image opacity directly instead of through full-canvas groups. Preserve external pivots for the sweep and seconds marker; remove redundant containers and the duplicate black ground draw.
+- Default decoration: 12 images → 9; total declared image rectangle area 1,866,408 → 629,601 pixels (66.3% smaller); full-canvas opacity groups 3 → 0. Selected drawing parts fall from 20–24 to 16–20.
+- All 384 matching raster comparisons stay within 2/255 channel difference. The gallery now uses the actual packed assets and per-instance tint, matching watch rendering more closely.
+- This reduces structural rendering work; smoother delivery and battery benefit remain unconfirmed until compared on the watch. Installer 0.7.2 already supports this update; pairing and customization selections are preserved.
+
 ## NEXUS 0.1.0 (build 1)
 
 - New two-tone command deck combining HALO's instruments, REDLINE's mechanical HUD, CIPHER's terminal orbit and Cyberdeck's circuitry/bevelled surfaces.

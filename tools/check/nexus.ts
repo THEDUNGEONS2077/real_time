@@ -66,7 +66,7 @@ export async function nexusPreviews(): Promise<void> {
   const cards: string[] = [];
   const ambient: { name: string; litFraction: number }[] = [];
   for (const [name, override] of states) {
-    const png = await sharp(Buffer.from(previewSvg(frame({ time: at('10:45:00'), ...override })))).png().toBuffer();
+    const png = await sharp(Buffer.from(await previewSvg(frame({ time: at('10:45:00'), ...override })))).png().toBuffer();
     await writeFile(resolve(out, `${name}.png`), png);
     cards.push(`<figure><img src="${name}.png" width="320" height="320" alt="${name}"/><figcaption>${name}</figcaption></figure>`);
     if (override.ambient) {
@@ -86,7 +86,7 @@ export async function nexusPreviews(): Promise<void> {
   const frames: string[] = [];
   for (let i = 0; i < 120; i++) {
     const name = `motion-${String(i).padStart(3, '0')}.svg`;
-    await writeFile(resolve(out, name), previewSvg(frame({ time: new Date(at('10:45:00').getTime() + i * 1000 / 30) })));
+    await writeFile(resolve(out, name), await previewSvg(frame({ time: new Date(at('10:45:00').getTime() + i * 1000 / 30) })));
     frames.push(name);
   }
 

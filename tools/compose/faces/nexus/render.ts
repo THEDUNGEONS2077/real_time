@@ -4,7 +4,7 @@
  * Scene structure (only one branch of each Condition is active):
  *
  *   interactive group (hidden in ambient)
- *     ground
+ *     (opaque black comes from Scene.backgroundColor)
  *     palette ▸ { decoration (each effect ▸ speed), clock font ▸ glow ▸ size ▸ DigitalClock, clock font ▸ readouts }
  *   ambient group (shown in ambient)
  *     palette ▸ clock font ▸ dim static DigitalClock
@@ -22,9 +22,11 @@ import { slotXml } from '../../src/wff/complication.ts';
 import type { SlotSpec } from '../../src/wff/complication.ts';
 import { nodeXml } from '../../src/wff/nodes.ts';
 import { breakLines, canvas, condition, escapeXml, lowBattery, tag } from '../../src/wff/xml.ts';
-import { clockScale, layout, palettes, scene, speeds } from './design.ts';
+import { clockScale, layout, palettes, speeds } from './design.ts';
 import type { PaletteId, Speed } from './design.ts';
 import { nexusFonts, editorSettings, settingById } from './editor.ts';
+import { artwork } from './artwork.ts';
+import type { NexusArtwork } from './artwork.ts';
 
 /** The ambient clock is a compact, crisp, dim copy of the chosen font. */
 export const ambientScale = 94 / 118;
@@ -69,16 +71,19 @@ function readoutsXml(font: FontId, ink: string, warning: string): string {
 }
 
 /** Everything that depends on the palette: decoration, clock and readouts. */
-function paletteXml(id: PaletteId): string {
+function paletteXml(id: PaletteId, compiled: NexusArtwork): string {
   const p = palettes[id];
   const [speedSetting, fontSetting, glowSetting, sizeSetting] = ['motion_speed', 'clock_font', 'glow', 'clock_size'].map(settingById);
   // Every speed's scene has the same top-level shape, so index i is the same node in all of them.
-  const base = scene('STANDARD');
+  const base = compiled.scenes[id].STANDARD;
   const decoration = base.map((node, index) => {
     if (node.kind !== 'switch') return nodeXml(node, p);
     return selectXml(speedSetting, Object.fromEntries((Object.keys(speeds) as Speed[]).map(speed => {
-      const chosen = speed === 'STILL' ? stillNodes([node]) : [scene(speed)[index]];
-      return [speed, tag('Group', { ...canvas, name: `${id}_${index}_${speed}` }, chosen.map(n => nodeXml(n, p)).join(''))];
+      const chosen = speed === 'STILL' ? stillNodes([node]) : [compiled.scenes[id][speed][index]];
+      const body = chosen.map(n => nodeXml(n, p)).join('');
+      // Compare requires a child even when Still removes an overlay completely.
+      // Empty groups draw nothing; moving branches need no extra container.
+      return [speed, body || tag('Group', { ...canvas, name: `${id}_${node.setting}_still` })];
     })));
   }).join('');
   const clocks = selectXml(fontSetting, Object.fromEntries(nexusFonts.map(font => [font,
@@ -95,12 +100,13 @@ function bitmapFontsXml(): string {
 }
 
 /** Build watchface.xml. Pure: the same inputs always give the same bytes. */
-export function compileWatchface(): string {
+export async function compileWatchface(): Promise<string> {
+  const compiled = await artwork();
   const paletteSetting = settingById('palette'), fontSetting = settingById('clock_font');
   const ids = Object.keys(palettes) as PaletteId[];
-  const ground = nodeXml({ kind: 'rect', ...canvas, role: 'ground' }, palettes.FUSION);
+  // Scene already supplies opaque black; a second full-screen ground draw is redundant.
   const interactive = tag('Group', { ...canvas, name: 'interactive' },
-    tag('Variant', { mode: 'AMBIENT', target: 'alpha', value: 0 }) + ground + selectXml(paletteSetting, Object.fromEntries(ids.map(id => [id, paletteXml(id)]))));
+    tag('Variant', { mode: 'AMBIENT', target: 'alpha', value: 0 }) + selectXml(paletteSetting, Object.fromEntries(ids.map(id => [id, paletteXml(id, compiled)]))));
   const ambient = tag('Group', { ...canvas, name: 'ambient', alpha: 0 },
     tag('Variant', { mode: 'AMBIENT', target: 'alpha', value: 255 }) +
     selectXml(paletteSetting, Object.fromEntries(ids.map(id => [id,

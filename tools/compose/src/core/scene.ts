@@ -80,8 +80,24 @@ export interface ImageNode {
   tint?: boolean;
 }
 
+/** A single image with direct transforms, avoiding an intermediate opacity group. */
+export interface Sprite {
+  kind: 'sprite';
+  name: string;
+  resource: string;
+  role: Role;
+  x: number; y: number; width: number; height: number;
+  alpha: NumberValue;
+  offsetX?: NumberValue;
+  offsetY?: NumberValue;
+  angle?: NumberValue;
+  pivotX: number;
+  pivotY: number;
+  tint?: boolean;
+}
+
 /** Any scene node. */
-export type Node = Shape | Group | Switch | ImageNode;
+export type Node = Shape | Group | Switch | ImageNode | Sprite;
 
 /** True for the four primitive kinds. */
 export const isShape = (n: Node): n is Shape => n.kind === 'line' || n.kind === 'rect' || n.kind === 'circle' || n.kind === 'arc';

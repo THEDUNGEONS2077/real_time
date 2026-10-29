@@ -39,6 +39,8 @@ function radii(nodes: Node[], f: Frame, map: (x: number, y: number) => [number, 
       });
     }
     if (n.kind === 'image' && n.resource === 'redline_mesh') return [];
+    // This bounds helper checks REDLINE's authored geometry, before raster packing.
+    if (n.kind === 'sprite') throw new Error('Use raster pixel bounds for a packed sprite.');
     const x = n.x ?? 0, y = n.y ?? 0;
     const points: [number, number][] = n.kind === 'line' ? [[x, y], [n.x2!, n.y2!]]
       : n.kind === 'rect' || n.kind === 'image' ? [[x, y], [x + n.width!, y], [x, y + n.height!], [x + n.width!, y + n.height!]]

@@ -1,0 +1,34 @@
+{
+  "beforeVersion": "0.1.0",
+  "candidateVersion": "0.1.1",
+  "settings": "FUSION / SLOW / all effects on",
+  "before": {
+    "images": 12,
+    "imageRectanglePixels": 1866408,
+    "opacityGroups": 3,
+    "groups": 7
+  },
+  "after": {
+    "images": 9,
+    "imageRectanglePixels": 629601,
+    "opacityGroups": 0,
+    "groups": 2
+  },
+  "imageRectangleReduction": 0.6626670052850181,
+  "sampleCount": 384,
+  "maxMeanChannelError": 0.02056362882944673,
+  "maxChannelError": 2,
+  "note": "Image rectangles are structural workload, not GPU timings or delivered FPS. Pixel comparisons use the same source masks, poses and controls; watch acceptance is pending.",
+  "recordedDate": "2026-10-29",
+  "deviceObservation": "NEXUS 0.1.0 looks good on defaults; motion insufficiently smooth. Candidate device comparison pending.",
+  "memoryBytes": {
+    "beforeActive": 15844832,
+    "afterActive": 13857204,
+    "ambient": 959576
+  },
+  "apkBytes": {
+    "before": 601934,
+    "after": 623530
+  },
+  "deviceFps": null
+}

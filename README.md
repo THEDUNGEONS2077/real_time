@@ -4,7 +4,7 @@ Moving sci-fi HUD watch faces for the Samsung Galaxy Watch7 40 mm (Wear OS 6). E
 
 | Face | Status | Docs |
 |---|---|---|
-| **NEXUS** 0.1.0 candidate | Two-tone command deck: bevelled clock console, mechanical/code orbits, circuit signals; local build, device acceptance pending | [faces/nexus/README.md](faces/nexus/README.md) |
+| **NEXUS** 0.1.1 candidate | Accepted command-deck design; smaller image bounds and fewer drawing parts. Smoothness comparison pending | [faces/nexus/README.md](faces/nexus/README.md) |
 | **REDLINE** 1.1 | Black/red concentric HUD. 8 clock fonts, glow and size, 6 palettes, 4 speeds, 3 rotation styles, 6 effects, Timer complication | [faces/redline/README.md](faces/redline/README.md) |
 | **CIPHER** 0.1.0 | Green phosphor terminal HUD: rotating rings of matrix glyphs, comet sweep, matrix rain. Built light: one image per moving piece | [faces/cipher/README.md](faces/cipher/README.md) |
 | **HALO** 0.1.0 | Cyan/amber dot-matrix HUD (frozen) | [DESIGN.md](DESIGN.md) |

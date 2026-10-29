@@ -11,10 +11,11 @@ tools/compose/
     editor/             catalogue.ts (settings, selectXml) · icons.ts (96 px tiles) · letters.ts (5×7 alphabet)
     fonts/              outline.ts (pinned OFL TTFs) · glyphs.ts (cell layout, glow, masks) · catalog.ts (shared clock fonts) · wff.ts / svg.ts (BitmapFont output)
     bake.ts             build-time layer cache
+    raster.ts           opt-in alpha cropping, static-image merging and direct image transforms
     build.ts            write or byte-check each face's res/ tree
   faces/redline/        design.ts · fonts.ts · editor.ts · render.ts (WFF) · preview.ts (SVG) · resources.ts · assets.ts
   faces/cipher/         design.ts · assets.ts / masks.ts (baked ring, rain and sweep masks) · editor.ts · render.ts · preview.ts · resources.ts
-  faces/nexus/          design.ts · masks.ts (instrument, circuit and bevel masks) · editor.ts · render.ts · preview.ts · resources.ts
+  faces/nexus/          design.ts · masks.ts · artwork.ts (packed scenes) · editor.ts · render.ts · preview.ts · resources.ts
   halo/                 HALO's frozen generator (byte-identical; no new features)
   fonts/                committed OFL fonts with their licences
 tools/check/            review gallery, release checker (verify_editor.py), packaged-pixel comparison
@@ -61,6 +62,10 @@ Font files are verified against pinned SHA-256s before use.
 
 ## Checks
 
+NEXUS 0.1.1 opts into `RasterOptimizer`. Its original scene remains authoritative; `artwork.ts` compiles cropped masks and consecutive static image runs once for both WFF and SVG. A single-image moving group can become a `Sprite` (a WFF `PartImage` with direct transforms), provided its pivot is valid inside the crop. Per-instance preview tints use `resource:literal-colour` keys so shared masks can have different colours. Existing faces keep their old output paths and byte-identical resources.
+
+`node tools/check/nexus-optimization.ts` compares 384 matching raster frames and writes structural counts and pixel error to `out/optimization/nexus/comparison.json`. It does not connect to the watch or report device FPS.
+
 - **`npm run check`:** typecheck, vitest, byte-for-byte resource reproduction and the preview gallery. The gallery enforces under 10% ambient lit pixels for every font.
 - **`tools/check/verify_editor.py`:** picks a profile by face name (REDLINE, CIPHER, NEXUS); a new face adds its own. For REDLINE it resolves Conditions for 1,279 editor states and asserts what the watch would draw. The states cover every option, every font × glow × size, every speed × style × effect combination, and a fixed-seed random sample. It also checks every BitmapFont character against its PNG size, and the Timer slot's types, bounds and empty default. With `--apk` it compares packaged resources through AAPT2's resource table, because AAPT2 renames ZIP paths.
 - **`scripts/release-wear.sh`:** adds Google's WFF validator, lint, signature, no-code and no-permission checks, and the official memory evaluator.
@@ -75,4 +80,4 @@ Font files are verified against pinned SHA-256s before use.
 
 ## Release tags
 
-HALO uses `v*`; REDLINE uses `redline-v*`; CIPHER uses `cipher-v*`; the installer uses `diagnostics-v*`. Each has its own monotonic versionCode.
+HALO uses `v*`; REDLINE uses `redline-v*`; CIPHER uses `cipher-v*`; NEXUS uses `nexus-v*`; the installer uses `diagnostics-v*`. Each has its own monotonic versionCode.

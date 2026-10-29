@@ -50,7 +50,8 @@ PROFILES = {
                  'data_flow': ['packet_0', 'packet_1'], 'sweep': ['bezel_sweep'],
                  'glass_glow': ['glass_glow'], 'seconds': ['seconds_mark']},
         defaults={'motion_speed': 'SLOW', 'clock_font': 'OXANIUM', 'clock_size': 'MEDIUM', 'glow': 'LOW', 'palette': 'FUSION'},
-        system_fonts=set(), inner_radius=174, max_parts=30, clock_scale=0.90, readout_rows=(112, 282)),
+        system_fonts=set(), inner_radius=174, max_parts=20, clock_scale=0.90, readout_rows=(112, 282),
+        motion_tags={'Group', 'PartImage'}),
 }
 PROFILE = PROFILES['REDLINE']
 # Clock size multipliers, matching tools/compose/src/fonts/catalog.ts.
@@ -157,7 +158,7 @@ def check_state(active, state):
     # Effects: each moving group is present exactly when its effect is on and motion is not STILL.
     for effect, names in PROFILE['effects'].items():
         for name in names:
-            moving = [n for n in active if n.tag == 'Group' and n.get('name') == name and any(
+            moving = [n for n in active if n.tag in PROFILE.get('motion_tags', {'Group'}) and n.get('name') == name and any(
                 c.tag == 'Gyro' or c.tag == 'Transform' and LIVE_SOURCE.search(c.get('value', '')) for c in n)]
             require(len(moving) == int(state['motion_speed'] != 'STILL' and state[effect] == 'TRUE'), 'Effect selection failed: ' + name)
     decorative = [n for n in active if n.tag in ('Transform', 'Gyro') and n.get('target') != 'width']
@@ -217,6 +218,7 @@ def verify(resources, apk=None, aapt2=None):
     require(not list(scene.iter('ListConfiguration')) and not list(scene.iter('BooleanConfiguration')),
             'Use Conditions in the scene; native configuration selectors cannot be nested.')
     require(b'ColorConfiguration' not in xml and not re.search(rb'CONFIGURATION\.palette\.\d', xml), 'Colours must be literal.')
+    require(all(len(compare) > 0 for compare in scene.iter('Compare')), 'Compare must contain a node, including empty Still branches.')
 
     # Transitions: one second, linear, non-repeating, refreshed by the integer clock.
     for transform in scene.iter('Transform'):

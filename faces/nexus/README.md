@@ -2,7 +2,7 @@
 
 An original command-deck face for the Galaxy Watch7 40 mm, Wear OS 6. NEXUS combines the family's visual ideas around a large, stationary clock rather than reproducing a desktop wallpaper.
 
-Version **0.1.0, build 1** is a local candidate. Package: `com.thedungeons2077.realtime.nexus`; release tag when approved: `nexus-v0.1.0`. Publication and watch acceptance are pending.
+Version **0.1.1, build 2** is a local optimization candidate. Package: `com.thedungeons2077.realtime.nexus`; release tag when approved: `nexus-v0.1.1`. Version 0.1.0 is published; the user likes its appearance at default settings but requests smoother motion. The new build preserves the design and awaits a watch comparison.
 
 ![NEXUS, Fusion palette](src/main/res/drawable-nodpi/preview.png)
 
@@ -43,7 +43,7 @@ At default Slow, the mechanical ring turns clockwise every 48 s, the code orbit 
 
 Motion reads the live clock, without a repeating Animation, sensor input or one-second startup target. Periods divide the day at every speed, avoiding a phase jump at midnight. Signal opacity reaches zero at both ends before wrapping. Rings freeze at their reference pose when disabled; sweep, signals and seconds disappear. STILL selects the same static branches, with no decorative clock dependencies.
 
-Eleven shared white-alpha WebP masks contain the artwork and baked edge softness. Palettes tint those masks; they do not multiply the image collection. The two moving signal instances share one tiny mask. Clock glow is baked into glyphs. There is no runtime blur, procedural texture generation, per-character ring animation or full-screen image sequence. This bounds rendering work; it does **not** establish actual frame rate or battery savings.
+The eleven authored SVG masks remain the source artwork. In 0.1.1 a build-time pass crops their transparent borders and merges the four static console images into one coloured layer per palette. Moving masks remain shared across palettes; two signal instances reuse one tiny mask. Opacity moves onto individual images and valid centred rotations use direct image transforms. Clock glow is baked into unchanged glyphs. See the [optimization record](../../OPTIMIZATION.md#nexus-011-optimization-candidate) for structural and pixel-comparison results. There is no runtime blur, procedural texture generation, per-character ring animation or full-screen image sequence. This bounds rendering work; it does **not** establish actual frame rate or battery savings.
 
 Ambient is the selected font's crisp, dim static time on black, with all decoration/readouts/shortcut hidden. Normal use assumes AOD off.
 
@@ -52,6 +52,7 @@ Ambient is the selected font's crisp, dim static time on black, with all decorat
 ```bash
 node tools/compose/src/build.ts --face nexus
 node tools/check/nexus.ts
+node tools/check/nexus-optimization.ts
 bash scripts/release-wear.sh --face nexus --verify-only
 bash scripts/release-diagnostics.sh --verify-only
 ```
@@ -62,9 +63,9 @@ Local verification results are in [VERIFICATION.md](VERIFICATION.md). Existing H
 
 ## Phone installation and acceptance
 
-Install **real_time installer 0.7.2 or later** on the phone first: older versions intentionally reject unknown NEXUS packages. Updating the installer keeps existing pairing. Choose `real_time-nexus-v0.1.0.apk`, check the NEXUS/version label and tap INSTALL TO WATCH. Add NEXUS from the watch's face picker. See [phone instructions](../../diagnostics/phone/README.md); the PC never connects to the watch.
+Install **real_time installer 0.7.2 or later** on the phone first: older versions intentionally reject unknown NEXUS packages. Updating the installer keeps existing pairing. Choose `real_time-nexus-v0.1.1.apk`, check the NEXUS/version label and tap INSTALL TO WATCH. Add NEXUS from the watch's face picker. See [phone instructions](../../diagnostics/phone/README.md); the PC never connects to the watch.
 
-Device acceptance remains pending for all items below:
+The user has accepted the general appearance of 0.1.0 on the watch at default settings. Smoothness was insufficient. Compare 0.1.1 with the same settings, brightness and power mode, including timeout/wake and switching away/back; record an improvement only after that observation. The detailed controls/provider checks below are still pending unless separately reported:
 
 - First application and both editor previews render correctly; time/date/battery remain readable on the 40 mm screen.
 - Every colour, font, size, glow, speed and effect works in Galaxy Wearable and on the watch; Save persists, Cancel preserves the previous selection, and both editors agree.

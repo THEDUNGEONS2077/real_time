@@ -6,7 +6,7 @@
  * backend never emits `[CONFIGURATION.*]` colour references.
  */
 import type { NumberValue } from '../core/expr.ts';
-import { expression, isConstant } from '../core/expr.ts';
+import { expression, isConstant, op } from '../core/expr.ts';
 import type { Node, Palette, Shape, Transition } from '../core/scene.ts';
 import { isShape } from '../core/scene.ts';
 import { canvas, condition, tag } from './xml.ts';
@@ -58,6 +58,16 @@ function shapeXml(n: Shape, colour: string): string {
 export function nodeXml(n: Node, palette: Palette): string {
   if (isShape(n)) return shapeXml(n, palette[n.role]);
   switch (n.kind) {
+    case 'sprite': {
+      const x = n.offsetX === undefined ? '' : transform('x', op('+', n.x, n.offsetX));
+      const y = n.offsetY === undefined ? '' : transform('y', op('+', n.y, n.offsetY));
+      return tag('PartImage', {
+        name: n.name, x: n.x, y: n.y, width: n.width, height: n.height,
+        pivotX: n.pivotX, pivotY: n.pivotY, angle: initial(n.angle, 0),
+        alpha: initial(n.alpha, 255), tintColor: n.tint === false ? undefined : palette[n.role],
+      }, x + y + transform('angle', n.angle) + transform('alpha', n.alpha)
+        + tag('Image', { resource: n.resource }));
+    }
     case 'switch':
       // Disabled effects select a static subtree, so no live expression keeps running behind alpha 0.
       return condition(

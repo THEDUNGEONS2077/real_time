@@ -14,8 +14,21 @@ Optimize from what the watch actually does. A small APK, a passing validator, th
 | 2026-10-25 | REDLINE 0.2.1 | All customization works, looks good | user report |
 | 2026-10-25 | REDLINE 0.3.0 | "Looks very smooth" (clock-refreshed 60 fps transitions) | user report |
 | 2026-10-25 | REDLINE 1.0.0 | Smooth and performant; up to ~1 s pause before motion after unlock/swipe | user report |
+| 2026-10-29 (recorded) | NEXUS 0.1.0 | "Looks really good" at default settings/all effects; motion is not smooth enough. Preserve the design and optimize performance | user report |
 
 No controlled trace, frame-rate or battery measurement has been collected yet.
+
+## NEXUS 0.1.1 optimization candidate
+
+The appearance and default motion equations stay unchanged. The new opt-in `RasterOptimizer` crops every mask to nonzero-alpha bounds (including weak glow), combines the four consecutive static console images, and transfers single-image transforms onto `PartImage`. Small orbiting marks retain a parent group because their rotation pivot lies outside their cropped image. Redundant speed-selection containers and the extra black ground draw are removed.
+
+At default Fusion/Slow/all effects, decorative images fall from **12 to 9**, and their total declared rectangle area falls from **1,866,408 to 629,601 pixels (66.3%)**. Three full-canvas opacity groups become direct image opacity. The conservative selected-tree count, including every complication type, falls from **20–24 to 16–20 parts**. These are structural counts; they are not measured GPU time, FPS or battery savings.
+
+Across **384 matching raster comparisons** (eight palettes, four speeds, individual/all-off states and fractional/wrap-adjacent poses), the maximum channel error is **2/255** and the worst frame's mean absolute channel error is **0.0206/255**. This bounds compositing rounding while retaining the accepted composition. The SVG preview now also respects per-instance tint when the same signal bitmap has two colours, matching the actual watch resource semantics.
+
+The tradeoff is one colour-baked console image per palette, replacing four shared mask draws. All moving masks still deduplicate across palettes; glyphs, controls, rates, layout and provider behaviour are unchanged. See [reviewed evidence](measurements/reviewed/nexus-0.1.1-optimization.md) and [release checks](faces/nexus/VERIFICATION.md). Device smoothness confidence remains pending a same-settings comparison on the Watch7.
+
+Future faces can opt into `tools/compose/src/raster.ts`. Compare packed and original raster pixels, preserve painter order and pivots, keep live fields outside the packing pass, and rerun editor/ambient/memory gates. Do not migrate an accepted face solely because a new optimizer exists. Android documents [direct image transforms](https://developer.android.com/reference/wear-os/wff/group/part/image/part-image) and [cropping/image-memory considerations](https://developer.android.com/training/wearables/wff/memory-usage); the optimization is still subject to device testing.
 
 ## Engineering choices (not yet measured)
 
