@@ -1,5 +1,11 @@
 # Changelog
 
+## Checkpoint acceptance — 2026-10-29
+
+- User confirms NEXUS 0.1.2 fixes the phone customization timeout and calls the experience perfect. Record published build 3/source `bebedda6769e00bb0716a014d2103bdbeebb6c31` as the accepted checkpoint.
+- Require future faces to start from its compact editor and optimized rendering/motion approach, and demonstrate comparable responsiveness on the phone/watch before acceptance.
+- Documentation only; no APK, resource, version or release-tag changes. See `docs/CHECKPOINT-NEXUS-0.1.2.md`.
+
 ## NEXUS 0.1.2 (build 3)
 
 - Candidate for Galaxy Wearable timing out when opening Customize; the user reports that on-watch editing works reliably. Excessive scene duplication is a suspected contributor, not an established cause.

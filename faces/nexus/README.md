@@ -2,7 +2,7 @@
 
 An original command-deck face for the Galaxy Watch7 40 mm, Wear OS 6. NEXUS combines the family's visual ideas around a large, stationary clock rather than reproducing a desktop wallpaper.
 
-Version **0.1.2, build 3** is a local companion-editor repair candidate. Package: `com.thedungeons2077.realtime.nexus`; release tag when approved: `nexus-v0.1.2`. Version 0.1.1 is published. Following that delivery, the user reports that the face looks good and on-watch customization works, but Galaxy Wearable times out opening Customize. The new build reduces scene duplication; phone acceptance is pending.
+Version **0.1.2, build 3** is published and is the user-accepted responsiveness checkpoint. Package: `com.thedungeons2077.realtime.nexus`; release: `nexus-v0.1.2`. On 2026-10-29 the user confirmed the Galaxy Wearable Customize timeout was resolved: “That fixed it, it's perfect now.” Future faces must target the same seamless experience; see [the checkpoint](../../docs/CHECKPOINT-NEXUS-0.1.2.md).
 
 ![NEXUS, Fusion palette](src/main/res/drawable-nodpi/preview.png)
 
@@ -66,7 +66,7 @@ Local verification results are in [VERIFICATION.md](VERIFICATION.md). Existing H
 
 Use **real_time installer 0.7.2 or later** on the phone: older versions intentionally reject unknown NEXUS packages. Choose `real_time-nexus-v0.1.2.apk`, check the NEXUS/version label and tap INSTALL TO WATCH. This updates the existing face without uninstalling or re-pairing; setting IDs remain stable. See [phone instructions](../../diagnostics/phone/README.md); the PC never connects to the watch.
 
-The user reports good appearance and reliable on-watch customization following 0.1.1 delivery. The phone fails while opening Customize. For 0.1.2, first open Galaxy Wearable Customize three times, change/save Fusion → Blood → Outrun, and close/reopen to verify persistence and agreement with the watch. Check clock/date/battery colours specifically because their tinting implementation changed. Then check font/glow/size and motion after editor exit and a face switch. Record the exact installed face version, phone app version, watch firmware and approximate opening time. No reset or re-pairing is part of this test. Detailed acceptance remains:
+The user confirmed 0.1.2 fixed the phone Customize timeout and accepted the experience. Reliable on-watch editing was previously reported. Individual checklist results beyond that report remain unspecified. For future changes, use this regression sequence: open Galaxy Wearable Customize three times, change/save Fusion → Blood → Outrun, and close/reopen to verify persistence and agreement with the watch. Check clock/date/battery colours specifically because their tinting implementation changed. Then check font/glow/size and motion after editor exit and a face switch. Record the exact installed face version, phone app version, watch firmware and approximate opening time. No reset or re-pairing is part of this test. Detailed acceptance remains:
 
 - First application and both editor previews render correctly; time/date/battery remain readable on the 40 mm screen.
 - Every colour, font, size, glow, speed and effect works in Galaxy Wearable and on the watch; Save persists, Cancel preserves the previous selection, and both editors agree.

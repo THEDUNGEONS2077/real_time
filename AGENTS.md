@@ -3,6 +3,7 @@
 Resource-only Wear OS watch faces for the user's Galaxy Watch7 40 mm. Read ARCHITECTURE.md, DESIGN.md, FACE_STANDARD.md and OPTIMIZATION.md before changing a face.
 
 - Every future face must follow FACE_STANDARD.md: REDLINE architecture and HUD design principles, distinct visual style, functional Galaxy Wearable/on-watch editing, fixed readable time, resumable motion and shared optimization/measurement gates.
+- NEXUS 0.1.2 is the user-accepted performance/editor checkpoint. Start future faces from its compact editor and optimized rendering approach; consult docs/CHECKPOINT-NEXUS-0.1.2.md. Seamless editing and motion are acceptance requirements. Keep the released checkpoint intact and verify each new face on the phone/watch before claiming equivalent responsiveness.
 - Each face is independent. Do not port the family's wallpapers into this project.
 - Keep WFF APKs free of executable code, permissions, analytics and network access.
 - Comments explain purpose and layer: a file header, a doc comment on every export and block comments on non-obvious logic (the user's standing request). Write readable, formatted code rather than dense one-liners. JSON, binary resources and the unmodified Gradle wrapper use their native formats without added comments.

@@ -4,12 +4,14 @@ Moving sci-fi HUD watch faces for the Samsung Galaxy Watch7 40 mm (Wear OS 6). E
 
 | Face | Status | Docs |
 |---|---|---|
-| **NEXUS** 0.1.2 candidate | Accepted command-deck design; reduced preview definition for Galaxy Wearable's Customize timeout. Phone acceptance pending | [faces/nexus/README.md](faces/nexus/README.md) |
+| **NEXUS** 0.1.2 | User-accepted checkpoint: phone customization timeout resolved; responsiveness baseline for future faces | [faces/nexus/README.md](faces/nexus/README.md) |
 | **REDLINE** 1.1 | Black/red concentric HUD. 8 clock fonts, glow and size, 6 palettes, 4 speeds, 3 rotation styles, 6 effects, Timer complication | [faces/redline/README.md](faces/redline/README.md) |
 | **CIPHER** 0.1.0 | Green phosphor terminal HUD: rotating rings of matrix glyphs, comet sweep, matrix rain. Built light: one image per moving piece | [faces/cipher/README.md](faces/cipher/README.md) |
 | **HALO** 0.1.0 | Cyan/amber dot-matrix HUD (frozen) | [DESIGN.md](DESIGN.md) |
 
 The [phone installer](diagnostics/phone/README.md) sends a face APK from the phone to the watch. New faces follow [FACE_STANDARD.md](FACE_STANDARD.md). See [ARCHITECTURE.md](ARCHITECTURE.md) for how the generator works and [OPTIMIZATION.md](OPTIMIZATION.md) for what has been measured.
+
+Use the [NEXUS 0.1.2 checkpoint](docs/CHECKPOINT-NEXUS-0.1.2.md) for the next face's rendering/editor architecture and seamless-experience acceptance target.
 
 The [2026-10-28 takeover review](docs/HANDOVER-2026-10-28.md) traces the latest deployments and the decisions carried into NEXUS. NEXUS needs installer 0.7.2 or later.
 

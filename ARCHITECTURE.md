@@ -41,7 +41,7 @@ Scene
 ```
 
 - **Only Conditions select branches.** Declarations stay flat in UserConfigurations; nesting native selectors left the editors blank in 0.2.0.
-- **Colours use explicit palette constants.** A theme-colour lookup turned 0.1.0 white on the watch. Existing faces use literal attributes; NEXUS 0.1.2's configuration-only RGB candidate is described below.
+- **Colours use explicit palette constants.** A theme-colour lookup turned 0.1.0 white on the watch. Existing faces use literal attributes; NEXUS 0.1.2's accepted configuration-only RGB approach is described below.
 - **Readouts sit outside every moving group** and are declared once, not once per palette.
 - **Fonts are bitmaps.** Each clock font has three families, `clock_<font>_off|low|high` (`_off` is also the ambient face). Fonts with a readout face add `readout_<font>`, whose lowercase letters reuse the capital masks.
 
@@ -66,7 +66,7 @@ NEXUS 0.1.1 opts into `RasterOptimizer`. Its original scene remains authoritativ
 
 `node tools/check/nexus-optimization.ts` compares 384 matching raster frames and writes structural counts and pixel error to `out/optimization/nexus/comparison.json`. It does not connect to the watch or report device FPS.
 
-NEXUS 0.1.2 shares its interactive clock/readouts across palettes to reduce companion-editor loading work. Decoration and ambient retain literal colours. A stationary clock group uses the WFF 4 `tintColor` transform with explicit `colorRgb(r,g,b)` constants selected by the existing palette ID. Readout BitmapFonts use the same configuration-only colour selection directly. There are no indexed theme-colour references or per-frame colour sources. The inline BitmapFont inside TimeText does **not** accept Transform in the pinned schema, so its white glyphs inherit the parent's tint. Clock boxes, sizes, masks and motion trees remain unchanged. This compatibility candidate still needs Samsung phone/editor acceptance.
+NEXUS 0.1.2 shares its interactive clock/readouts across palettes to reduce companion-editor loading work. Decoration and ambient retain literal colours. A stationary clock group uses the WFF 4 `tintColor` transform with explicit `colorRgb(r,g,b)` constants selected by the existing palette ID. Readout BitmapFonts use the same configuration-only colour selection directly. There are no indexed theme-colour references or per-frame colour sources. The inline BitmapFont inside TimeText does **not** accept Transform in the pinned schema, so its white glyphs inherit the parent's tint. Clock boxes, sizes, masks and motion trees remain unchanged. The user accepted the phone editor repair on 2026-10-29. This is the rendering/editor baseline for future faces; see [the checkpoint](docs/CHECKPOINT-NEXUS-0.1.2.md). Each new design still requires its own phone/watch acceptance.
 
 `python3 -I tools/check/nexus-editor.py` compares 3,776 interactive states and all 48 palette/font ambient states against drawing-instruction hashes recorded from released 0.1.1. It checks resolved colours, text geometry, motion, painter order, the entire editor catalogue and unknown-palette fallback. The fixture is independent of the current generator. These are instruction-equivalence checks, not renderer screenshots or measured editor latency.
 

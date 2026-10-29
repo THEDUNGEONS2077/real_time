@@ -2,6 +2,8 @@
 
 REDLINE establishes the shared architecture and design language for every new face. Each face has its own style, palette, silhouette and information layout. The common principles are clear time, dense but readable instruments, purposeful motion, restrained light, working phone/watch customization and measured resource cost. Existing HALO remains an independent design.
 
+**NEXUS 0.1.2 is the accepted responsiveness checkpoint.** On 2026-10-29 the user confirmed the phone editor repair was perfect and requested the same seamless experience for future faces. Start from its compact editor and optimized artwork/motion approach; preserve distinct designs. Follow [the checkpoint contract](docs/CHECKPOINT-NEXUS-0.1.2.md), including device comparison before accepting a new face.
+
 ## Visual and interaction principles
 
 - Make the time the clearest fixed element. Respect the watch's 12/24-hour setting. Size and place every other instrument around it; never let motion, readouts or a complication obscure it. Centre visible ink on both axes, including narrow times such as 11:11: use tight per-character cell widths (`layoutFace`), not fixed cells or added tracking. A deliberately fixed-cell font (an LCD) must say so.
@@ -21,7 +23,7 @@ REDLINE establishes the shared architecture and design language for every new fa
 - Use `Condition` expressions to compose selections in the scene. Do not nest native `ListConfiguration`/`BooleanConfiguration` scene selectors through groups or other options. [Android documents this restriction](https://developer.android.com/training/wearables/wff/personalization/user-configurations); passing XSD validation alone does not catch it.
 - Provide real packaged icons, display-name resources and screen-reader resources for every setting and list option. Icons are 96×96 PNGs with compact captions so options remain identifiable in icon-only companion layouts. Check their visible pixels, dimensions and size.
 - Use explicit ON/OFF list tiles for binary effects, with stable `TRUE`/`FALSE` values. This makes every choice visible without depending on companion-generated Boolean artwork. Keep IDs stable across releases; a change from a Boolean to a list setting may restore that effect to its declared default once.
-- Preserve REDLINE's literal-colour rendering unless a replacement is verified on the actual watch. Palette selections choose cached coloured layers and literal paint, with a default fallback; they do not resolve theme-colour indices.
+- For new faces, follow accepted NEXUS 0.1.2: literal decoration/ambient colours and shared interactive text with configuration-only typed RGB colour selection and a default fallback. Avoid theme-colour indices and full text-tree copies per palette. Keep existing accepted faces unchanged unless a specific task requires migration.
 - Keep editor icons out of the rendered scene. Editing metadata must not add per-frame work.
 - Keep complication editing independent of palette, speed and effect selections.
 
@@ -54,7 +56,7 @@ Device acceptance is a separate gate. A build cannot be called fully functional 
 
 Record exact face and installer versions, watch firmware, choices and results. For a failure, record the exact reproduction. Do not clear app data, remove pairing or reset the watch as a routine workaround.
 
-Track total parsed scene size as well as the selected drawing count. NEXUS's on-watch controls worked while Galaxy Wearable timed out opening Customize after 0.1.1 delivery. Inactive palette × font × glow × size copies can multiply the definition the companion must load. Share independent text where supported, retain stable setting IDs/icons and compare resolved drawing instructions before changing an accepted face. The 0.1.2 configuration-only RGB/tint approach is a candidate, not a proven Samsung fix; require phone open/Save/reopen and on-watch colour checks before adopting it in another face.
+Track total parsed scene size as well as the selected drawing count. NEXUS's on-watch controls worked while Galaxy Wearable timed out opening Customize after 0.1.1 delivery; the user confirmed 0.1.2 resolved it. Inactive palette × font × glow × size copies can multiply the definition the companion must load. Share independent text where supported, retain stable setting IDs/icons and compare resolved drawing instructions before changing an accepted face. Reuse the accepted configuration-only RGB/tint approach for new faces, with phone open/Save/reopen and on-watch colour checks for each new implementation.
 
 ## Efficiency and optimization
 

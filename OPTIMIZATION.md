@@ -16,16 +16,17 @@ Optimize from what the watch actually does. A small APK, a passing validator, th
 | 2026-10-25 | REDLINE 1.0.0 | Smooth and performant; up to ~1 s pause before motion after unlock/swipe | user report |
 | 2026-10-29 (recorded) | NEXUS 0.1.0 | "Looks really good" at default settings/all effects; motion is not smooth enough. Preserve the design and optimize performance | user report |
 | 2026-10-29 | NEXUS, following 0.1.1 delivery | "Looks good"; Galaxy Wearable times out **opening** Customize, while on-watch customization works reliably. Exact installed build, firmware and phone app version not supplied | user report |
+| 2026-10-29 | NEXUS 0.1.2 | “That fixed it, it's perfect now.” Phone editor repair accepted; user requests this as the seamless-experience checkpoint for future faces | user report |
 
 No controlled trace, frame-rate or battery measurement has been collected yet.
 
-## NEXUS 0.1.2 companion-editor candidate
+## NEXUS 0.1.2 accepted companion-editor checkpoint
 
 The observed failure is phone editor startup, not broken on-watch setting selection. Excessive inactive scene duplication is a hypothesis; no Samsung logs establish the cause. Share interactive clocks/readouts across the eight palettes using WFF 4 configuration-only RGB colour transforms. Leave all editor IDs/options/defaults, bitmap assets, exact clock sizes/boxes, decoration/motion and literal ambient trees unchanged. One stationary clock tint group replaces palette-specific clock copies; text has no per-frame colour expression.
 
-XML falls **446,460 → 250,138 bytes (44.0%)**, elements **6,819 → 3,423 (49.8%)**, clock declarations **480 → 102 (78.8%)**, and Conditions **458 → 234**. Resolved drawing instructions match the deployed baseline for **3,776 interactive + 48 ambient states**, including all palette/font/glow/size combinations and the battery warning boundary. This checks instruction equivalence; it does not prove identical device rasterization, faster editor loading, FPS or battery savings. The tint group's runtime cost and Samsung compatibility need device testing.
+XML falls **446,460 → 250,138 bytes (44.0%)**, elements **6,819 → 3,423 (49.8%)**, clock declarations **480 → 102 (78.8%)**, and Conditions **458 → 234**. Resolved drawing instructions match the deployed baseline for **3,776 interactive + 48 ambient states**, including all palette/font/glow/size combinations and the battery warning boundary. This checks instruction equivalence; it does not prove identical device rasterization, faster editor loading, FPS or battery savings. The user subsequently accepted the phone editor repair; exact renderer cost remains unmeasured.
 
-See [verification](faces/nexus/VERIFICATION.md). Official references document [Group tint transforms in WFF 4](https://developer.android.com/reference/wear-os/wff/group/group), [BitmapFont colour transforms](https://developer.android.com/reference/wear-os/wff/group/part/text/bitmap-font), and [typed RGB/ternary expressions](https://developer.android.com/reference/wear-os/wff/common/attributes/arithmetic-expression). Keep this approach opt-in until the phone test confirms it.
+See [verification](faces/nexus/VERIFICATION.md). Official references document [Group tint transforms in WFF 4](https://developer.android.com/reference/wear-os/wff/group/group), [BitmapFont colour transforms](https://developer.android.com/reference/wear-os/wff/group/part/text/bitmap-font), and [typed RGB/ternary expressions](https://developer.android.com/reference/wear-os/wff/common/attributes/arithmetic-expression). The user confirmed the repair on 2026-10-29. Use this approach as the default starting point for new faces, with independent device acceptance; preserve existing accepted faces. See [checkpoint identity and requirements](docs/CHECKPOINT-NEXUS-0.1.2.md).
 
 ## NEXUS 0.1.1 optimization candidate
 
@@ -67,4 +68,4 @@ Commit a reviewed summary under `measurements/reviewed/` and add a row here. Inc
 
 | Change | Device/build | Evidence | Result | Confidence | Guidance |
 |---|---|---|---|---|---|
-| none yet | — | — | — | — | measure before claiming |
+| Share palette-independent text; retain cropped/merged artwork and live-clock motion | Galaxy Watch7 40 mm / NEXUS 0.1.2 | User confirmation, 2026-10-29; local checks above | Phone Customize timeout fixed; experience accepted as checkpoint | User-accepted on this setup; exact firmware/timing unreported | Baseline for future faces; validate each on-device |
