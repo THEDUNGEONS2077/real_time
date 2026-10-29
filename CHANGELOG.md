@@ -1,5 +1,12 @@
 # Changelog
 
+## NEXUS 0.1.2 (build 3)
+
+- Candidate for Galaxy Wearable timing out when opening Customize; the user reports that on-watch editing works reliably. Excessive scene duplication is a suspected contributor, not an established cause.
+- Share interactive clocks and readouts across palettes using WFF 4 typed RGB transforms driven only by the existing palette setting. Keep all controls/icons/defaults, clock geometry, glyphs, motion and static ambient unchanged. No indexed theme-colour lookup is used.
+- Reduce XML by 44.0%, total elements by 49.8% and clock declarations from 480 to 102. Compare 3,776 interactive and 48 ambient states against drawing-instruction hashes from released 0.1.1.
+- Existing installer 0.7.2 installs the update; no re-pairing, reset or installer update is needed. Phone editor opening, colour rendering, Save/persistence and motion still require device acceptance for this candidate.
+
 ## NEXUS 0.1.1 (build 2)
 
 - Optimize the accepted design with every effect still enabled by default. Layout, colours, fonts, settings IDs, real seconds and decorative motion rates are unchanged.

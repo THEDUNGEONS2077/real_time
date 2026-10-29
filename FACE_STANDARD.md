@@ -54,6 +54,8 @@ Device acceptance is a separate gate. A build cannot be called fully functional 
 
 Record exact face and installer versions, watch firmware, choices and results. For a failure, record the exact reproduction. Do not clear app data, remove pairing or reset the watch as a routine workaround.
 
+Track total parsed scene size as well as the selected drawing count. NEXUS's on-watch controls worked while Galaxy Wearable timed out opening Customize after 0.1.1 delivery. Inactive palette × font × glow × size copies can multiply the definition the companion must load. Share independent text where supported, retain stable setting IDs/icons and compare resolved drawing instructions before changing an accepted face. The 0.1.2 configuration-only RGB/tint approach is a candidate, not a proven Samsung fix; require phone open/Save/reopen and on-watch colour checks before adopting it in another face.
+
 ## Efficiency and optimization
 
 Every new face reads `OPTIMIZATION.md`. The user judges smoothness and performance on the watch; compare one change at a time under the same settings, and record their observations there.

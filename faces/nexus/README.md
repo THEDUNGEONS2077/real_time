@@ -2,7 +2,7 @@
 
 An original command-deck face for the Galaxy Watch7 40 mm, Wear OS 6. NEXUS combines the family's visual ideas around a large, stationary clock rather than reproducing a desktop wallpaper.
 
-Version **0.1.1, build 2** is a local optimization candidate. Package: `com.thedungeons2077.realtime.nexus`; release tag when approved: `nexus-v0.1.1`. Version 0.1.0 is published; the user likes its appearance at default settings but requests smoother motion. The new build preserves the design and awaits a watch comparison.
+Version **0.1.2, build 3** is a local companion-editor repair candidate. Package: `com.thedungeons2077.realtime.nexus`; release tag when approved: `nexus-v0.1.2`. Version 0.1.1 is published. Following that delivery, the user reports that the face looks good and on-watch customization works, but Galaxy Wearable times out opening Customize. The new build reduces scene duplication; phone acceptance is pending.
 
 ![NEXUS, Fusion palette](src/main/res/drawable-nodpi/preview.png)
 
@@ -33,7 +33,7 @@ The clock stays centred at (216,216), with tight glyph advances and no inserted 
 | Motion speed | STILL, **SLOW 0.5×**, STANDARD 1×, FAST 2× |
 | Effects | Mechanical ring, code orbit, circuit signals, bezel sweep, glass light, seconds mark; **all on** |
 
-Both editors get captioned PNG tiles and accessibility labels. Palette tiles show both hues. IDs are stable; the scene selects options with Conditions and literal colours. The readout font follows the clock. Battery turns to the palette's warning colour at 15% or below. Time follows the watch's 12/24-hour setting.
+Both editors get captioned PNG tiles and accessibility labels. Palette tiles show both hues. IDs are stable; Conditions select scene branches. Decoration and ambient use literal colours; shared interactive text uses configuration-only WFF 4 RGB transforms, with no indexed theme-colour references. The readout font follows the clock. Battery turns to the palette's warning colour at 15% or below. Time follows the watch's 12/24-hour setting.
 
 Select Timer once in the complication editor. Until configured, the tile says SET TIMER. Afterwards it shows the selected provider's actual text, image or progress and uses that provider's tap action. Timer availability and tap behaviour need watch acceptance; Alarm is never substituted.
 
@@ -53,6 +53,7 @@ Ambient is the selected font's crisp, dim static time on black, with all decorat
 node tools/compose/src/build.ts --face nexus
 node tools/check/nexus.ts
 node tools/check/nexus-optimization.ts
+python3 -I tools/check/nexus-editor.py
 bash scripts/release-wear.sh --face nexus --verify-only
 bash scripts/release-diagnostics.sh --verify-only
 ```
@@ -63,9 +64,9 @@ Local verification results are in [VERIFICATION.md](VERIFICATION.md). Existing H
 
 ## Phone installation and acceptance
 
-Install **real_time installer 0.7.2 or later** on the phone first: older versions intentionally reject unknown NEXUS packages. Updating the installer keeps existing pairing. Choose `real_time-nexus-v0.1.1.apk`, check the NEXUS/version label and tap INSTALL TO WATCH. Add NEXUS from the watch's face picker. See [phone instructions](../../diagnostics/phone/README.md); the PC never connects to the watch.
+Use **real_time installer 0.7.2 or later** on the phone: older versions intentionally reject unknown NEXUS packages. Choose `real_time-nexus-v0.1.2.apk`, check the NEXUS/version label and tap INSTALL TO WATCH. This updates the existing face without uninstalling or re-pairing; setting IDs remain stable. See [phone instructions](../../diagnostics/phone/README.md); the PC never connects to the watch.
 
-The user has accepted the general appearance of 0.1.0 on the watch at default settings. Smoothness was insufficient. Compare 0.1.1 with the same settings, brightness and power mode, including timeout/wake and switching away/back; record an improvement only after that observation. The detailed controls/provider checks below are still pending unless separately reported:
+The user reports good appearance and reliable on-watch customization following 0.1.1 delivery. The phone fails while opening Customize. For 0.1.2, first open Galaxy Wearable Customize three times, change/save Fusion → Blood → Outrun, and close/reopen to verify persistence and agreement with the watch. Check clock/date/battery colours specifically because their tinting implementation changed. Then check font/glow/size and motion after editor exit and a face switch. Record the exact installed face version, phone app version, watch firmware and approximate opening time. No reset or re-pairing is part of this test. Detailed acceptance remains:
 
 - First application and both editor previews render correctly; time/date/battery remain readable on the 40 mm screen.
 - Every colour, font, size, glow, speed and effect works in Galaxy Wearable and on the watch; Save persists, Cancel preserves the previous selection, and both editors agree.

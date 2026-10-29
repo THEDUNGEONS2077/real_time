@@ -111,6 +111,11 @@ describe('NEXUS artwork and layout', () => {
 });
 
 describe('NEXUS release contracts', () => {
+  it('preserves the deployed drawing and editor contract while sharing text across palettes', async () => {
+    const result = await exec('python3', ['-I', resolve(root, 'tools/check/nexus-editor.py')]);
+    expect(JSON.parse(result.stdout)).toMatchObject({ interactiveStates: 3776, ambientStates: 48 });
+  }, 30000);
+
   it('passes the selected-tree editor and ambient checker', async () => {
     const result = await exec('python3', ['-I', resolve(root, 'tools/check/verify_editor.py'), '--resources', resolve(root, 'faces/nexus/src/main/res')]);
     expect(JSON.parse(result.stdout)).toMatchObject({ settings: 11, packaged: false });

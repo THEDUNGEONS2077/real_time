@@ -15,8 +15,17 @@ Optimize from what the watch actually does. A small APK, a passing validator, th
 | 2026-10-25 | REDLINE 0.3.0 | "Looks very smooth" (clock-refreshed 60 fps transitions) | user report |
 | 2026-10-25 | REDLINE 1.0.0 | Smooth and performant; up to ~1 s pause before motion after unlock/swipe | user report |
 | 2026-10-29 (recorded) | NEXUS 0.1.0 | "Looks really good" at default settings/all effects; motion is not smooth enough. Preserve the design and optimize performance | user report |
+| 2026-10-29 | NEXUS, following 0.1.1 delivery | "Looks good"; Galaxy Wearable times out **opening** Customize, while on-watch customization works reliably. Exact installed build, firmware and phone app version not supplied | user report |
 
 No controlled trace, frame-rate or battery measurement has been collected yet.
+
+## NEXUS 0.1.2 companion-editor candidate
+
+The observed failure is phone editor startup, not broken on-watch setting selection. Excessive inactive scene duplication is a hypothesis; no Samsung logs establish the cause. Share interactive clocks/readouts across the eight palettes using WFF 4 configuration-only RGB colour transforms. Leave all editor IDs/options/defaults, bitmap assets, exact clock sizes/boxes, decoration/motion and literal ambient trees unchanged. One stationary clock tint group replaces palette-specific clock copies; text has no per-frame colour expression.
+
+XML falls **446,460 → 250,138 bytes (44.0%)**, elements **6,819 → 3,423 (49.8%)**, clock declarations **480 → 102 (78.8%)**, and Conditions **458 → 234**. Resolved drawing instructions match the deployed baseline for **3,776 interactive + 48 ambient states**, including all palette/font/glow/size combinations and the battery warning boundary. This checks instruction equivalence; it does not prove identical device rasterization, faster editor loading, FPS or battery savings. The tint group's runtime cost and Samsung compatibility need device testing.
+
+See [verification](faces/nexus/VERIFICATION.md). Official references document [Group tint transforms in WFF 4](https://developer.android.com/reference/wear-os/wff/group/group), [BitmapFont colour transforms](https://developer.android.com/reference/wear-os/wff/group/part/text/bitmap-font), and [typed RGB/ternary expressions](https://developer.android.com/reference/wear-os/wff/common/attributes/arithmetic-expression). Keep this approach opt-in until the phone test confirms it.
 
 ## NEXUS 0.1.1 optimization candidate
 

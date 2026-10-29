@@ -15,6 +15,7 @@ is over 170,000), so states are chosen to cover every interaction that matters:
 """
 import argparse
 import base64
+import copy
 import itertools
 import json
 import math
@@ -107,22 +108,55 @@ def evaluate(expression, state):
     raise ValueError('Unsupported condition: ' + expression)
 
 
-def selected(node, state, ambient=False):
+def colour_value(expression, state):
+    """Read only literal RGB colours and configuration ternaries; never execute XML."""
+    expression = expression.strip()
+    if expression.startswith('(') and expression.endswith(')'):
+        return colour_value(expression[1:-1], state)
+    rgb = re.fullmatch(r'colorRgb\((\d+),(\d+),(\d+)\)', expression)
+    if rgb:
+        channels = [int(c) for c in rgb.groups()]
+        require(all(0 <= c <= 255 for c in channels), 'Colour channel outside RGB range.')
+        return '#' + ''.join(format(c, '02x') for c in channels)
+    choice = re.fullmatch(r'(\[CONFIGURATION\.[a-z_]+\] == "[A-Z0-9_]+") \? (colorRgb\(\d+,\d+,\d+\)) : (.+)', expression)
+    require(choice is not None, 'Unsupported colour expression: ' + expression)
+    return colour_value(choice[2] if evaluate(choice[1], state) else choice[3], state)
+
+
+def selected(node, state, ambient=False, tint=None):
     """Visible nodes for a state: resolve Conditions and drop subtrees whose alpha is 0."""
     if node.tag == 'Condition':
         expressions = {e.get('name'): (e.text or '') for e in node.findall('Expressions/Expression')}
         for branch in node.findall('Compare'):
             if evaluate(expressions[branch.get('expression')], state):
-                return [n for child in branch for n in selected(child, state, ambient)]
+                return [n for child in branch for n in selected(child, state, ambient, tint)]
         default = node.find('Default')
-        return [] if default is None else [n for child in default for n in selected(child, state, ambient)]
+        return [] if default is None else [n for child in default for n in selected(child, state, ambient, tint)]
     alpha = node.get('alpha', '255')
     for variant in node.findall('Variant'):
         if ambient and variant.get('mode') == 'AMBIENT' and variant.get('target') == 'alpha':
             alpha = variant.get('value')
     if alpha == '0':
         return []
-    return [node] + [n for child in node if child.tag not in ('Variant', 'Expressions') for n in selected(child, state, ambient)]
+    if node.tag == 'Group' and node.get('tintColor'):
+        require(tint is None, 'Nested group tints need a separate compositing check.')
+        tint = node.get('tintColor')
+        for transform in node.findall('Transform'):
+            if transform.get('target') == 'tintColor':
+                tint = colour_value(transform.get('value'), state)
+    if node.tag in ('TimeText', 'PartText'):
+        # Resolve configuration-only colour changes on a copy. Geometry and the
+        # original XML stay intact, including the ambient no-transform check.
+        node = copy.deepcopy(node)
+        for font in node.iter('BitmapFont'):
+            for transform in font.findall('Transform'):
+                if transform.get('target') == 'color':
+                    font.set('color', colour_value(transform.get('value'), state))
+            if tint:
+                require(font.get('color').lower() == '#ffffff', 'Shared tinted clock must use white glyphs.')
+                font.set('color', tint)
+        tint = None
+    return [node] + [n for child in node if child.tag not in ('Variant', 'Expressions') for n in selected(child, state, ambient, tint)]
 
 
 def check_state(active, state):
