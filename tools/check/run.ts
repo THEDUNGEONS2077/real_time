@@ -81,3 +81,5 @@ const { jarvisPreviews } = await import('./jarvis.ts');
 await jarvisPreviews();
 const { reactorPreviews } = await import('./reactor.ts');
 await reactorPreviews();
+const { vectorPreviews } = await import('./vector.ts');
+await vectorPreviews();

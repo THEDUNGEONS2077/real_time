@@ -4,6 +4,7 @@ Moving sci-fi HUD watch faces for the Samsung Galaxy Watch7 40 mm (Wear OS 6). E
 
 | Face | Status | Docs |
 |---|---|---|
+| **VECTOR** 0.1.0 candidate | Flight-instrument HUD with cyan course rails, amber chevrons and accepted rendering/editor architecture | [faces/vector/README.md](faces/vector/README.md) |
 | **REACTOR** 0.1.0 | User-accepted design and running performance; titanium containment HUD, amber energy and red accents | [faces/reactor/README.md](faces/reactor/README.md) |
 | **JARVIS** 0.1.0 | User-accepted cyan turbine HUD; motion and phone customization confirmed as seamless as NEXUS | [faces/jarvis/README.md](faces/jarvis/README.md) |
 | **NEXUS** 0.1.2 | User-accepted checkpoint: phone customization timeout resolved; responsiveness baseline for future faces | [faces/nexus/README.md](faces/nexus/README.md) |
@@ -22,6 +23,8 @@ The [2026-10-28 takeover review](docs/HANDOVER-2026-10-28.md) traces the latest 
 JARVIS needs installer **0.7.3** or later; update the helper on the phone before selecting its APK. Pairing is preserved.
 
 REACTOR needs installer **0.7.4** or later. Update the helper over the existing installation to keep pairing.
+
+VECTOR needs installer **0.7.5** or later. Its local gallery is `out/previews/vector/index.html`; phone/watch acceptance remains pending.
 
 ## Develop
 

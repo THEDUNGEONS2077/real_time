@@ -18,6 +18,7 @@ tools/compose/
   faces/nexus/          design.ts · masks.ts · artwork.ts (packed scenes) · editor.ts · render.ts · preview.ts · resources.ts
   faces/jarvis/         independent circular-instrument design using the accepted NEXUS packing/editor approach
   faces/reactor/        independent armoured energy-instrument design using the same accepted architecture
+  faces/vector/         independent flight-instrument design with open brackets and decorative navigation rings
   halo/                 HALO's frozen generator (byte-identical; no new features)
   fonts/                committed OFL fonts with their licences
 tools/check/            review gallery, release checker (verify_editor.py), packaged-pixel comparison
@@ -73,7 +74,7 @@ NEXUS 0.1.2 shares its interactive clock/readouts across palettes to reduce comp
 `python3 -I tools/check/nexus-editor.py` compares 3,776 interactive states and all 48 palette/font ambient states against drawing-instruction hashes recorded from released 0.1.1. It checks resolved colours, text geometry, motion, painter order, the entire editor catalogue and unknown-palette fallback. The fixture is independent of the current generator. These are instruction-equivalence checks, not renderer screenshots or measured editor latency.
 
 - **`npm run check`:** typecheck, vitest, byte-for-byte resource reproduction and the preview gallery. The gallery enforces under 10% ambient lit pixels for every font.
-- **`tools/check/verify_editor.py`:** picks a profile by face name (REDLINE, CIPHER, NEXUS); a new face adds its own. For REDLINE it resolves Conditions for 1,279 editor states and asserts what the watch would draw. The states cover every option, every font × glow × size, every speed × style × effect combination, and a fixed-seed random sample. It also checks every BitmapFont character against its PNG size, and the Timer slot's types, bounds and empty default. With `--apk` it compares packaged resources through AAPT2's resource table, because AAPT2 renames ZIP paths.
+- **`tools/check/verify_editor.py`:** picks a profile by face name (REDLINE, CIPHER, NEXUS, JARVIS, REACTOR, VECTOR); a new face adds its own. For REDLINE it resolves Conditions for 1,279 editor states and asserts what the watch would draw. The states cover every option, every font × glow × size, every speed × style × effect combination, and a fixed-seed random sample. It also checks every BitmapFont character against its PNG size, and the Timer slot's types, bounds and empty default. With `--apk` it compares packaged resources through AAPT2's resource table, because AAPT2 renames ZIP paths.
 - **`scripts/release-wear.sh`:** adds Google's WFF validator, lint, signature, no-code and no-permission checks, and the official memory evaluator.
 
 ## Phone installer
@@ -86,4 +87,4 @@ NEXUS 0.1.2 shares its interactive clock/readouts across palettes to reduce comp
 
 ## Release tags
 
-HALO uses `v*`; REDLINE uses `redline-v*`; CIPHER uses `cipher-v*`; NEXUS uses `nexus-v*`; JARVIS uses `jarvis-v*`; REACTOR uses `reactor-v*`; the installer uses `diagnostics-v*`. Each has its own monotonic versionCode.
+HALO uses `v*`; REDLINE uses `redline-v*`; CIPHER uses `cipher-v*`; NEXUS uses `nexus-v*`; JARVIS uses `jarvis-v*`; REACTOR uses `reactor-v*`; VECTOR uses `vector-v*`; the installer uses `diagnostics-v*`. Each has its own monotonic versionCode.

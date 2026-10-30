@@ -47,6 +47,9 @@ public final class FaceApkTest {
     @Test public void actualPackagedReactorResolvesItsWatchfaceResource() throws Exception {
         inspectPackaged(new File(System.getProperty("reactor.selection.fixture")));
     }
+    @Test public void actualPackagedVectorResolvesItsWatchfaceResource() throws Exception {
+        inspectPackaged(new File(System.getProperty("vector.selection.fixture")));
+    }
     private void inspectPackaged(File apk) throws Exception {
         assertTrue("A packaged face fixture is required", apk.isFile());
         // AAPT2 is a trusted SDK tool reading our built APK, never code from a diagnostic export.

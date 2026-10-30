@@ -4,7 +4,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 public final class FaceCatalogTest {
     @Test public void knownFacesRoundTripWithoutAdmittingOtherApps() {
-        for (String face : new String[]{"HALO", "REDLINE", "CIPHER", "NEXUS", "JARVIS", "REACTOR"}) assertEquals(face, FaceCatalog.name(FaceCatalog.packageName(face)));
+        for (String face : new String[]{"HALO", "REDLINE", "CIPHER", "NEXUS", "JARVIS", "REACTOR", "VECTOR"}) assertEquals(face, FaceCatalog.name(FaceCatalog.packageName(face)));
         assertThrows(IllegalArgumentException.class, () -> FaceCatalog.name("com.thedungeons2077.realtime.diagnostics"));
         assertNull(FaceCatalog.packageName("stock"));
     }

@@ -16,8 +16,8 @@ android {
         applicationId = "com.thedungeons2077.realtime.diagnostics"
         minSdk = 33
         targetSdk = 36
-        versionCode = 16
-        versionName = "0.7.4"
+        versionCode = 17
+        versionName = "0.7.5"
         buildConfigField("String", "SOURCE_COMMIT", "\"${providers.exec { commandLine("git", "rev-parse", "HEAD") }.standardOutput.asText.get().trim()}\"")
         buildConfigField("String", "FACE_CERT_SHA256", "\"${rootProject.file("signing-certificate.sha256").readText().trim()}\"")
         // Conscrypt ships native code; only ARM64 phones are supported.
@@ -46,6 +46,7 @@ tasks.withType<Test>().configureEach {
     dependsOn(":faces:nexus:assembleDebug")
     dependsOn(":faces:jarvis:assembleDebug")
     dependsOn(":faces:reactor:assembleDebug")
+    dependsOn(":faces:vector:assembleDebug")
     val fixture = providers.gradleProperty("haloSelectionFixture").orElse(rootProject.file("faces/halo/build/outputs/apk/debug/halo-debug.apk").absolutePath)
     inputs.file(fixture)
     systemProperty("halo.selection.fixture", fixture.get())
@@ -61,6 +62,9 @@ tasks.withType<Test>().configureEach {
     val reactorFixture = rootProject.file("faces/reactor/build/outputs/apk/debug/reactor-debug.apk")
     inputs.file(reactorFixture)
     systemProperty("reactor.selection.fixture", reactorFixture.absolutePath)
+    val vectorFixture = rootProject.file("faces/vector/build/outputs/apk/debug/vector-debug.apk")
+    inputs.file(vectorFixture)
+    systemProperty("vector.selection.fixture", vectorFixture.absolutePath)
     systemProperty("halo.selection.aapt2", File(android.sdkDirectory, "build-tools/36.0.0/aapt2").absolutePath)
 }
 dependencies {

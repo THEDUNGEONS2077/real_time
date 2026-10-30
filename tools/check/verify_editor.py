@@ -36,6 +36,13 @@ import zipfile
 #   clock_scale:    optional face-specific fit within its clock aperture
 #   readout_rows:   optional date/battery top coordinates, independent of slot-relative text
 PROFILES = {
+    'VECTOR': dict(
+        effects={'outer_rotor': ['outer_rotor'], 'inner_rotor': ['inner_rotor'],
+                 'sweep': ['radar_sweep'], 'core_glow': ['core_glow'], 'seconds': ['seconds_mark']},
+        defaults={'motion_speed': 'SLOW', 'clock_font': 'OXANIUM', 'clock_size': 'MEDIUM', 'glow': 'LOW', 'palette': 'NAV'},
+        system_fonts=set(), inner_radius=174, max_parts=18, clock_scale=0.85, readout_rows=(112, 282),
+        inks={'NAV': '#e0f5ff', 'ICE': '#ecfaff', 'PHOSPHOR': '#e5ffef', 'EMBER': '#fff0dc', 'VIOLET': '#f0eaff', 'MONO': '#f0f7fc'},
+        warning='#ff745c', motion_tags={'Group', 'PartImage'}),
     'REACTOR': dict(
         effects={'outer_rotor': ['outer_rotor'], 'inner_rotor': ['inner_rotor'],
                  'sweep': ['radar_sweep'], 'core_glow': ['core_glow'], 'seconds': ['seconds_mark']},

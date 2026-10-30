@@ -2,7 +2,7 @@
 
 A small Android app for the **phone** (ARM64, Android 13+). It sends real_time watch-face APKs to the watch. Install it by opening its APK on the phone. Updating over the old "real_time diagnostics" app keeps your pairing.
 
-Installer **0.7.4** adds REACTOR to the accepted face catalogue, alongside HALO, REDLINE, CIPHER, NEXUS and JARVIS. Update the installer on the phone before choosing a REACTOR APK; older versions reject that unknown package. Install over the existing helper to retain pairing. This update changes only the catalogue; installation checks, transport, privacy and permissions stay the same.
+Installer **0.7.5** adds VECTOR to the accepted face catalogue, alongside HALO, REDLINE, CIPHER, NEXUS, JARVIS and REACTOR. Update the installer on the phone before choosing a VECTOR APK; older versions reject that unknown package. Install over the existing helper to retain pairing. This update changes only the catalogue; installation checks, transport, privacy and permissions stay the same.
 
 ## First time: pair
 

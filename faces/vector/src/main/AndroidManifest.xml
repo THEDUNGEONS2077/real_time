@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Packaging layer: the Wear OS renderer owns execution; this APK has no code. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+    <uses-feature android:name="android.hardware.type.watch" android:required="true" />
+    <!-- There is no application data to transfer; the existing backup flag is sufficient. -->
+    <application android:label="@string/face_name" android:icon="@drawable/preview" android:hasCode="false" android:allowBackup="false" tools:ignore="DataExtractionRules">
+        <property android:name="com.google.wear.watchface.format.version" android:value="4" />
+        <!-- AGP 8.12 lint still requires this flag, although current WFF guidance makes it optional. -->
+        <meta-data android:name="com.google.android.wearable.standalone" android:value="true" />
+    </application>
+</manifest>

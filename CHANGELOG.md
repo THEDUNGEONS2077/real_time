@@ -1,5 +1,17 @@
 # Changelog
 
+## VECTOR 0.1.0 (build 1)
+
+- New flight-instrument HUD: ice-blue course rails, amber vector chevrons, open wing brackets and a pulsing diamond reticle. Large fixed time, date and battery remain clear of moving decoration; navigation marks are decorative.
+- Six palettes, four fonts, three clock sizes/glow levels, four speeds and five independent effects. Default Slow/all on; real-time seconds, editable provider shortcut and minimal static ambient.
+- Reuse accepted REACTOR/NEXUS compact editing, explicit RGB text and cropped/merged baked artwork. Existing faces remain unchanged. No executable code, permissions or runtime blur in the face.
+- Requires installer 0.7.5. Local verification does not establish delivered performance; phone/watch acceptance remains pending.
+
+## Installer 0.7.5 (build 17)
+
+- Add VECTOR to the explicit face catalogue and test selection through its actual AAPT2-packaged resource table.
+- Retain pairing, explicit APK selection/install, signature/code/permission checks, private-LAN transport, bounded streaming and installed-version verification. No new permissions, diagnostics, background components or uploads.
+
 ## REACTOR acceptance — 2026-10-30
 
 - User confirms REACTOR 0.1.0 “looks and runs amazing” and endorses the design direction. Record its published identity as a design/performance checkpoint alongside the NEXUS editor baseline.
