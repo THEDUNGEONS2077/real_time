@@ -1,6 +1,6 @@
 # REACTOR 0.1.0 — local verification
 
-Reviewed 2026-10-30. Resource-only WFF 4/API 36, 432×432 coordinates, build 1. Independent package `com.thedungeons2077.realtime.reactor`. Publication and device acceptance pending. The implementation follows accepted NEXUS/JARVIS architecture; acceptance of those faces does not establish this new face's delivered performance.
+Reviewed 2026-10-30. Resource-only WFF 4/API 36, 432×432 coordinates, build 1. Independent package `com.thedungeons2077.realtime.reactor`. Published as `reactor-v0.1.0` from `171cfe96ac21bbd8e57c203a084b5a816a4a67f1`; uploaded APK and provenance files were downloaded and verified against the local artifacts. The user subsequently confirmed the face “looks and runs amazing”, accepting its design and perceived running performance. See the [checkpoint](../../docs/CHECKPOINT-REACTOR-0.1.0.md).
 
 | Check | Result |
 |---|---|
@@ -30,4 +30,4 @@ Toolchain remains AGP 8.12.0, Gradle 8.13, JDK 17, SDK/build-tools 36. Google va
 
 Reproduce with `bash scripts/release-wear.sh --face reactor --verify-only`. Reports: `out/verification/reactor`; gallery: `out/previews/reactor/index.html`; signed APK: `dist/real_time-reactor-v0.1.0.apk`. Installer 0.7.4 adds the new package and is verified separately with `bash scripts/release-diagnostics.sh --verify-only`.
 
-Phone opening/Save/reopen, perceived smoothness after wake/face switches, Timer availability and individual live-field behaviour remain device acceptance items. Compare with the accepted faces using the [phone checklist](README.md#phone-installation-and-acceptance). Local checks involved no watch-PC connection or publication.
+The general design/running-performance experience is accepted. Phone opening/Save/reopen, specific wake/face-switch behaviour, Timer availability and individual live fields remain separately unreported. Use the [phone checklist](README.md#phone-installation-and-acceptance) for those details and future regression checks. No numerical FPS, latency or battery result is implied, and no watch-PC connection was used.

@@ -6,6 +6,8 @@ REDLINE establishes the shared architecture and design language for every new fa
 
 ## Visual and interaction principles
 
+REACTOR 0.1.0's appearance and running performance were accepted on 2026-10-30, with the user requesting this direction continue. Use its [design/performance checkpoint](docs/CHECKPOINT-REACTOR-0.1.0.md) alongside NEXUS's editor baseline: strong readable centres, detailed mechanical framing, restrained light and efficient motion, with a distinct visual identity for each face.
+
 - Make the time the clearest fixed element. Respect the watch's 12/24-hour setting. Size and place every other instrument around it; never let motion, readouts or a complication obscure it. Centre visible ink on both axes, including narrow times such as 11:11: use tight per-character cell widths (`layoutFace`), not fixed cells or added tracking. A deliberately fixed-cell font (an LCD) must say so.
 - Use a dark background, hierarchical accent colours, fine mechanical detail and intentional negative space. New styles may reinterpret this HUD language rather than copy REDLINE's exact rings, red palette or instrument positions.
 - Use counter-motion and bounded depth to communicate mechanical structure. Keep time, live readouts and touch targets stationary. Seconds keep real time at every decorative speed.

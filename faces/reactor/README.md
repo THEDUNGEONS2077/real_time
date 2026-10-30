@@ -2,7 +2,7 @@
 
 An original industrial HUD for the Galaxy Watch7 40 mm / Wear OS 6: dark titanium containment plates, amber energy cells, restrained red tension latches and a large fixed clock. Two counter-rotating rings pass behind an opaque armoured bridge; a small upper hexagonal core and shoulder lights breathe quietly. No moving decoration crosses the live information.
 
-**0.1.0, build 1**, package `com.thedungeons2077.realtime.reactor`, proposed tag `reactor-v0.1.0`. Local candidate; publication and device acceptance pending. Rendering and editor architecture follow the [accepted NEXUS checkpoint](../../docs/CHECKPOINT-NEXUS-0.1.2.md) and user-accepted JARVIS. Existing faces remain unchanged.
+**0.1.0, build 1**, package `com.thedungeons2077.realtime.reactor`, published tag `reactor-v0.1.0`. On 2026-10-30 the user confirmed: **“It looks and runs amazing! Continue in the direction you are heading!”** Design and perceived running performance are accepted; see the [exact checkpoint and evidence scope](../../docs/CHECKPOINT-REACTOR-0.1.0.md). Rendering and editor architecture follow the [accepted NEXUS checkpoint](../../docs/CHECKPOINT-NEXUS-0.1.2.md) and user-accepted JARVIS. Existing faces remain unchanged.
 
 ![REACTOR Ember preview](src/main/res/drawable-nodpi/preview.png)
 
@@ -48,4 +48,4 @@ Open `out/previews/reactor/index.html` directly. It includes every palette/font/
 4. Repeatedly open Galaxy Wearable Customize; verify icons, changes, Save/reopen, Cancel and agreement with on-watch editing. Check clock/date/battery colours, fonts, sizes and glow.
 5. Check readable 12/24-hour time, midnight/date rollover, battery warning, provider content/tap and minimal ambient. Record unavailable Timer support explicitly.
 
-Record exact versions, firmware and user observations. Resolve regressions before accepting REACTOR as equally seamless. No reset, re-pairing, PC-to-watch connection or added diagnostics is part of this workflow.
+The user's general design/performance acceptance is recorded; the detailed checklist above remains available for unreported behaviours and future regression checks. Record exact versions, firmware and observations when supplied. No reset, re-pairing, PC-to-watch connection or added diagnostics is part of this workflow.

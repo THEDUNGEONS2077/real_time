@@ -1,11 +1,16 @@
 # Changelog
 
+## REACTOR acceptance — 2026-10-30
+
+- User confirms REACTOR 0.1.0 “looks and runs amazing” and endorses the design direction. Record its published identity as a design/performance checkpoint alongside the NEXUS editor baseline.
+- Documentation only; no binary, resource or version changes. General experience acceptance does not imply exhaustive editor/provider/lifecycle coverage or measured FPS/battery results.
+
 ## REACTOR 0.1.0 (build 1)
 
 - New industrial HUD with titanium containment plates, amber energy cells, red latches and a fixed armoured clock bridge. Counter-rotating rings remain behind opaque shields; small core/shoulder lights pulse subtly.
 - Six palettes, four fonts, three sizes/glow levels, four speeds and five independent effects. Default Slow/all on; real-time seconds, fixed date/battery, editable provider shortcut and minimal ambient.
 - Reuse accepted NEXUS/JARVIS compact editing, explicit RGB text, cropped/merged artwork and live-clock motion. Existing faces unchanged; no executable code, permissions, runtime blur or materials shader in the face.
-- Installer 0.7.4 is required. Local structural checks do not establish device responsiveness; comparison with the accepted faces remains pending.
+- Installer 0.7.4 is required. The user subsequently accepted the design and running performance on 2026-10-30; detailed device checks remain unreported.
 
 ## Installer 0.7.4 (build 16)
 

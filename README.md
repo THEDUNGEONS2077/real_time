@@ -4,7 +4,7 @@ Moving sci-fi HUD watch faces for the Samsung Galaxy Watch7 40 mm (Wear OS 6). E
 
 | Face | Status | Docs |
 |---|---|---|
-| **REACTOR** 0.1.0 candidate | Titanium containment HUD, amber energy and red accents; accepted NEXUS/JARVIS architecture | [faces/reactor/README.md](faces/reactor/README.md) |
+| **REACTOR** 0.1.0 | User-accepted design and running performance; titanium containment HUD, amber energy and red accents | [faces/reactor/README.md](faces/reactor/README.md) |
 | **JARVIS** 0.1.0 | User-accepted cyan turbine HUD; motion and phone customization confirmed as seamless as NEXUS | [faces/jarvis/README.md](faces/jarvis/README.md) |
 | **NEXUS** 0.1.2 | User-accepted checkpoint: phone customization timeout resolved; responsiveness baseline for future faces | [faces/nexus/README.md](faces/nexus/README.md) |
 | **REDLINE** 1.1 | Black/red concentric HUD. 8 clock fonts, glow and size, 6 palettes, 4 speeds, 3 rotation styles, 6 effects, Timer complication | [faces/redline/README.md](faces/redline/README.md) |
@@ -14,6 +14,8 @@ Moving sci-fi HUD watch faces for the Samsung Galaxy Watch7 40 mm (Wear OS 6). E
 The [phone installer](diagnostics/phone/README.md) sends a face APK from the phone to the watch. New faces follow [FACE_STANDARD.md](FACE_STANDARD.md). See [ARCHITECTURE.md](ARCHITECTURE.md) for how the generator works and [OPTIMIZATION.md](OPTIMIZATION.md) for what has been measured.
 
 Use the [NEXUS 0.1.2 checkpoint](docs/CHECKPOINT-NEXUS-0.1.2.md) for the next face's rendering/editor architecture and seamless-experience acceptance target.
+
+Carry forward the [REACTOR 0.1.0 design/performance checkpoint](docs/CHECKPOINT-REACTOR-0.1.0.md), accepted by the user on 2026-10-30. Preserve these releases while developing distinct future faces.
 
 The [2026-10-28 takeover review](docs/HANDOVER-2026-10-28.md) traces the latest deployments and the decisions carried into NEXUS. NEXUS needs installer 0.7.2 or later.
 
