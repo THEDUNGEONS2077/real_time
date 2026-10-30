@@ -36,6 +36,13 @@ import zipfile
 #   clock_scale:    optional face-specific fit within its clock aperture
 #   readout_rows:   optional date/battery top coordinates, independent of slot-relative text
 PROFILES = {
+    'REACTOR': dict(
+        effects={'outer_rotor': ['outer_rotor'], 'inner_rotor': ['inner_rotor'],
+                 'sweep': ['radar_sweep'], 'core_glow': ['core_glow'], 'seconds': ['seconds_mark']},
+        defaults={'motion_speed': 'SLOW', 'clock_font': 'OXANIUM', 'clock_size': 'MEDIUM', 'glow': 'LOW', 'palette': 'EMBER'},
+        system_fonts=set(), inner_radius=174, max_parts=18, clock_scale=0.85, readout_rows=(112, 282),
+        inks={'EMBER': '#fff0d4', 'ICE': '#e5faff', 'PHOSPHOR': '#e5ffec', 'BLOOD': '#ffe6e9', 'VIOLET': '#f1eaff', 'STEEL': '#f0f4f7'},
+        warning='#ff745c', motion_tags={'Group', 'PartImage'}),
     'JARVIS': dict(
         effects={'outer_rotor': ['outer_rotor'], 'inner_rotor': ['inner_rotor'],
                  'sweep': ['radar_sweep'], 'core_glow': ['core_glow'], 'seconds': ['seconds_mark']},

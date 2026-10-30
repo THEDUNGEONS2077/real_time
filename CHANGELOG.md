@@ -1,5 +1,17 @@
 # Changelog
 
+## REACTOR 0.1.0 (build 1)
+
+- New industrial HUD with titanium containment plates, amber energy cells, red latches and a fixed armoured clock bridge. Counter-rotating rings remain behind opaque shields; small core/shoulder lights pulse subtly.
+- Six palettes, four fonts, three sizes/glow levels, four speeds and five independent effects. Default Slow/all on; real-time seconds, fixed date/battery, editable provider shortcut and minimal ambient.
+- Reuse accepted NEXUS/JARVIS compact editing, explicit RGB text, cropped/merged artwork and live-clock motion. Existing faces unchanged; no executable code, permissions, runtime blur or materials shader in the face.
+- Installer 0.7.4 is required. Local structural checks do not establish device responsiveness; comparison with the accepted faces remains pending.
+
+## Installer 0.7.4 (build 16)
+
+- Add REACTOR to the explicit face catalogue and exercise its actual AAPT2-packaged APK in selection tests.
+- Preserve pairing, private-LAN transport, explicit selection/install, signature/code/permission checks, bounded transfers and installed-version verification. No new permissions, diagnostics or automatic uploads.
+
 ## JARVIS acceptance — 2026-10-30
 
 - User accepts JARVIS 0.1.0 design and explicitly confirms motion and phone customization feel as seamless as NEXUS. Record the published release as accepted; retain NEXUS 0.1.2 as the architecture checkpoint.

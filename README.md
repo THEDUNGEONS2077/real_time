@@ -4,6 +4,7 @@ Moving sci-fi HUD watch faces for the Samsung Galaxy Watch7 40 mm (Wear OS 6). E
 
 | Face | Status | Docs |
 |---|---|---|
+| **REACTOR** 0.1.0 candidate | Titanium containment HUD, amber energy and red accents; accepted NEXUS/JARVIS architecture | [faces/reactor/README.md](faces/reactor/README.md) |
 | **JARVIS** 0.1.0 | User-accepted cyan turbine HUD; motion and phone customization confirmed as seamless as NEXUS | [faces/jarvis/README.md](faces/jarvis/README.md) |
 | **NEXUS** 0.1.2 | User-accepted checkpoint: phone customization timeout resolved; responsiveness baseline for future faces | [faces/nexus/README.md](faces/nexus/README.md) |
 | **REDLINE** 1.1 | Black/red concentric HUD. 8 clock fonts, glow and size, 6 palettes, 4 speeds, 3 rotation styles, 6 effects, Timer complication | [faces/redline/README.md](faces/redline/README.md) |
@@ -17,6 +18,8 @@ Use the [NEXUS 0.1.2 checkpoint](docs/CHECKPOINT-NEXUS-0.1.2.md) for the next fa
 The [2026-10-28 takeover review](docs/HANDOVER-2026-10-28.md) traces the latest deployments and the decisions carried into NEXUS. NEXUS needs installer 0.7.2 or later.
 
 JARVIS needs installer **0.7.3** or later; update the helper on the phone before selecting its APK. Pairing is preserved.
+
+REACTOR needs installer **0.7.4** or later. Update the helper over the existing installation to keep pairing.
 
 ## Develop
 

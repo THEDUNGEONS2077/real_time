@@ -79,3 +79,5 @@ await cipherPreviews();
 await nexusPreviews();
 const { jarvisPreviews } = await import('./jarvis.ts');
 await jarvisPreviews();
+const { reactorPreviews } = await import('./reactor.ts');
+await reactorPreviews();
