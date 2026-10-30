@@ -36,6 +36,14 @@ import zipfile
 #   clock_scale:    optional face-specific fit within its clock aperture
 #   readout_rows:   optional date/battery top coordinates, independent of slot-relative text
 PROFILES = {
+    'JARVIS': dict(
+        effects={'outer_rotor': ['outer_rotor'], 'inner_rotor': ['inner_rotor'],
+                 'sweep': ['radar_sweep'], 'core_glow': ['core_glow'], 'seconds': ['seconds_mark']},
+        defaults={'motion_speed': 'SLOW', 'clock_font': 'OXANIUM', 'clock_size': 'MEDIUM', 'glow': 'LOW', 'palette': 'CYAN'},
+        system_fonts=set(), inner_radius=174, max_parts=18, clock_scale=0.85, readout_rows=(112, 282),
+        inks={'CYAN': '#dcfcff', 'ICE': '#ecfcff', 'AMBER': '#fff0d4', 'PHOSPHOR': '#e1ffed', 'BLOOD': '#ffe6e9', 'VIOLET': '#f1eaff'},
+        warning='#ff745c',
+        motion_tags={'Group', 'PartImage'}),
     'REDLINE': dict(
         effects={'seconds': ['seconds_beacon'], 'ring_a': ['outer_rotor'], 'ring_b': ['inner_rotor', 'inset_rotor'],
                  'breathing': ['red_pulse'], 'scan': ['radar_sweep'], 'tilt': ['depth']},
@@ -175,6 +183,8 @@ def check_state(active, state):
     box = [int(clock.get(k)) for k in ('x', 'y', 'width', 'height')]
     require(box[0] * 2 + box[2] == 432 and box[1] * 2 + box[3] == 432, 'Clock box must be centred on (216,216).')
     require(clock.get('align') == 'CENTER' and clock.get('hourFormat') == 'SYNC_TO_DEVICE', 'Clock must centre and follow the 12/24-hour setting.')
+    if 'inks' in PROFILE:
+        require(font.get('color') == PROFILE['inks'][state['palette']], 'Clock palette tint failed.')
 
     # Face-specific fixed rows, in the same font family as the clock (or REDLINE's system font).
     # Slot text uses slot-relative y values, so the readouts are the PartTexts at the readout rows.
@@ -188,6 +198,9 @@ def check_state(active, state):
             require(t.find('Text/BitmapFont').get('family') == 'readout_' + state['clock_font'].lower(), 'Readout font must follow the clock font.')
         x, w = int(t.get('x')), int(t.get('width'))
         require(x * 2 + w == 432 and t.find('Text').get('align') == 'CENTER', 'Readouts must be centred.')
+        if 'inks' in PROFILE:
+            colour = PROFILE['warning'] if int(t.get('y')) == rows[1] and state['battery'] <= 15 else PROFILE['inks'][state['palette']]
+            require(t.find('Text/BitmapFont').get('color') == colour, 'Readout palette/battery colour failed.')
 
     # Effects: each moving group is present exactly when its effect is on and motion is not STILL.
     for effect, names in PROFILE['effects'].items():
@@ -295,6 +308,9 @@ def verify(resources, apk=None, aapt2=None):
     base = dict(defaults, battery=80)
     states = [dict(base, **{sid: option}) for sid, options in settings.items() for option in options]
     states += [dict(base, clock_font=f, glow=g, clock_size=s) for f, g, s in itertools.product(settings['clock_font'], settings['glow'], settings['clock_size'])]
+    if 'inks' in PROFILE:
+        states += [dict(base, palette=p, clock_font=f, glow=g, clock_size=s, battery=b)
+                   for p, f, g, s, b in itertools.product(settings['palette'], settings['clock_font'], settings['glow'], settings['clock_size'], [5, 15, 16, 80])]
     effect_ids = list(PROFILE['effects'])
     style_options = settings.get('motion_style', [None])
     states += [dict(base, motion_speed=sp, **({'motion_style': st} if st else {}), **dict(zip(effect_ids, bits)))

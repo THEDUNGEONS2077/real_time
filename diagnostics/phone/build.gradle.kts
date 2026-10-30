@@ -16,8 +16,8 @@ android {
         applicationId = "com.thedungeons2077.realtime.diagnostics"
         minSdk = 33
         targetSdk = 36
-        versionCode = 14
-        versionName = "0.7.2"
+        versionCode = 15
+        versionName = "0.7.3"
         buildConfigField("String", "SOURCE_COMMIT", "\"${providers.exec { commandLine("git", "rev-parse", "HEAD") }.standardOutput.asText.get().trim()}\"")
         buildConfigField("String", "FACE_CERT_SHA256", "\"${rootProject.file("signing-certificate.sha256").readText().trim()}\"")
         // Conscrypt ships native code; only ARM64 phones are supported.
@@ -44,6 +44,7 @@ tasks.withType<Test>().configureEach {
     dependsOn(":faces:halo:assembleDebug")
     dependsOn(":faces:redline:assembleDebug")
     dependsOn(":faces:nexus:assembleDebug")
+    dependsOn(":faces:jarvis:assembleDebug")
     val fixture = providers.gradleProperty("haloSelectionFixture").orElse(rootProject.file("faces/halo/build/outputs/apk/debug/halo-debug.apk").absolutePath)
     inputs.file(fixture)
     systemProperty("halo.selection.fixture", fixture.get())
@@ -53,6 +54,9 @@ tasks.withType<Test>().configureEach {
     val nexusFixture = rootProject.file("faces/nexus/build/outputs/apk/debug/nexus-debug.apk")
     inputs.file(nexusFixture)
     systemProperty("nexus.selection.fixture", nexusFixture.absolutePath)
+    val jarvisFixture = rootProject.file("faces/jarvis/build/outputs/apk/debug/jarvis-debug.apk")
+    inputs.file(jarvisFixture)
+    systemProperty("jarvis.selection.fixture", jarvisFixture.absolutePath)
     systemProperty("halo.selection.aapt2", File(android.sdkDirectory, "build-tools/36.0.0/aapt2").absolutePath)
 }
 dependencies {

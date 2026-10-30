@@ -42,6 +42,7 @@ Future faces can opt into `tools/compose/src/raster.ts`. Compare packed and orig
 
 ## Engineering choices (not yet measured)
 
+- **JARVIS 0.1.0 candidate (2026-10-30).** First new face using the accepted NEXUS checkpoint: compact RGB-selected text, cropped/merged reference-inspired instrument masks, direct image transforms and live-clock motion. XML 152,880 bytes, 16–18 selected drawing parts, 11.79 MiB active / 0.61 MiB ambient estimate; existing faces unchanged. These are smaller structural costs, not a measured performance gain. See [comparison](measurements/reviewed/jarvis-0.1.0-baseline.md); phone/watch acceptance pending.
 - **Fewer draw parts.** Long static runs are cached as cropped lossless layers: 325 parts became 26 in 0.2.1, and 14 in 0.3.x. The trade is more decoded image memory.
 - **Disabled motion is removed, not hidden.** STILL and OFF effects select static subtrees.
 - **Fixed readouts.** Clock, readouts and the complication sit outside every moving group.

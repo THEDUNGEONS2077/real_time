@@ -16,6 +16,7 @@ tools/compose/
   faces/redline/        design.ts · fonts.ts · editor.ts · render.ts (WFF) · preview.ts (SVG) · resources.ts · assets.ts
   faces/cipher/         design.ts · assets.ts / masks.ts (baked ring, rain and sweep masks) · editor.ts · render.ts · preview.ts · resources.ts
   faces/nexus/          design.ts · masks.ts · artwork.ts (packed scenes) · editor.ts · render.ts · preview.ts · resources.ts
+  faces/jarvis/         independent circular-instrument design using the accepted NEXUS packing/editor approach
   halo/                 HALO's frozen generator (byte-identical; no new features)
   fonts/                committed OFL fonts with their licences
 tools/check/            review gallery, release checker (verify_editor.py), packaged-pixel comparison
@@ -84,4 +85,4 @@ NEXUS 0.1.2 shares its interactive clock/readouts across palettes to reduce comp
 
 ## Release tags
 
-HALO uses `v*`; REDLINE uses `redline-v*`; CIPHER uses `cipher-v*`; NEXUS uses `nexus-v*`; the installer uses `diagnostics-v*`. Each has its own monotonic versionCode.
+HALO uses `v*`; REDLINE uses `redline-v*`; CIPHER uses `cipher-v*`; NEXUS uses `nexus-v*`; JARVIS uses `jarvis-v*`; the installer uses `diagnostics-v*`. Each has its own monotonic versionCode.

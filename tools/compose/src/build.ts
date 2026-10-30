@@ -12,11 +12,12 @@ import { haloResources } from '../halo/resources.ts';
 import { redlineResources } from '../faces/redline/resources.ts';
 import { cipherResources } from '../faces/cipher/resources.ts';
 import { nexusResources } from '../faces/nexus/resources.ts';
+import { jarvisResources } from '../faces/jarvis/resources.ts';
 
 /** Faces with their own resource-only module under faces/. */
-export type FaceName = 'halo' | 'redline' | 'cipher' | 'nexus';
+export type FaceName = 'halo' | 'redline' | 'cipher' | 'nexus' | 'jarvis';
 /** Every face, in build order. */
-export const faces: FaceName[] = ['halo', 'redline', 'cipher', 'nexus'];
+export const faces: FaceName[] = ['halo', 'redline', 'cipher', 'nexus', 'jarvis'];
 
 /** Repository root, independent of the caller's working directory. */
 export const root = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
@@ -28,6 +29,7 @@ export function resources(face: FaceName): Promise<Map<string, Buffer>> {
     case 'redline': return redlineResources();
     case 'cipher': return cipherResources();
     case 'nexus': return nexusResources();
+    case 'jarvis': return jarvisResources();
   }
 }
 

@@ -77,3 +77,5 @@ await redlinePreviews();
 await cipherPreviews();
 
 await nexusPreviews();
+const { jarvisPreviews } = await import('./jarvis.ts');
+await jarvisPreviews();

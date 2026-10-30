@@ -1,5 +1,17 @@
 # Changelog
 
+## JARVIS 0.1.0 (build 1)
+
+- New reference-inspired cyan circular HUD: broad asymmetric turbine sectors, counter-rotating index windows, fine calibration ticks, a quiet peripheral grid and wireframe core detail around large stationary time.
+- Six palettes, four fonts, three clock sizes/glow levels, four speeds and five independent effects. Default Slow/all on; real seconds, fixed date/battery, accurate provider shortcut and minimal ambient.
+- Carry forward NEXUS 0.1.2's accepted compact editor, configuration-only RGB text, baked/cropped/merged artwork and resume-safe live-clock motion. Existing face resources stay unchanged. No reference bitmap, code or permissions in the face APK.
+- Smaller editor definition and selected part count than the checkpoint; actual phone/watch responsiveness still needs device acceptance. Requires installer 0.7.3.
+
+## Installer 0.7.3 (build 15)
+
+- Add JARVIS to the explicit face package catalogue and test its actual AAPT2-packaged APK resource table.
+- Preserve existing pairing, signature/code/permission checks, bounded transfer, installed-version verification and explicit-copy errors. No new permissions, diagnostics, automatic uploads or background components.
+
 ## Checkpoint acceptance — 2026-10-29
 
 - User confirms NEXUS 0.1.2 fixes the phone customization timeout and calls the experience perfect. Record published build 3/source `bebedda6769e00bb0716a014d2103bdbeebb6c31` as the accepted checkpoint.
