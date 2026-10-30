@@ -1,5 +1,10 @@
 # Changelog
 
+## JARVIS acceptance — 2026-10-30
+
+- User accepts JARVIS 0.1.0 design and explicitly confirms motion and phone customization feel as seamless as NEXUS. Record the published release as accepted; retain NEXUS 0.1.2 as the architecture checkpoint.
+- Documentation only; no APK, resource or version change. No numerical performance or battery result is inferred.
+
 ## JARVIS 0.1.0 (build 1)
 
 - New reference-inspired cyan circular HUD: broad asymmetric turbine sectors, counter-rotating index windows, fine calibration ticks, a quiet peripheral grid and wireframe core detail around large stationary time.

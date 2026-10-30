@@ -1,6 +1,6 @@
 # JARVIS 0.1.0 — local verification
 
-Reviewed 2026-10-30. Resource-only WFF 4/API 36, 432×432 coordinates, build 1. Independent package `com.thedungeons2077.realtime.jarvis`. Publication and device acceptance are pending. This face reuses the accepted NEXUS 0.1.2 architecture; it does not yet have NEXUS's user acceptance.
+Reviewed 2026-10-30. Resource-only WFF 4/API 36, 432×432 coordinates, build 1. Independent package `com.thedungeons2077.realtime.jarvis`. Published as `jarvis-v0.1.0` from `e23a4839960d190be548d3006ed0226d2e39d00c`. On 2026-10-30 the user called the face “awesome” and explicitly confirmed that motion and phone customization feel as seamless as NEXUS: “It does yes - really good!” Design and perceived responsiveness are accepted. Exact firmware/settings, numerical timing and individual provider/lifecycle checklist results were not supplied.
 
 | Check | Result |
 |---|---|

@@ -17,6 +17,7 @@ Optimize from what the watch actually does. A small APK, a passing validator, th
 | 2026-10-29 (recorded) | NEXUS 0.1.0 | "Looks really good" at default settings/all effects; motion is not smooth enough. Preserve the design and optimize performance | user report |
 | 2026-10-29 | NEXUS, following 0.1.1 delivery | "Looks good"; Galaxy Wearable times out **opening** Customize, while on-watch customization works reliably. Exact installed build, firmware and phone app version not supplied | user report |
 | 2026-10-29 | NEXUS 0.1.2 | “That fixed it, it's perfect now.” Phone editor repair accepted; user requests this as the seamless-experience checkpoint for future faces | user report |
+| 2026-10-30 | JARVIS 0.1.0 | Design “awesome”; explicitly confirms motion and phone customization feel as seamless as NEXUS: “It does yes - really good!” | user report |
 
 No controlled trace, frame-rate or battery measurement has been collected yet.
 
@@ -42,7 +43,7 @@ Future faces can opt into `tools/compose/src/raster.ts`. Compare packed and orig
 
 ## Engineering choices (not yet measured)
 
-- **JARVIS 0.1.0 candidate (2026-10-30).** First new face using the accepted NEXUS checkpoint: compact RGB-selected text, cropped/merged reference-inspired instrument masks, direct image transforms and live-clock motion. XML 152,880 bytes, 16–18 selected drawing parts, 11.79 MiB active / 0.61 MiB ambient estimate; existing faces unchanged. These are smaller structural costs, not a measured performance gain. See [comparison](measurements/reviewed/jarvis-0.1.0-baseline.md); phone/watch acceptance pending.
+- **JARVIS 0.1.0 accepted (2026-10-30).** First new face using the accepted NEXUS checkpoint: compact RGB-selected text, cropped/merged reference-inspired instrument masks, direct image transforms and live-clock motion. XML 152,880 bytes, 16–18 selected drawing parts, 11.79 MiB active / 0.61 MiB ambient estimate; existing faces unchanged. These are smaller structural costs, not a measured performance gain. See [comparison](measurements/reviewed/jarvis-0.1.0-baseline.md). The user confirms motion and phone customization feel as seamless as NEXUS; numerical FPS, latency and battery remain unmeasured.
 - **Fewer draw parts.** Long static runs are cached as cropped lossless layers: 325 parts became 26 in 0.2.1, and 14 in 0.3.x. The trade is more decoded image memory.
 - **Disabled motion is removed, not hidden.** STILL and OFF effects select static subtrees.
 - **Fixed readouts.** Clock, readouts and the complication sit outside every moving group.

@@ -4,7 +4,7 @@ Moving sci-fi HUD watch faces for the Samsung Galaxy Watch7 40 mm (Wear OS 6). E
 
 | Face | Status | Docs |
 |---|---|---|
-| **JARVIS** 0.1.0 candidate | Cyan concentric turbine HUD inspired by the supplied reference; uses the NEXUS checkpoint architecture | [faces/jarvis/README.md](faces/jarvis/README.md) |
+| **JARVIS** 0.1.0 | User-accepted cyan turbine HUD; motion and phone customization confirmed as seamless as NEXUS | [faces/jarvis/README.md](faces/jarvis/README.md) |
 | **NEXUS** 0.1.2 | User-accepted checkpoint: phone customization timeout resolved; responsiveness baseline for future faces | [faces/nexus/README.md](faces/nexus/README.md) |
 | **REDLINE** 1.1 | Black/red concentric HUD. 8 clock fonts, glow and size, 6 palettes, 4 speeds, 3 rotation styles, 6 effects, Timer complication | [faces/redline/README.md](faces/redline/README.md) |
 | **CIPHER** 0.1.0 | Green phosphor terminal HUD: rotating rings of matrix glyphs, comet sweep, matrix rain. Built light: one image per moving piece | [faces/cipher/README.md](faces/cipher/README.md) |
